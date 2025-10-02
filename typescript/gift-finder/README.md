@@ -17,17 +17,12 @@
   Docs → https://docs.browserbase.com/features/proxies
 
 ## QUICKSTART
- 1) Create virtual environment (optional but recommended):
-      python -m venv venv
-      source venv/bin/activate  # On Windows: venv\Scripts\activate
- 2) Install dependencies:
-      pip install stagehand python-dotenv InquirerPy openai pydantic
- 3) Create .env with:
-      BROWSERBASE_PROJECT_ID=...
-      BROWSERBASE_API_KEY=...
-      OPENAI_API_KEY=...
- 4) Run:
-      python index.py
+ 1) cd gift-finder-template
+ 2) npm install
+ 3) npm install inquirer openai
+ 4) cp .env.example .env
+ 5) Add your Browserbase API key, Project ID, and OpenAI API key to .env
+ 6) npm start
 
 ## EXPECTED OUTPUT
 - Prompts user for recipient and description
@@ -39,10 +34,9 @@
 
 ## COMMON PITFALLS
 - Browserbase Developer plan or higher is required to use proxies (they have been commented out in the code)
-- "ModuleNotFoundError": ensure all dependencies are installed via pip
+- "Cannot find module": ensure all dependencies are installed
 - Missing credentials: verify .env contains all required API keys
 - Search failures: check internet connection and website accessibility
-- Import errors: activate your virtual environment if you created one
 
 ## USE CASES
 • Multi-retailer product discovery: Generate smart queries, browse in parallel, and extract structured results across sites (with geo-specific proxies when needed).

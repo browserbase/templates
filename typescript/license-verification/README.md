@@ -17,14 +17,11 @@
 - structured scraping: extracting consistent, typed data that can flow into apps, CRMs, or compliance systems.
 
 ## QUICKSTART
- 1) pnpm init
- 2) pnpm add @browserbasehq/stagehand dotenv @types/node zod
-    pnpm add -D typescript && pnpm tsc --init
- 3) Create .env with:
-      BROWSERBASE_PROJECT_ID=...
-      BROWSERBASE_API_KEY=...
- 4) Compile + run:
-      pnpm tsc && node product.js
+ 1) cd license-verification-template
+ 2) npm install
+ 3) cp .env.example .env
+ 4) Add your Browserbase API key and Project ID to .env
+ 5) npm start
 
 ## EXPECTED OUTPUT
 - Navigates to California DRE license verification website

@@ -20,16 +20,12 @@
 
 ## QUICKSTART
 1) Create an account with SF Recreation & Parks website -> https://www.rec.us/organizations/san-francisco-rec-park
-2) pnpm init
-3) pnpm add @browserbasehq/stagehand dotenv @types/node inquirer zod
-   pnpm add -D typescript && pnpm tsc --init
-4) Create .env with:
-   BROWSERBASE_PROJECT_ID=...
-   BROWSERBASE_API_KEY=...
-   SF_REC_PARK_EMAIL=...
-   SF_REC_PARK_PASSWORD=...
-5) Compile + run:
-   pnpm tsc && node pickleball.js
+2) cd pickleball-template
+3) npm install
+4) npm install inquirer
+5) cp .env.example .env
+6) Add your Browserbase API key, Project ID, and SF Rec Park credentials to .env
+7) npm start
 
 ## EXPECTED OUTPUT
 - Prompts user for activity type (Tennis/Pickleball), date, and time

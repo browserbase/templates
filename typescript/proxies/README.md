@@ -8,14 +8,12 @@
   Docs → https://docs.browserbase.com/features/proxies
 
 ## QUICKSTART
- 1) pnpm init
- 2) pnpm add @browserbasehq/sdk playwright-core dotenv
-    pnpm add -D typescript tsx && pnpm tsc --init
- 3) Create .env with:
-      BROWSERBASE_PROJECT_ID=...
-      BROWSERBASE_API_KEY=...
- 4) Run the script:
-      pnpm run proxies
+ 1) cd proxies-template
+ 2) npm install
+ 3) npm install @browserbasehq/sdk playwright-core
+ 4) cp .env.example .env
+ 5) Add your Browserbase API key and Project ID to .env
+ 6) npm start
 
 ## EXPECTED OUTPUT
 - Tests built-in proxy rotation

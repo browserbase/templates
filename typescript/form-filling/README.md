@@ -15,17 +15,11 @@
 - variable substitution: inject dynamic values into actions using `%variable%` syntax
 
 ## QUICKSTART
- 1) Create virtual environment (optional but recommended):
-      python -m venv venv
-      source venv/bin/activate  # On Windows: venv\Scripts\activate
- 2) Install dependencies:
-      pip install stagehand python-dotenv
- 3) Create .env with:
-      BROWSERBASE_PROJECT_ID=...
-      BROWSERBASE_API_KEY=...
-      OPENAI_API_KEY=...
- 4) Run:
-      python index.py
+ 1) cd form-fill-template
+ 2) npm install
+ 3) cp .env.example .env
+ 4) Add your Browserbase API key, Project ID, and OpenAI API key to .env
+ 5) npm start
 
 ## EXPECTED OUTPUT
 - Initializes Stagehand session with Browserbase
@@ -36,12 +30,11 @@
 - Closes session cleanly
 
 ## COMMON PITFALLS
-- "ModuleNotFoundError": ensure all dependencies are installed via pip
+- "Cannot find module": ensure all dependencies are installed
 - Missing credentials: verify .env contains all required API keys
 - Form detection: ensure target page has fillable form fields
 - Variable mismatch: ensure variable names in action match variables object
 - Network issues: check internet connection and website accessibility
-- Import errors: activate your virtual environment if you created one
 
 ## USE CASES
 • Lead & intake automation: Auto-fill contact/quote/request forms from CRM or CSV to speed up inbound/outbound workflows.

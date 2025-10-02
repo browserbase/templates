@@ -4,11 +4,26 @@ import os
 import asyncio
 from playwright.async_api import async_playwright
 from browserbase import Browserbase
+from stagehand import Stagehand, StagehandConfig
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
 
 load_dotenv()
 
 bb = Browserbase(api_key=os.environ.get("BROWSERBASE_API_KEY"))
+
+
+class GeoInfo(BaseModel):
+    """Schema for IP information and geolocation data"""
+    ip: str = Field(..., description="The IP address")
+    city: str = Field(..., description="The city name")
+    region: str = Field(..., description="The state or region")
+    country: str = Field(..., description="The country code")
+    loc: str = Field(..., description="The latitude and longitude coordinates")
+    timezone: str = Field(..., description="The timezone")
+    org: str = Field(..., description="The organization or ISP")
+    postal: str = Field(..., description="The postal code")
+    hostname: str = Field(..., description="The hostname if available")
 
 
 async def create_session_with_built_in_proxies():
@@ -75,10 +90,41 @@ async def test_session(session_function, session_name: str):
         if not page:
             raise Exception("No page found in default context")
 
-        # Navigate to IP info service to verify proxy location and IP address.
-        await page.goto("https://ipinfo.io/json", wait_until="domcontentloaded")
-        geo_info = await page.text_content('pre')  # Extract JSON response containing IP and location data.
-        print(f"Geo Info: {geo_info}")
+        # Initialize Stagehand for structured data extraction
+        stagehand_config = StagehandConfig(
+            env="BROWSERBASE",
+            api_key=os.environ.get("BROWSERBASE_API_KEY"),
+            project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
+            verbose=1,
+            # 0 = errors only, 1 = info, 2 = debug 
+            # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
+            # https://docs.stagehand.dev/configuration/logging
+            model_name="openai/gpt-4.1",
+            model_api_key=os.environ.get("OPENAI_API_KEY"),
+            browserbase_session_id=session.id,  # Use the existing Browserbase session
+        )
+        
+        stagehand = Stagehand(stagehand_config)
+
+        try:
+            # Initialize Stagehand 
+            await stagehand.init()
+
+            # Navigate to IP info service to verify proxy location and IP address.
+            await stagehand.page.goto("https://ipinfo.io/json", wait_until="domcontentloaded")
+            
+            # Extract structured IP and location data using Stagehand and Pydantic schema
+            geo_info = await stagehand.page.extract(
+                instruction="Extract all IP information and geolocation data from the JSON response",
+                schema=GeoInfo
+            )
+
+            print("Geo Info:", geo_info.model_dump_json(indent=2))
+
+            # Close Stagehand session
+            await stagehand.close()
+        except Exception as error:
+            print(f"Error during Stagehand extraction: {error}")
 
         # Close browser to release resources and end the test session.
         await browser.close()
