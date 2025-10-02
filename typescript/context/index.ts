@@ -95,7 +95,8 @@ async function main() {
   // persist: true ensures any new changes (cookies, cache) are saved back to context.
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    modelName: "gpt-4.1",
+    modelName: "openai/gpt-4.1",
+    verbose: 1,
     browserbaseSessionCreateParams: {
       projectId: process.env.BROWSERBASE_PROJECT_ID!,
       browserSettings: {

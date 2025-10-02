@@ -13,7 +13,8 @@ async function main() {
   // Initialize Stagehand with Browserbase for cloud-based browser automation.
   const stagehand = new Stagehand({
     env: "BROWSERBASE", // Use Browserbase cloud browsers for reliable automation.
-    verbose: 0,
+    verbose: 1,
+    modelName: "openai/gpt-4.1",
     // 0 = errors only, 1 = info, 2 = debug 
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
     // https://docs.stagehand.dev/configuration/logging

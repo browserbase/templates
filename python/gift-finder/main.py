@@ -271,11 +271,11 @@ async def main() -> None:
             env="BROWSERBASE",
             api_key=os.environ.get("BROWSERBASE_API_KEY"),
             project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-            verbose=0,  # Silent logging to avoid cluttering output
+            verbose=1,  # Silent logging to avoid cluttering output
             # Logging levels: 0 = errors only, 1 = info, 2 = debug 
             # When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs
             # https://docs.stagehand.dev/configuration/logging
-            model_name="gpt-4.1",
+            model_name="openai/gpt-4.1",
             model_api_key=os.environ.get("OPENAI_API_KEY"),
             browserbase_session_create_params={
                 "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
