@@ -18,7 +18,8 @@ async function main() {
 	// Initialize Stagehand with Browserbase for cloud-based browser automation.
 	const stagehand = new Stagehand({
 		env: "BROWSERBASE",
-		modelName: "gpt-4.1",
+		modelName: "openai/gpt-4.1",
+		verbose: 1,
 		browserbaseSessionCreateParams: {
 			projectId: process.env.BROWSERBASE_PROJECT_ID!,
 		}
