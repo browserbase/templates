@@ -33,7 +33,8 @@ async function createSessionContextID() {
   console.log("Connecting Stagehand to session...");
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    modelName: "gpt-4.1",
+    modelName: "openai/gpt-4.1",
+    verbose: 1,
     browserbaseSessionID: session.id,
   });
 
