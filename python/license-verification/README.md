@@ -17,16 +17,14 @@
 - structured scraping: extracting consistent, typed data that can flow into apps, CRMs, or compliance systems.
 
 ## QUICKSTART
- 1) Create virtual environment (optional but recommended):
-      python -m venv venv
-      source venv/bin/activate  # On Windows: venv\Scripts\activate
- 2) Install dependencies:
-      pip install stagehand python-dotenv pydantic
- 3) Create .env with:
-      BROWSERBASE_PROJECT_ID=...
-      BROWSERBASE_API_KEY=...
- 4) Run:
-      python index.py
+ 1) cd license-verification-template
+ 2) python -m venv venv
+ 3) source venv/bin/activate  # On Windows: venv\Scripts\activate
+ 4) pip install -r requirements.txt
+ 5) pip install pydantic
+ 6) cp .env.example .env
+ 7) Add your Browserbase API key and Project ID to .env
+ 8) python main.py
 
 ## EXPECTED OUTPUT
 - Navigates to California DRE license verification website

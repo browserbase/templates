@@ -18,7 +18,8 @@ async function main() {
 	// Initialize Stagehand with Browserbase for cloud-based browser automation.
 	const stagehand = new Stagehand({
 		env: "BROWSERBASE",
-		modelName: "gpt-4o",
+		modelName: "openai/gpt-4.1",
+		verbose: 1,
 		browserbaseSessionCreateParams: {
 			projectId: process.env.BROWSERBASE_PROJECT_ID!,
 		}
@@ -39,34 +40,42 @@ async function main() {
 			timeout: 60000 // Extended timeout for reliable page loading.
 		});
 
-		// Analyze form structure to identify fillable fields before attempting to fill.
-		console.log("Analyzing form fields...");
-		const contact_page = await page.observe({ 
-			instruction: "What are the fields that can be filled in?",
-			returnAction: true // Return action objects for potential reuse with act().
+		// Single observe call to plan all form filling
+		const formFields = await page.observe({
+			instruction: `Find form fields for: first name, last name, company, job title, email, message`,
+			returnAction: true
 		});
-		console.log("Available form fields:", contact_page);
 
-		// Fill form using a more reliable approach with individual field targeting.
-		console.log("Filling in contact form...");
+		// Execute all actions without LLM calls
+		for (const field of formFields) {
+			// Match field to data based on description
+			let value = '';
+			const desc = field.description.toLowerCase();
+			
+			if (desc.includes('first name')) value = firstName;
+			else if (desc.includes('last name')) value = lastName;
+			else if (desc.includes('company')) value = company;
+			else if (desc.includes('job title')) value = jobTitle;
+			else if (desc.includes('email')) value = email;
+			else if (desc.includes('message')) value = message;
+			
+			if (value) {
+				await page.act({
+					...field,
+					arguments: [value]
+				});
+			}
+		}
 		
-		// Fill each field individually for better reliability
-		await page.act(`Fill in the first name field with "${firstName}"`);
-		await page.act(`Fill in the last name field with "${lastName}"`);
-		await page.act(`Fill in the company field with "${company}"`);
-		await page.act(`Fill in the job title field with "${jobTitle}"`);
-		await page.act(`Fill in the email field with "${email}"`);
-		await page.act(`Fill in the message field with "${message}"`);
-        
-        // Language choice in Stagehand act() is crucial for reliable automation.
-        // Use "click" for dropdown interactions rather than "select"
-        await page.act("Click on the How Can we help? dropdown");
-        await page.waitForTimeout(500);
-        await page.act("Click on the first option from the dropdown");
-        // await page.act("Select the first option from the dropdown"); // Less reliable than "click"
+		// Language choice in Stagehand act() is crucial for reliable automation.
+		// Use "click" for dropdown interactions rather than "select"
+		await page.act("Click on the How Can we help? dropdown");
+		await page.waitForTimeout(500);
+		await page.act("Click on the first option from the dropdown");
+		// await page.act("Select the first option from the dropdown"); // Less reliable than "click"
 
-        // Uncomment the line below if you want to submit the form
-        // await page.act("Click the submit button");
+		// Uncomment the line below if you want to submit the form
+		// await page.act("Click the submit button");
 	
 		console.log("Form filled successfully! Waiting 3 seconds...");
 		await page.waitForTimeout(30000);

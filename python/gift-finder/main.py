@@ -37,13 +37,19 @@ client = OpenAI()
 
 
 async def generate_search_queries(recipient: str, description: str) -> List[str]:
+    """
+    Generate intelligent search queries based on recipient profile.
+    
+    Uses AI to create thoughtful, complementary gift search terms that go beyond
+    obvious basics to find unique and meaningful gifts.
+    """
     print(f"Generating search queries for {recipient}...")
 
     # Use AI to generate search terms based on recipient profile
     # This avoids generic searches and focuses on thoughtful, complementary gifts
     response = await asyncio.to_thread(
         client.chat.completions.create,
-        model="gpt-4o",
+        model="gpt-4.1",
         messages=[
             {
                 "role": "user",
@@ -80,6 +86,12 @@ async def score_products(
     recipient: str,
     description: str,
 ) -> List[Product]:
+    """
+    Score and rank products based on recipient profile using AI.
+    
+    Analyzes each product against the recipient's interests, relationship context,
+    value, uniqueness, and practical usefulness to find the best gift matches.
+    """
     print("AI is analyzing gift options based on recipient profile...")
 
     # Flatten all products from multiple search sessions into single array
@@ -99,7 +111,7 @@ async def score_products(
 
     response = await asyncio.to_thread(
         client.chat.completions.create,
-        model="gpt-4o",
+        model="gpt-4.1",
         messages=[
             {
                 "role": "user",
@@ -176,6 +188,12 @@ IMPORTANT:
 
 
 async def get_user_input() -> GiftFinderAnswers:
+    """
+    Collect user input for gift recipient and description.
+    
+    Uses interactive CLI prompts with validation to gather information
+    needed for intelligent gift recommendations.
+    """
     print("Welcome to the Gift Finder App!")
     print("Find the perfect gift with intelligent web browsing")
 
@@ -208,16 +226,26 @@ async def get_user_input() -> GiftFinderAnswers:
 
 
 async def main() -> None:
+    """
+    Main application entry point.
+    
+    Orchestrates the entire gift finding process:
+    1. Collects user input
+    2. Generates intelligent search queries
+    3. Runs concurrent browser searches
+    4. Scores and ranks products with AI
+    5. Displays top recommendations
+    """
     print("Starting Gift Finder Application...")
 
+    # Step 1: Collect user input
     user_input = await get_user_input()
     recipient = user_input.recipient
     description = user_input.description
     print(f"User input received: {recipient} - {description}")
 
+    # Step 2: Generate search queries using AI
     print("\nGenerating intelligent search queries...")
-
-    # Generate search queries with fallback for reliability
     try:
         search_queries = await generate_search_queries(recipient, description)
 
@@ -227,39 +255,40 @@ async def main() -> None:
             print(f"   {index + 1}. {cleaned_query}")
     except Exception as error:
         print(f"Error generating search queries: {error}")
-        # Fallback queries
+        # Fallback queries ensure app continues working
         search_queries = ["gifts", "accessories", "items"]
         print("Using fallback search queries")
 
+    # Step 3: Start concurrent browser searches
     print("\nStarting concurrent browser searches...")
 
     async def run_single_search(query: str, session_index: int) -> SearchResult:
         print(f"Starting search session {session_index + 1} for: \"{query}\"")
 
         # Create separate Stagehand instance for each search to run concurrently
-        # Each session searches independently to maximize speed
+        # Each session searches independently to maximize speed and parallel processing
         config = StagehandConfig(
             env="BROWSERBASE",
             api_key=os.environ.get("BROWSERBASE_API_KEY"),
             project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-            verbose=0,
-            # 0 = errors only, 1 = info, 2 = debug 
-            # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
+            verbose=1,  # Silent logging to avoid cluttering output
+            # Logging levels: 0 = errors only, 1 = info, 2 = debug 
+            # When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs
             # https://docs.stagehand.dev/configuration/logging
-            model_name="gpt-4o",
+            model_name="openai/gpt-4.1",
             model_api_key=os.environ.get("OPENAI_API_KEY"),
             browserbase_session_create_params={
                 "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
-                # Proxies require Developer Plan or higher - comment in if you have a Developer Plan or higher
-                #   "proxies": [
+                # Proxies require Developer Plan or higher - uncomment if you have a Developer Plan or higher
+                # "proxies": [
                 #     {
-                #       "type": "browserbase",
-                #       "geolocation": {
-                #         "city": "LONDON",
-                #         "country": "GB"
-                #       }
+                #         "type": "browserbase",
+                #         "geolocation": {
+                #             "city": "LONDON",
+                #             "country": "GB"
+                #         }
                 #     }
-                #   ],
+                # ],
                 "region": "us-east-1",
                 "timeout": 900,
                 "browser_settings": {
@@ -272,6 +301,7 @@ async def main() -> None:
         )
 
         try:
+            # Initialize browser session with Stagehand
             async with Stagehand(config) as session_stagehand:
                 session_page = session_stagehand.page
 
@@ -286,7 +316,7 @@ async def main() -> None:
                     live_view_url = f"https://www.browserbase.com/sessions/{session_id}"
                     print(f"Session {session_index + 1} Live View: {live_view_url}")
 
-                # Navigate to European gift site - proxies help with regional access
+                # Navigate to European gift site
                 print(f"Session {session_index + 1}: Navigating to Firebox.eu...")
                 await session_page.goto("https://firebox.eu/")
 
@@ -299,7 +329,7 @@ async def main() -> None:
                 # Extract structured product data using Pydantic schema for type safety
                 print(f"Session {session_index + 1}: Extracting product data...")
                 
-                # Define schema using Pydantic
+                # Define Pydantic schemas for structured data extraction
                 class ProductItem(BaseModel):
                     title: str = Field(..., description="the title/name of the product")
                     url: HttpUrl = Field(..., description="the full URL link to the product page")
@@ -343,12 +373,13 @@ async def main() -> None:
                 products=[]
             )
 
+    # Create concurrent search tasks for all generated queries
     search_promises = [run_single_search(query, index) for index, query in enumerate(search_queries)]
 
     print("\nBrowser Sessions Starting...")
     print("Live view links will appear as each session initializes")
 
-    # Wait for all concurrent searches to complete
+    # Execute all searches concurrently using asyncio.gather()
     all_results = await asyncio.gather(*search_promises)
 
     # Calculate total products found across all search sessions
@@ -360,6 +391,7 @@ async def main() -> None:
     for result in all_results:
         all_products_flat.extend(result.products)
 
+    # Step 4: Score and rank products with AI
     if len(all_products_flat) > 0:
         try:
             # AI scores all products and ranks them by relevance to recipient
@@ -367,6 +399,7 @@ async def main() -> None:
             top3_products = scored_products[:3]
 
             print("\nTOP 3 RECOMMENDED GIFTS:")
+            print("=" * 50)
 
             # Display top 3 products with AI reasoning for transparency
             for index, product in enumerate(top3_products):
@@ -374,19 +407,21 @@ async def main() -> None:
                 print(f"\n{rank} - {product.title}")
                 print(f"Price: {product.price}")
                 print(f"Rating: {product.rating}")
-                print(f"Score: {product.ai_score}/10")
+                print(f"AI Score: {product.ai_score}/10")
                 print(f"Why: {product.ai_reason}")
                 print(f"Link: {product.url}")
+                print("-" * 30)
 
             print(
                 f"\nGift finding complete! Found {total_products} products, analyzed {len(scored_products)} with AI."
             )
         except Exception as error:
+            # Handle AI scoring errors
             print(f"Error scoring products: {error}")
             print(f"Target: {recipient}")
             print(f"Profile: {description}")
     else:
-        # Handle case where no products were found across all searches
+        # Handle case where no products were found
         print("No products found to score")
         print("Try adjusting your recipient description or check if the website is accessible")
 

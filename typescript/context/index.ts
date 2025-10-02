@@ -33,7 +33,8 @@ async function createSessionContextID() {
   console.log("Connecting Stagehand to session...");
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    modelName: "gpt-4o",
+    modelName: "openai/gpt-4.1",
+    verbose: 1,
     browserbaseSessionID: session.id,
   });
 
@@ -95,7 +96,8 @@ async function main() {
   // persist: true ensures any new changes (cookies, cache) are saved back to context.
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    modelName: "gpt-4o",
+    modelName: "openai/gpt-4.1",
+    verbose: 1,
     browserbaseSessionCreateParams: {
       projectId: process.env.BROWSERBASE_PROJECT_ID!,
       browserSettings: {

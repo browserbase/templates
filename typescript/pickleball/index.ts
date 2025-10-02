@@ -1,10 +1,10 @@
 // SF Court Booking Automation - See README.md for full documentation
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
+import { Stagehand, StagehandPage } from "@browserbasehq/stagehand";
 import inquirer from 'inquirer';
 import { z } from 'zod';
 
-async function loginToSite(page: any, email: string, password: string): Promise<void> {
+async function loginToSite(page: StagehandPage, email: string, password: string): Promise<void> {
   console.log("Logging in...");
   // Perform login sequence: each step is atomic to handle dynamic page changes.
   await page.act("Click the Login button");
@@ -15,7 +15,7 @@ async function loginToSite(page: any, email: string, password: string): Promise<
   console.log("Logged in");
 }
 
-async function selectFilters(page: any, activity: string, timeOfDay: string, selectedDate: string): Promise<void> {
+async function selectFilters(page: StagehandPage, activity: string, timeOfDay: string, selectedDate: string): Promise<void> {
   console.log("Selecting the activity");
   // Filter by activity type first to narrow down available courts.
   await page.act(`Click the activites drop down menu`);
@@ -54,7 +54,7 @@ async function selectFilters(page: any, activity: string, timeOfDay: string, sel
   await page.act(`Click the Done button`);
 }
 
-async function checkAndExtractCourts(page: any, timeOfDay: string): Promise<void> {
+async function checkAndExtractCourts(page: StagehandPage, timeOfDay: string): Promise<void> {
   console.log("Checking for available courts...");
   
   // First observe the page to find all available court booking options.
@@ -171,7 +171,7 @@ async function checkAndExtractCourts(page: any, timeOfDay: string): Promise<void
   }
 }
 
-async function bookCourt(page: any): Promise<void> {
+async function bookCourt(page: StagehandPage): Promise<void> {
   console.log("Starting court booking process...");
   
   try {
@@ -352,11 +352,11 @@ async function bookTennisPaddleCourt() {
   console.log("Initializing Stagehand with Browserbase");
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    verbose: 0,
+    verbose: 1,
     // 0 = errors only, 1 = info, 2 = debug 
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
     // https://docs.stagehand.dev/configuration/logging
-    modelName: "gpt-4o",
+    modelName: "openai/gpt-4.1",
     browserbaseSessionCreateParams: {
       projectId: process.env.BROWSERBASE_PROJECT_ID!,
       timeout: 900,

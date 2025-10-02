@@ -20,18 +20,14 @@
 
 ## QUICKSTART
 1) Create an account with SF Recreation & Parks website -> https://www.rec.us/organizations/san-francisco-rec-park
-2) Create virtual environment (optional but recommended):
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-3) Install dependencies:
-   pip install stagehand python-dotenv InquirerPy pydantic
-4) Create .env with:
-   BROWSERBASE_PROJECT_ID=...
-   BROWSERBASE_API_KEY=...
-   SF_REC_PARK_EMAIL=...
-   SF_REC_PARK_PASSWORD=...
-5) Run:
-   python index.py
+2) cd pickleball-template
+3) python -m venv venv
+4) source venv/bin/activate  # On Windows: venv\Scripts\activate
+5) pip install -r requirements.txt
+6) pip install InquirerPy pydantic
+7) cp .env.example .env
+8) Add your Browserbase API key, Project ID, and SF Rec Park credentials to .env
+9) python main.py
 
 ## EXPECTED OUTPUT
 - Prompts user for activity type (Tennis/Pickleball), date, and time

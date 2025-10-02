@@ -8,17 +8,15 @@
   Docs → https://docs.browserbase.com/features/proxies
 
 ## QUICKSTART
- 1) Create virtual environment (optional but recommended):
-      python -m venv venv
-      source venv/bin/activate  # On Windows: venv\Scripts\activate
- 2) Install dependencies:
-      pip install playwright browserbase python-dotenv
-      playwright install chromium
- 3) Create .env with:
-      BROWSERBASE_PROJECT_ID=...
-      BROWSERBASE_API_KEY=...
- 4) Run:
-      python index.py
+ 1) cd proxies-template
+ 2) python -m venv venv
+ 3) source venv/bin/activate  # On Windows: venv\Scripts\activate
+ 4) pip install -r requirements.txt
+ 5) pip install browserbase playwright
+ 6) playwright install chromium
+ 7) cp .env.example .env
+ 8) Add your Browserbase API key and Project ID to .env
+ 9) python main.py
 
 ## EXPECTED OUTPUT
 - Tests built-in proxy rotation

@@ -14,16 +14,12 @@
   Docs → https://docs.stagehand.dev/basics/act
 
 ## QUICKSTART
- 1) pnpm init
- 2) pnpm add @browserbasehq/stagehand dotenv @types/node axios zod
-    pnpm add -D typescript && pnpm tsc --init
- 3) Create .env with:
-      BROWSERBASE_PROJECT_ID=...
-      BROWSERBASE_API_KEY=...
-      SF_REC_PARK_EMAIL=...
-      SF_REC_PARK_PASSWORD=...
- 4) Compile + run:
-      pnpm tsc && node context.js
+ 1) cd context-template
+ 2) npm install
+ 3) npm install axios
+ 4) cp .env.example .env
+ 5) Add your Browserbase API key, Project ID, and SF Rec Park credentials to .env
+ 6) npm start
 
 ## EXPECTED OUTPUT
 - Creates context, performs login, saves auth state

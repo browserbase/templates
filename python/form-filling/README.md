@@ -15,15 +15,13 @@
 - variable substitution: inject dynamic values into actions using `%variable%` syntax
 
 ## QUICKSTART
- 1) pnpm init
- 2) pnpm add @browserbasehq/stagehand dotenv @types/node zod
-    pnpm add -D typescript && pnpm tsc --init
- 3) Create .env with:
-      BROWSERBASE_PROJECT_ID=...
-      BROWSERBASE_API_KEY=...
-      OPENAI_API_KEY=...
- 4) Compile + run:
-      pnpm tsc && node formFilling.js
+ 1) cd form-fill-template
+ 2) python -m venv venv
+ 3) source venv/bin/activate  # On Windows: venv\Scripts\activate
+ 4) pip install -r requirements.txt
+ 5) cp .env.example .env
+ 6) Add your Browserbase API key and Project ID to .env
+ 7) python main.py
 
 ## EXPECTED OUTPUT
 - Initializes Stagehand session with Browserbase
@@ -34,11 +32,12 @@
 - Closes session cleanly
 
 ## COMMON PITFALLS
-- "Cannot find module": ensure all dependencies are installed
+- "ModuleNotFoundError": ensure all dependencies are installed via pip
 - Missing credentials: verify .env contains all required API keys
 - Form detection: ensure target page has fillable form fields
 - Variable mismatch: ensure variable names in action match variables object
 - Network issues: check internet connection and website accessibility
+- Import errors: activate your virtual environment if you created one
 
 ## USE CASES
 • Lead & intake automation: Auto-fill contact/quote/request forms from CRM or CSV to speed up inbound/outbound workflows.
