@@ -76,10 +76,10 @@ async function testSession(sessionFunction: () => Promise<any>, sessionName: str
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
     verbose: 1,
-    modelName: "openai/gpt-4.1",
     // 0 = errors only, 1 = info, 2 = debug 
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
     // https://docs.stagehand.dev/configuration/logging
+    modelName: "openai/gpt-4.1",
     browserbaseSessionID: session.id, // Use the existing Browserbase session
   });
 
