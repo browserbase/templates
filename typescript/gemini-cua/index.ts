@@ -35,10 +35,6 @@ async function main() {
       proxies: true, // Using proxies will give the agent a better chance of success - requires Developer Plan or higher, comment out if you don't have access
       region: "us-west-2",
       browserSettings: {
-        viewport: { 
-            width: 1024, 
-            height: 768 
-        },
         blockAds: true,
       },
     },

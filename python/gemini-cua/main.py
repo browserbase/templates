@@ -67,10 +67,6 @@ async def main():
             "proxies": True,  # Using proxies will give the agent a better chance of success - requires Developer Plan or higher, comment out if you don't have access
             "region": "us-west-2",
             "browser_settings": {
-                "viewport": {
-                    "width": 1920,
-                    "height": 1080
-                },
                 "block_ads": True,
             },
         },
