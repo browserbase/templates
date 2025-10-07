@@ -13,6 +13,7 @@ A comprehensive collection of ready-to-use automation templates demonstrating th
 
 ### TypeScript Templates (`/typescript/`)
 - **context** - AI-powered context switching and page analysis
+- **CUA** - Computer Use Agent for autonomous web browsing and decision-making
 - **formFilling** - Automated form submission and data entry  
 - **giftfinder** - AI-powered product discovery and recommendation
 - **pickleball** - Court booking automation with user interaction
@@ -21,6 +22,7 @@ A comprehensive collection of ready-to-use automation templates demonstrating th
 
 ### Python Templates (`/python/`)
 - **context** - AI-powered context switching and page analysis
+- **CUA** - Computer Use Agent for autonomous web browsing and decision-making
 - **formFilling** - Automated form submission and data entry
 - **giftfinder** - AI-powered product discovery and recommendation
 - **pickleball** - Court booking automation with user interaction
