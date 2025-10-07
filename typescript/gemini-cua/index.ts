@@ -60,7 +60,7 @@ async function main() {
     // Create agent with computer use capabilities for autonomous web browsing.
     const agent = stagehand.agent({
       provider: "google",
-      model: "gemini-2.5-computer-use-preview",
+      model: "gemini-2.5-computer-use-preview-10-2025",
       instructions: `You are a helpful assistant that can use a web browser.
       You are currently on the following page: ${page.url()}.
       Do not ask follow up questions, the user will trust your judgement. If you are getting blocked on google, try another search engine.`,
