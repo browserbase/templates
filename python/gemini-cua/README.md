@@ -10,13 +10,12 @@
   Docs → https://docs.stagehand.dev/basics/agent#what-is-agent
 
 ## QUICKSTART
- 1) cd CUA-template
- 2) python -m venv venv
- 3) source venv/bin/activate  # On Windows: venv\Scripts\activate
- 4) pip install -r requirements.txt
- 5) cp .env.example .env
- 6) Add your Browserbase API key, Project ID, and Google API key to .env
- 7) python main.py
+ 1) python -m venv venv
+ 2) source venv/bin/activate  # On Windows: venv\Scripts\activate
+ 3) pip install -r requirements.txt
+ 4) cp .env.example .env
+ 5) Add your Browserbase API key, Project ID, and Google API key to .env
+ 6) python main.py
 
 ## EXPECTED OUTPUT
 - Initializes Stagehand session with Browserbase
