@@ -10,11 +10,10 @@
   Docs → https://docs.stagehand.dev/basics/agent#what-is-agent
 
 ## QUICKSTART
- 1) cd CUA-template
- 2) npm install
- 3) cp .env.example .env
- 4) Add your Browserbase API key, Project ID, and Google API key to .env
- 5) npm start
+ 1) npm install
+ 2) cp .env.example .env
+ 3) Add your Browserbase API key, Project ID, and Google API key to .env
+ 4) npm start
 
 ## EXPECTED OUTPUT
 - Initializes Stagehand session with Browserbase
