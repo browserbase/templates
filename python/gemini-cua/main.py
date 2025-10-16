@@ -68,7 +68,11 @@ async def main():
             "region": "us-west-2",
             "browser_settings": {
                 "block_ads": True,
-            },
+                "viewport": {
+                    "width": 1288,
+                    "height": 711
+                }
+            }
         },
         verbose=1  # 0 = errors only, 1 = info, 2 = debug 
         # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
