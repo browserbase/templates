@@ -307,7 +307,10 @@ async def book_tennis_paddle_court():
     # Load credentials from environment variables for SF Rec & Parks login.
     email = os.environ.get("SF_REC_PARK_EMAIL")
     password = os.environ.get("SF_REC_PARK_PASSWORD")
-    debug_mode = os.environ.get("DEBUG") == "true"
+    
+    # Validate that required credentials are available before proceeding.
+    if not email or not password:
+        raise ValueError("Missing SF_REC_PARK_EMAIL or SF_REC_PARK_PASSWORD environment variables")
     
     # Collect user preferences for activity, date, and time selection.
     activity = await select_activity()
@@ -315,10 +318,6 @@ async def book_tennis_paddle_court():
     time_of_day = await select_time_of_day()
     
     print(f"Booking {activity} courts in San Francisco for {time_of_day} on {selected_date}...")
-
-    # Validate that required credentials are available before proceeding.
-    if not email or not password:
-        raise ValueError("Missing SF_REC_PARK_EMAIL or SF_REC_PARK_PASSWORD environment variables")
 
     # Initialize Stagehand with Browserbase for AI-powered browser automation.
     print("Initializing Stagehand with Browserbase")
@@ -406,6 +405,5 @@ if __name__ == "__main__":
         asyncio.run(main())
     except Exception as err:
         print(f"Application error: {err}")
-        print("Check your environment variables and internet connection")
         exit(1)
 

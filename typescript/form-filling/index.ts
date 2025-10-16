@@ -93,7 +93,6 @@ main().catch((err) => {
 	console.error("Error in form filling example:", err);
 	console.error("Common issues:");
 	console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
-	console.error("  - Verify internet connection and website accessibility");
 	console.error("  - Ensure form fields are available on the contact page");
 	console.error("Docs: https://docs.browserbase.com/stagehand");
 	process.exit(1);

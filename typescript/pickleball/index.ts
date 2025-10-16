@@ -425,7 +425,7 @@ async function main() {
 
 main().catch((err) => {
   console.error("Application error:", err);
-  console.log("Check your environment variables and internet connection");
+  console.log("Check your environment variables");
   process.exit(1);
 });
 

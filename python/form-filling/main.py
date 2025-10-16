@@ -93,7 +93,6 @@ if __name__ == "__main__":
         print(f"Error in form filling example: {err}")
         print("Common issues:")
         print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
-        print("  - Verify internet connection and website accessibility")
         print("  - Ensure form fields are available on the contact page")
         print("Docs: https://docs.browserbase.com/stagehand")
         exit(1)
