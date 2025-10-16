@@ -36,6 +36,10 @@ async function main() {
       region: "us-west-2",
       browserSettings: {
         blockAds: true,
+        viewport: {
+          width: 1288,
+          height: 711
+        }
       },
     },
   });
