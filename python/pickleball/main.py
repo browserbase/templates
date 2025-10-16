@@ -316,10 +316,6 @@ async def book_tennis_paddle_court():
     
     print(f"Booking {activity} courts in San Francisco for {time_of_day} on {selected_date}...")
 
-    # Validate that required credentials are available before proceeding.
-    if not email or not password:
-        raise ValueError("Missing SF_REC_PARK_EMAIL or SF_REC_PARK_PASSWORD environment variables")
-
     # Initialize Stagehand with Browserbase for AI-powered browser automation.
     print("Initializing Stagehand with Browserbase")
     config = StagehandConfig(
@@ -406,6 +402,5 @@ if __name__ == "__main__":
         asyncio.run(main())
     except Exception as err:
         print(f"Application error: {err}")
-        print("Check your environment variables and internet connection")
         exit(1)
 

@@ -385,6 +385,5 @@ async function main(): Promise<void> {
 
 main().catch((err) => {
   console.error("Application error:", err);
-  console.log("Check your environment variables and internet connection");
   process.exit(1);
 });
