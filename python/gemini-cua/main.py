@@ -8,33 +8,6 @@ from stagehand import Stagehand, StagehandConfig
 # Load environment variables
 load_dotenv()
 
-# Validate required environment variables
-def validate_env_vars():
-    """Check that all required environment variables are set before proceeding."""
-    required_vars = {
-        "BROWSERBASE_API_KEY": "Browserbase API key for cloud browser automation",
-        "BROWSERBASE_PROJECT_ID": "Browserbase Project ID for session management", 
-        "GOOGLE_API_KEY": "Google API key for Computer Use Agent model access"
-    }
-    
-    missing_vars = []
-    for var, description in required_vars.items():
-        if not os.getenv(var):
-            missing_vars.append(f"  - {var}: {description}")
-    
-    if missing_vars:
-        print(" Missing required environment variables:")
-        for var in missing_vars:
-            print(var)
-        print("\n Please add these to your .env file and try again.")
-        print(" See README.md for setup instructions.")
-        exit(1)
-    
-    print("✅ All required environment variables are set!")
-
-# Validate environment variables before proceeding
-validate_env_vars()
-
 # ============================================================================
 # EXAMPLE INSTRUCTIONS - Choose one to test different scenarios
 # ============================================================================
@@ -135,7 +108,5 @@ if __name__ == "__main__":
         print("Common issues:")
         print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
         print("  - Verify GOOGLE_API_KEY is set for the agent")
-        print("  - Ensure internet connection and website accessibility")
-        print("  - Check that you have access to Google's model")
         print("Docs: https://docs.browserbase.com/stagehand")
         exit(1)

@@ -433,5 +433,5 @@ if __name__ == "__main__":
         asyncio.run(main())
     except Exception as err:
         print(f"Application error: {err}")
-        print("Check your environment variables and internet connection")
+        print("Check your environment variables")
         exit(1)
