@@ -307,7 +307,10 @@ async def book_tennis_paddle_court():
     # Load credentials from environment variables for SF Rec & Parks login.
     email = os.environ.get("SF_REC_PARK_EMAIL")
     password = os.environ.get("SF_REC_PARK_PASSWORD")
-    debug_mode = os.environ.get("DEBUG") == "true"
+    
+    # Validate that required credentials are available before proceeding.
+    if not email or not password:
+        raise ValueError("Missing SF_REC_PARK_EMAIL or SF_REC_PARK_PASSWORD environment variables")
     
     # Collect user preferences for activity, date, and time selection.
     activity = await select_activity()
