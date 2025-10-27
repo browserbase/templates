@@ -24,7 +24,7 @@ async function main() {
 
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    // modelName: "google/gemini-2.5-pro", // this is the model stagehand uses in act, observe, extract (not agent)
+    // model: "google/gemini-2.5-pro", // this is the model stagehand uses in act, observe, extract (not agent)
     useAPI: false,
     verbose: 1,
     // 0 = errors only, 1 = info, 2 = debug 
@@ -50,7 +50,7 @@ async function main() {
     console.log("Stagehand initialized successfully!");
     console.log(`Live View Link: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`);
 
-    const page = stagehand.page;
+    const page = stagehand.context.pages()[0];
 
     // Navigate to search engine with extended timeout for slow-loading sites.
     await page.goto("https://www.google.com/", {

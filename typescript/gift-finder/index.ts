@@ -236,7 +236,7 @@ async function main(): Promise<void> {
       // 0 = errors only, 1 = info, 2 = debug 
       // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
       // https://docs.stagehand.dev/configuration/logging
-      modelName: "openai/gpt-4.1",
+      model: "openai/gpt-4.1",
       browserbaseSessionCreateParams: {
         projectId: process.env.BROWSERBASE_PROJECT_ID!,
         // Proxies require Developer Plan or higher - comment in if you have a Developer Plan or higher
@@ -262,7 +262,7 @@ async function main(): Promise<void> {
 
     try {
       await sessionStagehand.init();
-      const sessionPage = sessionStagehand.page;
+      const sessionPage = sessionStagehand.context.pages()[0];
 
       // Display live view URL for debugging and monitoring
       const sessionId = sessionStagehand.browserbaseSessionID;
@@ -277,15 +277,15 @@ async function main(): Promise<void> {
 
       // Perform search using natural language actions
       console.log(`Session ${sessionIndex + 1}: Searching for "${query}"...`);
-      await sessionPage.act(`Type ${query} into the search bar`);
-      await sessionPage.act("Click the search button");
+      await sessionStagehand.act(`Type ${query} into the search bar`);
+      await sessionStagehand.act("Click the search button");
       await sessionPage.waitForTimeout(1000);
 
       // Extract structured product data using Zod schema for type safety
       console.log(`Session ${sessionIndex + 1}: Extracting product data...`);
-      const productsData = await sessionPage.extract({
-        instruction: "Extract the first 3 products from the search results",
-        schema: z.object({
+      const productsData = await sessionStagehand.extract(
+        "Extract the first 3 products from the search results",
+        z.object({
           products: z
             .array(
               z.object({
@@ -301,8 +301,8 @@ async function main(): Promise<void> {
             )
             .max(3)
             .describe("array of the first 3 products from search results"),
-        }),
-      });
+        })
+      );
 
       console.log(
         `Session ${sessionIndex + 1}: Found ${productsData.products.length} products for "${query}"`,

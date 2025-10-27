@@ -33,14 +33,14 @@ async function createSessionContextID() {
   console.log("Connecting Stagehand to session...");
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    modelName: "openai/gpt-4.1",
+    model: "openai/gpt-4.1",
     verbose: 1,
     browserbaseSessionID: session.id,
   });
 
   await stagehand.init(); // Connect to existing session for login process.
   
-  const page = stagehand.page;
+  const page = stagehand.context.pages()[0];
   const email = process.env.SF_REC_PARK_EMAIL;
   const password = process.env.SF_REC_PARK_PASSWORD;
   
@@ -96,7 +96,7 @@ async function main() {
   // persist: true ensures any new changes (cookies, cache) are saved back to context.
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    modelName: "openai/gpt-4.1",
+    model: "openai/gpt-4.1",
     verbose: 1,
     browserbaseSessionCreateParams: {
       projectId: process.env.BROWSERBASE_PROJECT_ID!,
@@ -113,7 +113,7 @@ async function main() {
   console.log("Authenticated session ready!");
   console.log("Live view: https://browserbase.com/sessions/" + stagehand.browserbaseSessionID);
 
-  const page = stagehand.page;
+  const page = stagehand.context.pages()[0];
 
   // Navigate to authenticated area - should skip login due to persisted cookies.
   console.log("Navigating to authenticated area (should skip login)...");

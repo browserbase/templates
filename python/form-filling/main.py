@@ -26,7 +26,7 @@ async def main():
         env="BROWSERBASE",
         api_key=os.environ.get("BROWSERBASE_API_KEY"),
         project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_name="openai/gpt-4.1",
+        model="openai/gpt-4.1",
         model_api_key=os.environ.get("OPENAI_API_KEY"),
         browserbase_session_create_params={
             "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
@@ -45,7 +45,7 @@ async def main():
             elif hasattr(stagehand, 'browserbase_session_id'):
                 print(f"Live View Link: https://browserbase.com/sessions/{stagehand.browserbase_session_id}")
 
-            page = stagehand.page
+            page = stagehand.context.pages()[0]
 
             # Navigate to contact page with extended timeout for slow-loading sites.
             print("Navigating to Browserbase contact page...")
@@ -59,22 +59,22 @@ async def main():
             print("Filling in contact form...")
             
             # Fill each field individually for better reliability
-            await page.act(f"Fill in the first name field with \"{first_name}\"")
-            await page.act(f"Fill in the last name field with \"{last_name}\"")
-            await page.act(f"Fill in the company field with \"{company}\"")
-            await page.act(f"Fill in the job title field with \"{job_title}\"")
-            await page.act(f"Fill in the email field with \"{email}\"")
-            await page.act(f"Fill in the message field with \"{message}\"")
+            await stagehand.act(f"Fill in the first name field with \"{first_name}\"")
+            await stagehand.act(f"Fill in the last name field with \"{last_name}\"")
+            await stagehand.act(f"Fill in the company field with \"{company}\"")
+            await stagehand.act(f"Fill in the job title field with \"{job_title}\"")
+            await stagehand.act(f"Fill in the email field with \"{email}\"")
+            await stagehand.act(f"Fill in the message field with \"{message}\"")
             
             # Language choice in Stagehand act() is crucial for reliable automation.
             # Use "click" for dropdown interactions rather than "select"
-            await page.act("Click on the How Can we help? dropdown")
+            await stagehand.act("Click on the How Can we help? dropdown")
             await page.wait_for_timeout(500)
-            await page.act("Click on the first option from the dropdown")
-            # await page.act("Select the first option from the dropdown")  # Less reliable than "click"
+            await stagehand.act("Click on the first option from the dropdown")
+            # await stagehand.act("Select the first option from the dropdown")  # Less reliable than "click"
 
             # Uncomment the line below if you want to submit the form
-            # await page.act("Click the submit button")
+            # await stagehand.act("Click the submit button")
         
             print("Form filled successfully! Waiting 3 seconds...")
             await page.wait_for_timeout(30000)

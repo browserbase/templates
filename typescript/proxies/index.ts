@@ -79,7 +79,7 @@ async function testSession(sessionFunction: () => Promise<any>, sessionName: str
     // 0 = errors only, 1 = info, 2 = debug 
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
     // https://docs.stagehand.dev/configuration/logging
-    modelName: "openai/gpt-4.1",
+    model: "openai/gpt-4.1",
     browserbaseSessionID: session.id, // Use the existing Browserbase session
   });
 
@@ -87,13 +87,15 @@ async function testSession(sessionFunction: () => Promise<any>, sessionName: str
     // Initialize Stagehand 
     await stagehand.init();
 
+    const stagehandPage = stagehand.context.pages()[0];
+
     // Navigate to IP info service to verify proxy location and IP address.
-    await stagehand.page.goto("https://ipinfo.io/json", { waitUntil: "domcontentloaded" });
+    await stagehandPage.goto("https://ipinfo.io/json", { waitUntil: "domcontentloaded" });
     
     // Extract structured IP and location data using Stagehand and Zod schema
-    const geoInfo = await stagehand.page.extract({
-      instruction: "Extract all IP information and geolocation data from the JSON response",
-      schema: z.object({
+    const geoInfo = await stagehand.extract(
+      "Extract all IP information and geolocation data from the JSON response",
+      z.object({
         ip: z.string().optional().describe("The IP address"),
         city: z.string().optional().describe("The city name"),
         region: z.string().optional().describe("The state or region"),
@@ -104,7 +106,7 @@ async function testSession(sessionFunction: () => Promise<any>, sessionName: str
         postal: z.string().optional().describe("The postal code"),
         hostname: z.string().optional().describe("The hostname if available")
       })
-    });
+    );
 
     console.log("Geo Info:", JSON.stringify(geoInfo, null, 2));
 

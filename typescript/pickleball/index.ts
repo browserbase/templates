@@ -4,27 +4,27 @@ import { Stagehand, StagehandPage } from "@browserbasehq/stagehand";
 import inquirer from 'inquirer';
 import { z } from 'zod';
 
-async function loginToSite(page: StagehandPage, email: string, password: string): Promise<void> {
+async function loginToSite(stagehand: Stagehand, page: StagehandPage, email: string, password: string): Promise<void> {
   console.log("Logging in...");
   // Perform login sequence: each step is atomic to handle dynamic page changes.
-  await page.act("Click the Login button");
-  await page.act(`Fill in the email or username field with "${email}"`);
-  await page.act("Click the next, continue, or submit button to proceed");
-  await page.act(`Fill in the password field with "${password}"`);
-  await page.act("Click the login, sign in, or submit button");
+  await stagehand.act("Click the Login button");
+  await stagehand.act(`Fill in the email or username field with "${email}"`);
+  await stagehand.act("Click the next, continue, or submit button to proceed");
+  await stagehand.act(`Fill in the password field with "${password}"`);
+  await stagehand.act("Click the login, sign in, or submit button");
   console.log("Logged in");
 }
 
-async function selectFilters(page: StagehandPage, activity: string, timeOfDay: string, selectedDate: string): Promise<void> {
+async function selectFilters(stagehand: Stagehand, page: StagehandPage, activity: string, timeOfDay: string, selectedDate: string): Promise<void> {
   console.log("Selecting the activity");
   // Filter by activity type first to narrow down available courts.
-  await page.act(`Click the activites drop down menu`);
-  await page.act(`Select the ${activity} activity`);
-  await page.act(`Click the Done button`);
+  await stagehand.act(`Click the activites drop down menu`);
+  await stagehand.act(`Select the ${activity} activity`);
+  await stagehand.act(`Click the Done button`);
   
   console.log(`Selecting date: ${selectedDate}`);
   // Open calendar to select specific date for court booking.
-  await page.act(`Click the date picker or calendar`);
+  await stagehand.act(`Click the date picker or calendar`);
   
   // Parse date string to extract day number for calendar selection.
   const dateParts = selectedDate.split('-');
@@ -39,32 +39,32 @@ async function selectFilters(page: StagehandPage, activity: string, timeOfDay: s
   
   console.log(`Looking for day number: ${dayNumber} in calendar`);
   // Click specific day number in calendar to select date.
-  await page.act(`Click on the number ${dayNumber} in the calendar`);
+  await stagehand.act(`Click on the number ${dayNumber} in the calendar`);
   
   console.log(`Selecting time of day: ${timeOfDay}`);
   // Filter by time period to find courts available during preferred hours.
-  await page.act(`Click the time filter or time selection dropdown`);
-  await page.act(`Select ${timeOfDay} time period`);
-  await page.act(`Click the Done button`);
+  await stagehand.act(`Click the time filter or time selection dropdown`);
+  await stagehand.act(`Select ${timeOfDay} time period`);
+  await stagehand.act(`Click the Done button`);
   
   // Apply additional filters to show only available courts that accept reservations.
-  await page.act(`Click Available Only button`);
-  await page.act(`Click All Facilities dropdown list`);
-  await page.act(`Select Accept Reservations checkbox`);
-  await page.act(`Click the Done button`);
+  await stagehand.act(`Click Available Only button`);
+  await stagehand.act(`Click All Facilities dropdown list`);
+  await stagehand.act(`Select Accept Reservations checkbox`);
+  await stagehand.act(`Click the Done button`);
 }
 
-async function checkAndExtractCourts(page: StagehandPage, timeOfDay: string): Promise<void> {
+async function checkAndExtractCourts(stagehand: Stagehand, page: StagehandPage, timeOfDay: string): Promise<void> {
   console.log("Checking for available courts...");
   
   // First observe the page to find all available court booking options.
-  const availableCourts = await page.observe("Find all available court booking slots, time slots, or court reservation options");
+  const availableCourts = await stagehand.observe("Find all available court booking slots, time slots, or court reservation options");
   console.log(`Found ${availableCourts.length} available court options`); 
   
   // Extract structured court data using Zod schema for type safety and validation.
-  const courtData = await page.extract({
-    instruction: "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
-    schema: z.object({
+  const courtData = await stagehand.extract(
+    "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
+    z.object({
       courts: z.array(z.object({
         name: z.string().describe("the name or identifier of the court"),
         openingTimes: z.string().describe("the opening hours or operating times of the court"),
@@ -73,7 +73,7 @@ async function checkAndExtractCourts(page: StagehandPage, timeOfDay: string): Pr
         duration: z.string().nullable().describe("the duration of the court session in minutes")
       }))
     })
-  });
+  );
   
   // Check if any courts are actually available by filtering out unavailable status messages.
   let hasAvailableCourts = courtData.courts.some((court: any) => 
@@ -96,17 +96,17 @@ async function checkAndExtractCourts(page: StagehandPage, timeOfDay: string): Pr
       console.log(`Trying ${altTime} time period...`);
       
       // Change time filter to alternative time period and check availability.
-      await page.act(`Click the time filter dropdown that currently shows "${timeOfDay}"`);
-      await page.act(`Select ${altTime} from the time period options`);
-      await page.act(`Click the Done button`);
+      await stagehand.act(`Click the time filter dropdown that currently shows "${timeOfDay}"`);
+      await stagehand.act(`Select ${altTime} from the time period options`);
+      await stagehand.act(`Click the Done button`);
       
-      const altAvailableCourts = await page.observe("Find all available court booking slots, time slots, or court reservation options");
+      const altAvailableCourts = await stagehand.observe("Find all available court booking slots, time slots, or court reservation options");
       console.log(`Found ${altAvailableCourts.length} available court options for ${altTime}`);
       
       if (altAvailableCourts.length > 0) {
-        const altCourtData = await page.extract({
-          instruction: "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
-          schema: z.object({
+        const altCourtData = await stagehand.extract(
+          "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
+          z.object({
             courts: z.array(z.object({
               name: z.string().describe("the name or identifier of the court"),
               openingTimes: z.string().describe("the opening hours or operating times of the court"),
@@ -115,7 +115,7 @@ async function checkAndExtractCourts(page: StagehandPage, timeOfDay: string): Pr
               duration: z.string().nullable().describe("the duration of the court session in minutes")
             }))
           })
-        });
+        );
         
         const hasAltAvailableCourts = altCourtData.courts.some((court: any) => 
           !court.availability.toLowerCase().includes('no free spots') && 
@@ -138,9 +138,9 @@ async function checkAndExtractCourts(page: StagehandPage, timeOfDay: string): Pr
   // If still no available courts found, extract final court data for display.
   if (!hasAvailableCourts) {
     console.log("Extracting final court information...");
-    const finalCourtData = await page.extract({
-      instruction: "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
-      schema: z.object({
+    const finalCourtData = await stagehand.extract(
+      "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
+      z.object({
         courts: z.array(z.object({
           name: z.string().describe("the name or identifier of the court"),
           openingTimes: z.string().describe("the opening hours or operating times of the court"),
@@ -149,7 +149,7 @@ async function checkAndExtractCourts(page: StagehandPage, timeOfDay: string): Pr
           duration: z.string().nullable().describe("the duration of the court session in minutes")
         }))
       })
-    });
+    );
     courtData.courts = finalCourtData.courts;
   }
   
@@ -171,23 +171,23 @@ async function checkAndExtractCourts(page: StagehandPage, timeOfDay: string): Pr
   }
 }
 
-async function bookCourt(page: StagehandPage): Promise<void> {
+async function bookCourt(stagehand: Stagehand, page: StagehandPage): Promise<void> {
   console.log("Starting court booking process...");
   
   try {
     // Select the first available court time slot for booking.
     console.log("Clicking the top available time slot...");
-    await page.act("Click the first available time slot or court booking option");
+    await stagehand.act("Click the first available time slot or court booking option");
     
     // Select participant from dropdown - assumes only one participant is available.
     console.log("Opening participant dropdown...");
-    await page.act("Click the participant dropdown menu or select participant field");
-    await page.act("Click the only named participant in the dropdown!");
+    await stagehand.act("Click the participant dropdown menu or select participant field");
+    await stagehand.act("Click the only named participant in the dropdown!");
     
     // Complete booking process and trigger verification code request.
     console.log("Clicking the book button to complete reservation...");
-    await page.act("Click the book, reserve, or confirm booking button");
-    await page.act("Click the Send Code Button");
+    await stagehand.act("Click the book, reserve, or confirm booking button");
+    await stagehand.act("Click the Send Code Button");
     
     // Prompt user for verification code received via SMS/email for booking confirmation.
     const codeAnswer = await inquirer.prompt([
@@ -207,19 +207,19 @@ async function bookCourt(page: StagehandPage): Promise<void> {
     console.log(`Verification code: ${codeAnswer.verificationCode}`);
     
     // Enter verification code and confirm booking to complete reservation.
-    await page.act(`Fill in the verification code field with "${codeAnswer.verificationCode}"`);
-    await page.act("Click the confirm button");
+    await stagehand.act(`Fill in the verification code field with "${codeAnswer.verificationCode}"`);
+    await stagehand.act("Click the confirm button");
     
     // Extract booking confirmation details to verify successful reservation.
     console.log("Checking for booking confirmation...");
-    const confirmation = await page.extract({
-      instruction: "Extract any booking confirmation message, success notification, or reservation details",
-      schema: z.object({
+    const confirmation = await stagehand.extract(
+      "Extract any booking confirmation message, success notification, or reservation details",
+      z.object({
         confirmationMessage: z.string().nullable().describe("any confirmation or success message"),
         bookingDetails: z.string().nullable().describe("booking details like time, court, etc."),
         errorMessage: z.string().nullable().describe("any error message if booking failed")
       })
-    });
+    );
     
     // Display confirmation details if booking was successful.
     if (confirmation.confirmationMessage || confirmation.bookingDetails) {
@@ -356,7 +356,7 @@ async function bookTennisPaddleCourt() {
     // 0 = errors only, 1 = info, 2 = debug 
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
     // https://docs.stagehand.dev/configuration/logging
-    modelName: "openai/gpt-4.1",
+    model: "openai/gpt-4.1",
     browserbaseSessionCreateParams: {
       projectId: process.env.BROWSERBASE_PROJECT_ID!,
       timeout: 900,
@@ -371,7 +371,7 @@ async function bookTennisPaddleCourt() {
     console.log("Browserbase Session Started");
     console.log(`Watch live: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`);
 
-    const page = stagehand.page;
+    const page = stagehand.context.pages()[0];
 
     // Navigate to SF Rec & Parks booking site with extended timeout for slow loading.
     console.log("Navigating to court booking site...");
@@ -381,10 +381,10 @@ async function bookTennisPaddleCourt() {
     });
 
     // Execute booking workflow: login, filter, find courts, and complete booking.
-    await loginToSite(page, email, password);
-    await selectFilters(page, activity, timeOfDay, selectedDate);
-    await checkAndExtractCourts(page, timeOfDay);
-    await bookCourt(page);
+    await loginToSite(stagehand, page, email, password);
+    await selectFilters(stagehand, page, activity, timeOfDay, selectedDate);
+    await checkAndExtractCourts(stagehand, page, timeOfDay);
+    await bookCourt(stagehand, page);
 
   } catch (error) {
     console.error("Error during court booking:", error);

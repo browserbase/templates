@@ -26,7 +26,7 @@ async def main():
         # 0 = errors only, 1 = info, 2 = debug 
         # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
         # https://docs.stagehand.dev/configuration/logging
-        model_name="openai/gpt-4.1",
+        model="openai/gpt-4.1",
         model_api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
@@ -44,7 +44,7 @@ async def main():
         if session_id:
             print(f"Watch live: https://browserbase.com/sessions/{session_id}")
 
-        page = stagehand.page
+        page = stagehand.context.pages()[0]
 
         # Navigate to California DRE license verification website for data extraction.
         print('Navigating to: https://www2.dre.ca.gov/publicasp/pplinfo.asp')
@@ -54,11 +54,11 @@ async def main():
         print(
             f"Performing action: type {variables['input1']} into the License ID input field"
         )
-        await page.act(f"type {variables['input1']} into the License ID input field")
+        await stagehand.act(f"type {variables['input1']} into the License ID input field")
         
         # Submit search form to retrieve license verification data.
         print("Performing action: click the Find button")
-        await page.act("click the Find button")
+        await stagehand.act("click the Find button")
         
         # Define schema using Pydantic
         class LicenseData(BaseModel):
@@ -80,7 +80,7 @@ async def main():
         print(
             "Extracting: extract all the license verification details for DRE#02237476"
         )
-        extracted_data = await page.extract(
+        extracted_data = await stagehand.extract(
             "extract all the license verification details for DRE#02237476",
             schema=LicenseData
         )
