@@ -41,7 +41,7 @@ async def create_session_context_id():
         env="BROWSERBASE",
         api_key=os.environ.get("BROWSERBASE_API_KEY"),
         project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model="openai/gpt-4.1",
+        model_name="openai/gpt-4.1",
         model_api_key=os.environ.get("OPENAI_API_KEY"),
         browserbase_session_id=session.id,
         verbose=1  # 0 = errors only, 1 = info, 2 = debug 
@@ -50,7 +50,7 @@ async def create_session_context_id():
     )
     
     async with Stagehand(config) as stagehand:
-        page = stagehand.context.pages()[0]
+        page = stagehand.page
         email = os.environ.get("SF_REC_PARK_EMAIL")
         password = os.environ.get("SF_REC_PARK_PASSWORD")
         
@@ -64,11 +64,11 @@ async def create_session_context_id():
 
         # Perform login sequence: each step is atomic to handle dynamic page changes.
         print("Starting login sequence...")
-        await stagehand.act("Click the Login button")
-        await stagehand.act(f"Fill in the email or username field with \"{email}\"")
-        await stagehand.act("Click the next, continue, or submit button to proceed")
-        await stagehand.act(f"Fill in the password field with \"{password}\"")
-        await stagehand.act("Click the login, sign in, or submit button")
+        await page.act("Click the Login button")
+        await page.act(f"Fill in the email or username field with \"{email}\"")
+        await page.act("Click the next, continue, or submit button to proceed")
+        await page.act(f"Fill in the password field with \"{password}\"")
+        await page.act("Click the login, sign in, or submit button")
         print("Login sequence completed!")
     
     print("Authentication state saved to context")
@@ -105,7 +105,7 @@ async def main():
         env="BROWSERBASE",
         api_key=os.environ.get("BROWSERBASE_API_KEY"),
         project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model="openai/gpt-4.1",
+        model_name="openai/gpt-4.1",
         model_api_key=os.environ.get("OPENAI_API_KEY"),
         browserbase_session_create_params={
             "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
@@ -128,7 +128,7 @@ async def main():
         elif hasattr(stagehand, 'browserbase_session_id'):
             print(f"Live view: https://browserbase.com/sessions/{stagehand.browserbase_session_id}")
 
-        page = stagehand.context.pages()[0]
+        page = stagehand.page
 
         # Navigate to authenticated area - should skip login due to persisted cookies.
         print("Navigating to authenticated area (should skip login)...")
@@ -139,7 +139,7 @@ async def main():
         )
 
         # Navigate to user-specific area to access personal data.
-        await stagehand.act("Click on the reservations button")
+        await page.act("Click on the reservations button")
         
         # Extract structured user data using Pydantic schema for type safety.
         # Schema ensures consistent data format and validates extracted content.
@@ -150,7 +150,7 @@ async def main():
             full_name: str = Field(..., description="the user's full name")
             address: str = Field(..., description="the user's address")
         
-        user_data = await stagehand.extract(
+        user_data = await page.extract(
             "Extract the user's full name and address",
             schema=UserData
         )

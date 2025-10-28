@@ -275,7 +275,7 @@ async def main() -> None:
             # Logging levels: 0 = errors only, 1 = info, 2 = debug 
             # When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs
             # https://docs.stagehand.dev/configuration/logging
-            model="openai/gpt-4.1",
+            model_name="openai/gpt-4.1",
             model_api_key=os.environ.get("OPENAI_API_KEY"),
             browserbase_session_create_params={
                 "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
@@ -303,7 +303,7 @@ async def main() -> None:
         try:
             # Initialize browser session with Stagehand
             async with Stagehand(config) as session_stagehand:
-                session_page = session_stagehand.context.pages()[0]
+                session_page = session_stagehand.page
 
                 # Display live view URL for debugging and monitoring
                 session_id = None
@@ -322,8 +322,8 @@ async def main() -> None:
 
                 # Perform search using natural language actions
                 print(f"Session {session_index + 1}: Searching for \"{query}\"...")
-                await session_stagehand.act(f"Type {query} into the search bar")
-                await session_stagehand.act("Click the search button")
+                await session_page.act(f"Type {query} into the search bar")
+                await session_page.act("Click the search button")
                 await session_page.wait_for_timeout(1000)
 
                 # Extract structured product data using Pydantic schema for type safety
@@ -339,7 +339,7 @@ async def main() -> None:
                 class ProductsData(BaseModel):
                     products: List[ProductItem] = Field(..., max_length=3, description="array of the first 3 products from search results")
                 
-                products_data = await session_stagehand.extract(
+                products_data = await session_page.extract(
                     "Extract the first 3 products from the search results",
                     schema=ProductsData
                 )

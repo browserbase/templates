@@ -99,7 +99,7 @@ async def test_session(session_function, session_name: str):
             # 0 = errors only, 1 = info, 2 = debug 
             # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
             # https://docs.stagehand.dev/configuration/logging
-            model="openai/gpt-4.1",
+            model_name="openai/gpt-4.1",
             model_api_key=os.environ.get("OPENAI_API_KEY"),
             browserbase_session_id=session.id,  # Use the existing Browserbase session
         )
@@ -110,14 +110,11 @@ async def test_session(session_function, session_name: str):
             # Initialize Stagehand 
             await stagehand.init()
 
-            # Get the page from context
-            stagehand_page = stagehand.context.pages()[0]
-
             # Navigate to IP info service to verify proxy location and IP address.
-            await stagehand_page.goto("https://ipinfo.io/json", wait_until="domcontentloaded")
+            await stagehand.page.goto("https://ipinfo.io/json", wait_until="domcontentloaded")
             
             # Extract structured IP and location data using Stagehand and Pydantic schema
-            geo_info = await stagehand.extract(
+            geo_info = await stagehand.page.extract(
                 instruction="Extract all IP information and geolocation data from the JSON response",
                 schema=GeoInfo
             )

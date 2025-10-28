@@ -12,27 +12,27 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 
-async def login_to_site(stagehand, page, email: str, password: str) -> None:
+async def login_to_site(page, email: str, password: str) -> None:
     print("Logging in...")
     # Perform login sequence: each step is atomic to handle dynamic page changes.
-    await stagehand.act("Click the Login button")
-    await stagehand.act(f"Fill in the email or username field with \"{email}\"")
-    await stagehand.act("Click the next, continue, or submit button to proceed")
-    await stagehand.act(f"Fill in the password field with \"{password}\"")
-    await stagehand.act("Click the login, sign in, or submit button")
+    await page.act("Click the Login button")
+    await page.act(f"Fill in the email or username field with \"{email}\"")
+    await page.act("Click the next, continue, or submit button to proceed")
+    await page.act(f"Fill in the password field with \"{password}\"")
+    await page.act("Click the login, sign in, or submit button")
     print("Logged in")
 
 
-async def select_filters(stagehand, page, activity: str, time_of_day: str, selected_date: str) -> None:
+async def select_filters(page, activity: str, time_of_day: str, selected_date: str) -> None:
     print("Selecting the activity")
     # Filter by activity type first to narrow down available courts.
-    await stagehand.act("Click the activites drop down menu")
-    await stagehand.act(f"Select the {activity} activity")
-    await stagehand.act("Click the Done button")
+    await page.act("Click the activites drop down menu")
+    await page.act(f"Select the {activity} activity")
+    await page.act("Click the Done button")
     
     print(f"Selecting date: {selected_date}")
     # Open calendar to select specific date for court booking.
-    await stagehand.act("Click the date picker or calendar")
+    await page.act("Click the date picker or calendar")
     
     # Parse date string to extract day number for calendar selection.
     date_parts = selected_date.split('-')
@@ -45,26 +45,26 @@ async def select_filters(stagehand, page, activity: str, time_of_day: str, selec
     
     print(f"Looking for day number: {day_number} in calendar")
     # Click specific day number in calendar to select date.
-    await stagehand.act(f"Click on the number {day_number} in the calendar")
+    await page.act(f"Click on the number {day_number} in the calendar")
     
     print(f"Selecting time of day: {time_of_day}")
     # Filter by time period to find courts available during preferred hours.
-    await stagehand.act("Click the time filter or time selection dropdown")
-    await stagehand.act(f"Select {time_of_day} time period")
-    await stagehand.act("Click the Done button")
+    await page.act("Click the time filter or time selection dropdown")
+    await page.act(f"Select {time_of_day} time period")
+    await page.act("Click the Done button")
     
     # Apply additional filters to show only available courts that accept reservations.
-    await stagehand.act("Click Available Only button")
-    await stagehand.act("Click All Facilities dropdown list")
-    await stagehand.act("Select Accept Reservations checkbox")
-    await stagehand.act("Click the Done button")
+    await page.act("Click Available Only button")
+    await page.act("Click All Facilities dropdown list")
+    await page.act("Select Accept Reservations checkbox")
+    await page.act("Click the Done button")
 
 
-async def check_and_extract_courts(stagehand, page, time_of_day: str) -> None:
+async def check_and_extract_courts(page, time_of_day: str) -> None:
     print("Checking for available courts...")
     
     # First observe the page to find all available court booking options.
-    available_courts = await stagehand.observe("Find all available court booking slots, time slots, or court reservation options")
+    available_courts = await page.observe("Find all available court booking slots, time slots, or court reservation options")
     print(f"Found {len(available_courts)} available court options")
     
     # Define schema using Pydantic
@@ -79,7 +79,7 @@ async def check_and_extract_courts(stagehand, page, time_of_day: str) -> None:
         courts: List[Court]
     
     # Extract structured court data using Pydantic schema for type safety and validation.
-    court_data = await stagehand.extract(
+    court_data = await page.extract(
         "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
         schema=CourtData
     )
@@ -106,15 +106,15 @@ async def check_and_extract_courts(stagehand, page, time_of_day: str) -> None:
             print(f"Trying {alt_time} time period...")
             
             # Change time filter to alternative time period and check availability.
-            await stagehand.act(f"Click the time filter dropdown that currently shows \"{time_of_day}\"")
-            await stagehand.act(f"Select {alt_time} from the time period options")
-            await stagehand.act("Click the Done button")
+            await page.act(f"Click the time filter dropdown that currently shows \"{time_of_day}\"")
+            await page.act(f"Select {alt_time} from the time period options")
+            await page.act("Click the Done button")
             
-            alt_available_courts = await stagehand.observe("Find all available court booking slots, time slots, or court reservation options")
+            alt_available_courts = await page.observe("Find all available court booking slots, time slots, or court reservation options")
             print(f"Found {len(alt_available_courts)} available court options for {alt_time}")
             
             if len(alt_available_courts) > 0:
-                alt_court_data = await stagehand.extract(
+                alt_court_data = await page.extract(
                     "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
                     schema=CourtData
                 )
@@ -137,7 +137,7 @@ async def check_and_extract_courts(stagehand, page, time_of_day: str) -> None:
     # If still no available courts found, extract final court data for display.
     if not has_available_courts:
         print("Extracting final court information...")
-        final_court_data = await stagehand.extract(
+        final_court_data = await page.extract(
             "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
             schema=CourtData
         )
@@ -158,23 +158,23 @@ async def check_and_extract_courts(stagehand, page, time_of_day: str) -> None:
         print("No court data available to display")
 
 
-async def book_court(stagehand, page) -> None:
+async def book_court(page) -> None:
     print("Starting court booking process...")
     
     try:
         # Select the first available court time slot for booking.
         print("Clicking the top available time slot...")
-        await stagehand.act("Click the first available time slot or court booking option")
+        await page.act("Click the first available time slot or court booking option")
         
         # Select participant from dropdown - assumes only one participant is available.
         print("Opening participant dropdown...")
-        await stagehand.act("Click the participant dropdown menu or select participant field")
-        await stagehand.act("Click the only named participant in the dropdown!")
+        await page.act("Click the participant dropdown menu or select participant field")
+        await page.act("Click the only named participant in the dropdown!")
         
         # Complete booking process and trigger verification code request.
         print("Clicking the book button to complete reservation...")
-        await stagehand.act("Click the book, reserve, or confirm booking button")
-        await stagehand.act("Click the Send Code Button")
+        await page.act("Click the book, reserve, or confirm booking button")
+        await page.act("Click the Send Code Button")
         
         # Prompt user for verification code received via SMS/email for booking confirmation.
         def validate_code(text):
@@ -193,8 +193,8 @@ async def book_court(stagehand, page) -> None:
         print(f"Verification code: {verification_code}")
         
         # Enter verification code and confirm booking to complete reservation.
-        await stagehand.act(f"Fill in the verification code field with \"{verification_code}\"")
-        await stagehand.act("Click the confirm button")
+        await page.act(f"Fill in the verification code field with \"{verification_code}\"")
+        await page.act("Click the confirm button")
         
         # Define schema using Pydantic
         class Confirmation(BaseModel):
@@ -204,7 +204,7 @@ async def book_court(stagehand, page) -> None:
         
         # Extract booking confirmation details to verify successful reservation.
         print("Checking for booking confirmation...")
-        confirmation = await stagehand.extract(
+        confirmation = await page.extract(
             "Extract any booking confirmation message, success notification, or reservation details",
             schema=Confirmation
         )
@@ -329,7 +329,7 @@ async def book_tennis_paddle_court():
         # 0 = errors only, 1 = info, 2 = debug 
         # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
         # https://docs.stagehand.dev/configuration/logging
-        model="openai/gpt-4.1",
+        model_name="openai/gpt-4.1",
         model_api_key=os.environ.get("OPENAI_API_KEY"),
         browserbase_session_create_params={
             "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
@@ -351,7 +351,7 @@ async def book_tennis_paddle_court():
             if session_id:
                 print(f"Watch live: https://browserbase.com/sessions/{session_id}")
 
-            page = stagehand.context.pages()[0]
+            page = stagehand.page
 
             # Navigate to SF Rec & Parks booking site with extended timeout for slow loading.
             print("Navigating to court booking site...")
@@ -362,10 +362,10 @@ async def book_tennis_paddle_court():
             )
 
             # Execute booking workflow: login, filter, find courts, and complete booking.
-            await login_to_site(stagehand, page, email, password)
-            await select_filters(stagehand, page, activity, time_of_day, selected_date)
-            await check_and_extract_courts(stagehand, page, time_of_day)
-            await book_court(stagehand, page)
+            await login_to_site(page, email, password)
+            await select_filters(page, activity, time_of_day, selected_date)
+            await check_and_extract_courts(page, time_of_day)
+            await book_court(page)
         
         print("\nBrowser session closed")
 

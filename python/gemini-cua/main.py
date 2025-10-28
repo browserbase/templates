@@ -57,7 +57,7 @@ async def main():
             print("Stagehand initialized successfully!")
             print(f"Live View Link: https://browserbase.com/sessions/{stagehand.session_id}")
 
-            page = stagehand.context.pages()[0]
+            page = stagehand.page
 
             # Navigate to search engine with extended timeout for slow-loading sites.
             print("Navigating to Google search...")
