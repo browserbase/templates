@@ -4,7 +4,7 @@ import { Stagehand, StagehandPage } from "@browserbasehq/stagehand";
 import inquirer from 'inquirer';
 import { z } from 'zod';
 
-async function loginToSite(stagehand: Stagehand, page: StagehandPage, email: string, password: string): Promise<void> {
+async function loginToSite(stagehand: Stagehand, email: string, password: string): Promise<void> {
   console.log("Logging in...");
   // Perform login sequence: each step is atomic to handle dynamic page changes.
   await stagehand.act("Click the Login button");
@@ -15,7 +15,7 @@ async function loginToSite(stagehand: Stagehand, page: StagehandPage, email: str
   console.log("Logged in");
 }
 
-async function selectFilters(stagehand: Stagehand, page: StagehandPage, activity: string, timeOfDay: string, selectedDate: string): Promise<void> {
+async function selectFilters(stagehand: Stagehand, activity: string, timeOfDay: string, selectedDate: string): Promise<void> {
   console.log("Selecting the activity");
   // Filter by activity type first to narrow down available courts.
   await stagehand.act(`Click the activites drop down menu`);
@@ -54,7 +54,7 @@ async function selectFilters(stagehand: Stagehand, page: StagehandPage, activity
   await stagehand.act(`Click the Done button`);
 }
 
-async function checkAndExtractCourts(stagehand: Stagehand, page: StagehandPage, timeOfDay: string): Promise<void> {
+async function checkAndExtractCourts(stagehand: Stagehand, timeOfDay: string): Promise<void> {
   console.log("Checking for available courts...");
   
   // First observe the page to find all available court booking options.
@@ -171,7 +171,7 @@ async function checkAndExtractCourts(stagehand: Stagehand, page: StagehandPage, 
   }
 }
 
-async function bookCourt(stagehand: Stagehand, page: StagehandPage): Promise<void> {
+async function bookCourt(stagehand: Stagehand): Promise<void> {
   console.log("Starting court booking process...");
   
   try {
@@ -381,10 +381,10 @@ async function bookTennisPaddleCourt() {
     });
 
     // Execute booking workflow: login, filter, find courts, and complete booking.
-    await loginToSite(stagehand, page, email, password);
-    await selectFilters(stagehand, page, activity, timeOfDay, selectedDate);
-    await checkAndExtractCourts(stagehand, page, timeOfDay);
-    await bookCourt(stagehand, page);
+    await loginToSite(stagehand, email, password);
+    await selectFilters(stagehand, activity, timeOfDay, selectedDate);
+    await checkAndExtractCourts(stagehand, timeOfDay);
+    await bookCourt(stagehand);
 
   } catch (error) {
     console.error("Error during court booking:", error);
