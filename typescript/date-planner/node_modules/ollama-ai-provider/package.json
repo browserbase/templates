@@ -1,0 +1,62 @@
+{
+  "name": "ollama-ai-provider",
+  "version": "1.2.0",
+  "description": "Vercel AI Provider for running LLMs locally using Ollama",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**/*"
+  ],
+  "keywords": [
+    "ai",
+    "vercel-ai"
+  ],
+  "author": "Sergio Gómez Bachiller <decano@gmail.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@ai-sdk/provider": "^1.0.0",
+    "@ai-sdk/provider-utils": "^2.0.0",
+    "partial-json": "0.1.7"
+  },
+  "devDependencies": {
+    "@edge-runtime/vm": "^3.2.0",
+    "@types/node": "^18.19.56",
+    "tsup": "^8.3.0",
+    "typescript": "5.6.3",
+    "zod": "3.23.8"
+  },
+  "peerDependencies": {
+    "zod": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "zod": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "homepage": "https://github.com/sgomez/ollama-ai-provider",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sgomez/ollama-ai-provider.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sgomez/ollama-ai-provider/issues"
+  },
+  "scripts": {
+    "build": "tsup",
+    "clean": "rm -rf dist",
+    "dev": "tsup --watch",
+    "lint": "eslint \"./**/*.ts*\"",
+    "type-check": "tsc --noEmit",
+    "prettier-check": "prettier --check \"./**/*.ts*\"",
+    "test": "pnpm test:node && pnpm test:edge",
+    "test:edge": "vitest --config vitest.edge.config.js --run",
+    "test:node": "vitest --config vitest.node.config.js --run"
+  }
+}
