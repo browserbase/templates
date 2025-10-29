@@ -14,7 +14,7 @@ async function main() {
   const stagehand = new Stagehand({
     env: "BROWSERBASE", // Use Browserbase cloud browsers for reliable automation.
     verbose: 1,
-    modelName: "openai/gpt-4.1",
+    model: "openai/gpt-4.1",
     // 0 = errors only, 1 = info, 2 = debug 
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
     // https://docs.stagehand.dev/configuration/logging
@@ -27,7 +27,7 @@ async function main() {
   // Provide live session URL for debugging and monitoring extraction process.
   console.log(`Watch live: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`);
 
-  const page = stagehand.page;
+  const page = stagehand.context.pages()[0];
 
   // Navigate to California DRE license verification website for data extraction.
   console.log('Navigating to: https://www2.dre.ca.gov/publicasp/pplinfo.asp');
@@ -37,19 +37,19 @@ async function main() {
   console.log(
     `Performing action: type ${variables.input1} into the License ID input field`,
   );
-  await page.act(`type ${variables.input1} into the License ID input field`); 
+  await stagehand.act(`type ${variables.input1} into the License ID input field`); 
   
   // Submit search form to retrieve license verification data.
   console.log(`Performing action: click the Find button`);
-  await page.act(`click the Find button`); 
+  await stagehand.act(`click the Find button`); 
   
   // Extract structured license data using Zod schema for type safety and validation.
   console.log(
     `Extracting: extract all the license verification details for DRE#02237476`,
   );
-  const extractedData4 = await page.extract({
-    instruction: `extract all the license verification details for DRE#02237476`,
-    schema: z.object({
+  const extractedData4 = await stagehand.extract(
+    `extract all the license verification details for DRE#02237476`,
+    z.object({
       licenseType: z.string().optional(), // Type of real estate license
       name: z.string().optional(), // License holder's full name
       mailingAddress: z.string().optional(), // Current mailing address
@@ -63,8 +63,8 @@ async function main() {
       brokerAddress: z.string().optional(), // Broker's business address
       disciplinaryAction: z.string().optional(), // Any disciplinary actions taken
       otherComments: z.string().optional(), // Additional relevant information
-    }),
-  });
+    })
+  );
   console.log('Extracted:', extractedData4); 
 
   // Always close session to release resources and clean up.
