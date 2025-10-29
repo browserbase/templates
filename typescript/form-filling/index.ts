@@ -69,7 +69,6 @@ async function main() {
 		// Language choice in Stagehand act() is crucial for reliable automation.
 		// Use "click" for dropdown interactions rather than "select"
 		await stagehand.act("Click on the How Can we help? dropdown");
-		await page.waitForTimeout(500);
 		await stagehand.act("Click on the first option from the dropdown");
 		// await stagehand.act("Select the first option from the dropdown"); // Less reliable than "click"
 
