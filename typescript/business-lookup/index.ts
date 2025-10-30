@@ -1,4 +1,4 @@
-// Stagehand + Browserbase: Business Lookup with Agent - See README.md for full documentation
+// Business Lookup with Agent - See README.md for full documentation
 
 import "dotenv/config";
 import { Stagehand } from "@browserbasehq/stagehand";
@@ -8,10 +8,7 @@ import { z } from "zod";
 const businessName = "Jalebi Street";
 
 async function main() {
-  console.log("Starting business lookup...");
-  
   // Initialize Stagehand with Browserbase for cloud-based browser automation.
-  // Note: set verbose: 0 to prevent API keys from appearing in logs when handling sensitive data.
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
     verbose: 1,
@@ -24,7 +21,7 @@ async function main() {
   try {
     // Initialize browser session to start automation.
     await stagehand.init();
-    console.log("Stagehand initialized successfully");
+    console.log("Stagehand initialized successfully!");
     console.log(`Live View Link: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`);
 
     const page = stagehand.context.pages()[0];
@@ -34,13 +31,12 @@ async function main() {
     await page.goto("https://data.sfgov.org/stories/s/Registered-Business-Lookup/k6sk-2y6w/");
 
     // Create agent with computer use capabilities for autonomous business search.
-    // Using CUA mode allows the agent to interact with complex UI elements like filters and tables.
     const agent = stagehand.agent({
       cua: true, // Enable Computer Use Agent mode
       model: {
         modelName: "google/gemini-2.5-computer-use-preview-10-2025",
-        apiKey: process.env.GOOGLE_API_KEY,
-      },
+        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY
+    },
       systemPrompt: "You are a helpful assistant that can use a web browser to search for business information.",
     });
 
@@ -53,11 +49,8 @@ async function main() {
     if (!result.success) {
       throw new Error("Agent failed to complete the search");
     }
-    
-    console.log("Agent completed search successfully");
 
     // Extract comprehensive business information after agent completes the search.
-    // Using structured schema ensures consistent data extraction even if page layout changes.
     console.log("Extracting business information...");
     const businessInfo = await stagehand.extract(
       "Extract all visible business information including DBA Name, Ownership Name, Business Account Number, Location Id, Street Address, Business Start Date, Business End Date, Neighborhood, NAICS Code, and NAICS Code Description",
@@ -76,8 +69,9 @@ async function main() {
       { page },
     );
 
-    console.log("Business information extracted:");
+    console.log("Business Information:");
     console.log(JSON.stringify(businessInfo, null, 2));
+
 
   } catch (error) {
     console.error("Error during business lookup:", error);
