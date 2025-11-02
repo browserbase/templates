@@ -23,6 +23,14 @@ interface Restaurant {
   location: string;
   ai_score?: number;
   ai_reason?: string;
+  verified?: boolean;
+  verified_details?: {
+    description?: string;
+    hours?: string;
+    phone?: string;
+    address?: string;
+    reservation_available?: boolean;
+  };
 }
 
 interface SearchResult {
@@ -33,18 +41,13 @@ interface SearchResult {
 
 const client = new OpenAI();
 
+/** Generate diverse search queries using AI for finding restaurants across different angles. */
 async function generateSearchQueries(
   location: string,
   cuisine: string,
   budget: string,
   requirements: string
 ): Promise<string[]> {
-  /**
-   * Generate intelligent search queries for restaurant discovery.
-   * 
-   * Uses AI to create diverse search terms that will find different types of restaurants
-   * for the perfect date night experience.
-   */
   console.log(`Generating search queries for ${cuisine} restaurants in ${location}...`);
 
   const response = await client.chat.completions.create({
@@ -73,18 +76,13 @@ Return ONLY the search queries, one per line, no dashes, bullets, or numbers. Ju
   return cleanedQueries.slice(0, 3);
 }
 
+/** Score and rank restaurants against user preferences using AI, prioritizing cuisine match. */
 async function scoreRestaurants(
   restaurants: Restaurant[],
   requirements: string,
   cuisine: string,
   budget: string
 ): Promise<Restaurant[]> {
-  /**
-   * Score and rank restaurants based on user requirements using AI.
-   * 
-   * Analyzes each restaurant against the user's preferences, budget, cuisine match,
-   * and special requirements to find the best date night options.
-   */
   console.log("AI is analyzing restaurant options based on your preferences...");
 
   if (restaurants.length === 0) {
@@ -117,12 +115,18 @@ RESTAURANTS TO SCORE:
 ${restaurantList}
 
 For each restaurant, provide a score from 1-10 (10 being perfect match) and a brief reason. Consider:
-- How well it matches the cuisine preference
+- How well it matches the cuisine preference (CRITICAL: Restaurants that don't match ${cuisine} cuisine should score 3 or below)
 - Budget appropriateness
 - Special requirements fit
 - Rating and reviews
 - Location convenience
 - Date night atmosphere
+
+IMPORTANT SCORING GUIDELINES:
+- Restaurants that don't match the ${cuisine} cuisine preference should score 1-3 points maximum
+- Restaurants that match cuisine but have other issues should score 4-6 points
+- Good matches that meet most criteria should score 7-8 points
+- Perfect matches should score 9-10 points
 
 Return ONLY a valid JSON array (no markdown, no code blocks) with this exact format:
 [
@@ -149,7 +153,7 @@ IMPORTANT:
   });
 
   try {
-    // Clean up AI response by removing markdown code blocks
+    // Remove markdown code blocks that AI sometimes wraps JSON in
     let responseContent = response.choices[0]?.message?.content?.trim() || "[]";
     responseContent = responseContent
       .replace(/```json\n/g, "")
@@ -157,10 +161,9 @@ IMPORTANT:
       .replace(/```\n/g, "")
       .replace(/```/g, "");
 
-    // Parse JSON response from AI scoring
     const scoresData = JSON.parse(responseContent);
 
-    // Map AI scores back to restaurants using index matching
+    // Map scores to restaurants by index (AI uses 1-based indexing)
     const scoredRestaurants: Restaurant[] = [];
     for (let index = 0; index < restaurants.length; index++) {
       const restaurant = restaurants[index];
@@ -170,14 +173,13 @@ IMPORTANT:
       scoredRestaurants.push(restaurant);
     }
 
-    // Sort by AI score descending to show best matches first
     scoredRestaurants.sort((a, b) => (b.ai_score || 0) - (a.ai_score || 0));
     return scoredRestaurants;
   } catch (error) {
     console.error("Error parsing AI scores:", error);
     console.log("Using fallback scoring (all restaurants scored as 5)");
 
-    // Fallback scoring ensures app continues working even if AI fails
+    // Neutral fallback ensures app continues even if AI response is malformed
     restaurants.forEach(restaurant => {
       restaurant.ai_score = 5;
       restaurant.ai_reason = "Scoring failed - using neutral score";
@@ -186,17 +188,11 @@ IMPORTANT:
   }
 }
 
+/** Collect user preferences via interactive CLI prompts. */
 async function getUserInput(): Promise<DatePlannerAnswers> {
-  /**
-   * Collect user input for date planning.
-   * 
-   * Uses interactive CLI prompts with validation to gather information
-   * needed for intelligent restaurant recommendations.
-   */
   console.log("🍽️ Welcome to the AI-Powered Date Planner!");
   console.log("Let's find the perfect restaurant for your special date.\n");
 
-  // Use inquirer for interactive CLI prompts with validation
   const answers = await inquirer.prompt([
     {
       type: "input",
@@ -237,8 +233,8 @@ async function getUserInput(): Promise<DatePlannerAnswers> {
   return answers as DatePlannerAnswers;
 }
 
+/** Suggest nearby date activities using AI, with fallback defaults if API fails. */
 async function findNearbyActivities(restaurant: Restaurant): Promise<string[]> {
-  /**Find nearby activities to extend the date.*/
   try {
     const prompt = `
         Suggest 3-5 nearby activities for a date night near ${restaurant.name} in ${restaurant.location}.
@@ -261,26 +257,14 @@ async function findNearbyActivities(restaurant: Restaurant): Promise<string[]> {
   }
 }
 
+/** Main workflow: collect input, search concurrently, score with AI, suggest activities. */
 async function main(): Promise<void> {
-  /**
-   * Main application entry point.
-   * 
-   * Orchestrates the entire date planning process:
-   * 1. Collects user input
-   * 2. Generates intelligent search queries
-   * 3. Runs concurrent browser searches
-   * 4. Scores and ranks restaurants with AI
-   * 5. Suggests nearby activities
-   * 6. Displays comprehensive date plan
-   */
   console.log("Starting AI Date Planner...");
 
-  // Step 1: Collect user input
   const userInput = await getUserInput();
-  console.log(`User input received: ${userInput.cuisine_type} in ${userInput.location} for ${userInput.date_preference}`);
+  console.log(`Extracted: ${userInput.cuisine_type} in ${userInput.location} for ${userInput.date_preference}`);
 
-  // Step 2: Generate search queries using AI
-  console.log("\nGenerating intelligent search queries...");
+  console.log("\nGenerating search queries...");
   let searchQueries: string[];
   try {
     searchQueries = await generateSearchQueries(
@@ -290,30 +274,28 @@ async function main(): Promise<void> {
       userInput.special_requirements
     );
 
-    console.log("\nGenerated Search Queries:");
+    console.log(`Found ${searchQueries.length} search queries:`);
     searchQueries.forEach((query, index) => {
       const cleanedQuery = query.replace(/['"]/g, '');
       console.log(`   ${index + 1}. ${cleanedQuery}`);
     });
   } catch (error) {
     console.error("Error generating search queries:", error);
-    // Fallback queries ensure app continues working
+    console.log("Trying fallback search queries...");
     searchQueries = [
       `${userInput.cuisine_type} restaurants in ${userInput.location}`,
       `${userInput.cuisine_type} ${userInput.location} ${userInput.budget}`,
       `best ${userInput.cuisine_type} restaurants ${userInput.location}`
     ];
-    console.log("Using fallback search queries");
   }
 
-  // Step 3: Start concurrent browser searches
   console.log("\nStarting concurrent browser searches...");
 
+  /** Execute a single search query in its own browser session, verifying top results. */
   async function runSingleSearch(query: string, sessionIndex: number, userInput: DatePlannerAnswers): Promise<SearchResult> {
     console.log(`Starting search session ${sessionIndex + 1} for: "${query}"`);
 
-    // Create separate Stagehand instance for each search to run concurrently
-    // Each session searches independently to maximize speed and parallel processing
+    // Separate Stagehand instance per search enables true concurrency
     const sessionStagehand = new Stagehand({
       env: "BROWSERBASE",
       verbose: 1, // Silent logging to avoid cluttering output
@@ -335,65 +317,113 @@ async function main(): Promise<void> {
     });
 
     try {
-      // Initialize browser session with Stagehand
       await sessionStagehand.init();
       const sessionPage = sessionStagehand.page;
 
-      // Display live view URL for debugging and monitoring
       const sessionId = sessionStagehand.browserbaseSessionID;
       if (sessionId) {
-        const liveViewUrl = `https://www.browserbase.com/sessions/${sessionId}`;
-        console.log(`Session ${sessionIndex + 1} Live View: ${liveViewUrl}`);
+        console.log(`Session ${sessionIndex + 1} Live View: https://www.browserbase.com/sessions/${sessionId}`);
       }
 
-      // Navigate to restaurant search site with location-specific URL
-      console.log(`Session ${sessionIndex + 1}: Navigating to OpenTable with location filter...`);
-      const locationSlug = userInput.location.toLowerCase().replace(" ", "-");
-      const locationUrl = `https://www.opentable.com/${locationSlug}-restaurants`;
-      await sessionPage.goto(locationUrl);
+      console.log(`Session ${sessionIndex + 1}: Navigating to Google search for "${query}"...`);
+      const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(query)}`;
+      await sessionPage.goto(searchUrl);
+      // Wait for results to load (Google may show captcha or require time)
       await sessionPage.waitForTimeout(3000);
 
-      // Perform search using natural language actions
-      console.log(`Session ${sessionIndex + 1}: Searching for "${query}"...`);
-      await sessionPage.act(`Search for ${query}`);
-      await sessionPage.waitForTimeout(3000);
-
-      // Extract structured restaurant data using Zod schema for type safety
-      console.log(`Session ${sessionIndex + 1}: Extracting restaurant data...`);
+      console.log(`Session ${sessionIndex + 1}: Extracting restaurant links from search results...`);
       
-      // Define Zod schemas for structured data extraction
-      const RestaurantItemSchema = z.object({
+      const SearchResultItemSchema = z.object({
         name: z.string().describe("the name of the restaurant"),
-        url: z.string().url().describe("the full URL link to the restaurant page"),
-        rating: z.string().describe("the star rating or number of reviews (e.g., '4.5 stars' or '123 reviews')"),
-        price_range: z.string().describe("the price range of the restaurant ($, $$, $$$, $$$$)"),
-        cuisine: z.string().describe("the cuisine type of the restaurant"),
-        location: z.string().describe("the location/neighborhood of the restaurant"),
+        url: z.string().url().describe("the URL link to the restaurant page (from search results or restaurant sites like OpenTable, Yelp, Resy, etc.)"),
+        snippet: z.string().optional().describe("a brief snippet/description if available from search results"),
       });
       
-      const RestaurantsDataSchema = z.object({
-        restaurants: z.array(RestaurantItemSchema).max(3).describe("array of the first 3 restaurants from search results"),
+      const SearchResultsSchema = z.object({
+        restaurants: z.array(SearchResultItemSchema).max(5).describe("array of up to 5 restaurant results from the search, including links to restaurant websites, OpenTable, Yelp, Resy, or other booking platforms"),
       });
       
-      const restaurantsData = await sessionPage.extract({
-        instruction: "Extract the first 3 restaurants from the search results",
-        schema: RestaurantsDataSchema
+      const searchResults = await sessionPage.extract({
+        instruction: "Extract restaurant names and URLs from the search results. Look for links to restaurant websites, OpenTable, Yelp, Resy, or other restaurant listing/booking sites. Get up to 5 results.",
+        schema: SearchResultsSchema
       });
 
-      console.log(
-        `Session ${sessionIndex + 1}: Found ${restaurantsData.restaurants.length} restaurants for "${query}"`
-      );
+      console.log(`Session ${sessionIndex + 1}: Found ${searchResults.restaurants.length} restaurant links`);
 
-      // Convert to Restaurant objects
-      const restaurants: Restaurant[] = restaurantsData.restaurants.map(r => ({
-        name: r.name,
-        url: r.url,
-        rating: r.rating,
-        price_range: r.price_range,
-        cuisine: r.cuisine,
-        location: r.location
-      }));
+      const verifiedRestaurants: Restaurant[] = [];
+      const verifyCount = Math.min(3, searchResults.restaurants.length);
+      
+      for (let i = 0; i < verifyCount; i++) {
+        const result = searchResults.restaurants[i];
+        console.log(`Session ${sessionIndex + 1}: Verifying ${i + 1}/${verifyCount}: ${result.name}...`);
+        
+        try {
+          console.log(`Session ${sessionIndex + 1}: Navigating to ${result.url}...`);
+          await sessionPage.goto(result.url);
+          await sessionPage.waitForTimeout(3000);
+          
+          console.log(`Session ${sessionIndex + 1}: Extracting restaurant details from ${result.url}...`);
+          const RestaurantDetailSchema = z.object({
+            name: z.string().describe("the name of the restaurant"),
+            rating: z.string().describe("the star rating or review information (e.g., '4.5 stars', 'Great reviews', '4.7/5')"),
+            price_range: z.string().describe("the price range ($, $$, $$$, $$$$) or price level"),
+            cuisine: z.string().describe("the cuisine type"),
+            location: z.string().describe("the location, neighborhood, or address"),
+            description: z.string().optional().describe("a brief description or key features"),
+            hours: z.string().optional().describe("operating hours if available"),
+            phone: z.string().optional().describe("phone number if available"),
+            address: z.string().optional().describe("full address if available"),
+            reservation_available: z.boolean().optional().describe("whether reservations appear to be available"),
+          });
+          
+          const DetailSchema = z.object({
+            restaurant: RestaurantDetailSchema.describe("detailed restaurant information from the page"),
+          });
+          
+          const restaurantDetails = await sessionPage.extract({
+            instruction: "Extract detailed information about this restaurant from the page. Look for rating, price range, cuisine type, location, description, hours, contact info, and whether reservations are available.",
+            schema: DetailSchema
+          });
+          
+          const detail = restaurantDetails.restaurant;
+          
+          verifiedRestaurants.push({
+            name: detail.name || result.name,
+            url: result.url,
+            rating: detail.rating || "Rating not available",
+            price_range: detail.price_range || "Price not specified",
+            cuisine: detail.cuisine || userInput.cuisine_type,
+            location: detail.location || userInput.location,
+            verified: true,
+            verified_details: {
+              description: detail.description,
+              hours: detail.hours,
+              phone: detail.phone,
+              address: detail.address,
+              reservation_available: detail.reservation_available,
+            }
+          });
+          
+          console.log(`Session ${sessionIndex + 1}: ✓ Verified ${detail.name || result.name}`);
+          
+        } catch (error) {
+          console.error(`Session ${sessionIndex + 1}: Error verifying ${result.name}:`, error);
+          console.log(`Session ${sessionIndex + 1}: ⚠ Could not verify ${result.name}, using basic info`);
+          verifiedRestaurants.push({
+            name: result.name,
+            url: result.url,
+            rating: "Rating not verified",
+            price_range: "Price not verified",
+            cuisine: userInput.cuisine_type,
+            location: userInput.location,
+            verified: false,
+          });
+        }
+      }
 
+      const restaurants = verifiedRestaurants;
+
+      console.log(`Session ${sessionIndex + 1}: Session closed successfully`);
       await sessionStagehand.close();
 
       return {
@@ -406,6 +436,7 @@ async function main(): Promise<void> {
 
       try {
         await sessionStagehand.close();
+        console.log(`Session ${sessionIndex + 1}: Session closed after error`);
       } catch (closeError) {
         console.error(`Error closing session ${sessionIndex + 1}:`, closeError);
       }
@@ -418,41 +449,80 @@ async function main(): Promise<void> {
     }
   }
 
-  // Create concurrent search tasks for all generated queries
   const searchPromises = searchQueries.map((query, index) => runSingleSearch(query, index, userInput));
 
   console.log("\nBrowser Sessions Starting...");
   console.log("Live view links will appear as each session initializes");
 
-  // Execute all searches concurrently using Promise.all()
   const allResults = await Promise.all(searchPromises);
 
-  // Calculate total restaurants found across all search sessions
   const totalRestaurants = allResults.reduce((sum, result) => sum + result.restaurants.length, 0);
-  console.log(`\nTotal restaurants found: ${totalRestaurants} across ${searchQueries.length} searches`);
+  console.log(`\nTotal restaurants found: ${totalRestaurants} across ${searchQueries.length} search sessions`);
 
-  // Flatten all restaurants into single array for AI scoring
   const allRestaurantsFlat: Restaurant[] = [];
   allResults.forEach(result => {
     allRestaurantsFlat.push(...result.restaurants);
   });
 
-  // Step 4: Score and rank restaurants with AI
   if (allRestaurantsFlat.length > 0) {
     try {
-      // AI scores all restaurants and ranks them by relevance to user preferences
+      console.log(`\nScoring ${allRestaurantsFlat.length} restaurants with AI...`);
       const scoredRestaurants = await scoreRestaurants(
         allRestaurantsFlat, 
         userInput.special_requirements,
         userInput.cuisine_type,
         userInput.budget
       );
-      const top3Restaurants = scoredRestaurants.slice(0, 3);
+      
+      console.log(`Scored ${scoredRestaurants.length} restaurants`);
+      
+      console.log(`Filtering restaurants (minimum score 5/10, must match ${userInput.cuisine_type} cuisine)...`);
+      // Filter: minimum score 5/10 and cuisine must match (prevents showing wrong cuisine types)
+      const MIN_SCORE_THRESHOLD = 5;
+      const filteredRestaurants = scoredRestaurants.filter(restaurant => {
+        const score = restaurant.ai_score || 0;
+        const reason = restaurant.ai_reason?.toLowerCase() || "";
+        
+        // Exclude restaurants with low scores
+        if (score < MIN_SCORE_THRESHOLD) {
+          return false;
+        }
+        
+        // Exclude restaurants explicitly marked as not matching cuisine
+        const cuisineMismatchIndicators = [
+          "not " + userInput.cuisine_type.toLowerCase(),
+          "doesn't match cuisine",
+          "wrong cuisine",
+          "not " + userInput.cuisine_type.toLowerCase().slice(0, -1) + " cuisine"
+        ];
+        if (cuisineMismatchIndicators.some(indicator => reason.includes(indicator))) {
+          return false;
+        }
+        
+        return true;
+      });
+      
+      console.log(`Found ${filteredRestaurants.length} restaurants meeting quality threshold`);
+      const top3Restaurants = filteredRestaurants.slice(0, 3);
+      
+      if (top3Restaurants.length === 0) {
+        console.log("\n⚠️  No restaurants found that match your preferences well enough.");
+        console.log("The restaurants found didn't meet the quality threshold (minimum score 5/10) or cuisine match.");
+        console.log("\nTry:");
+        console.log(`  - Adjusting your cuisine preference (currently: ${userInput.cuisine_type})`);
+        console.log(`  - Trying a different location (currently: ${userInput.location})`);
+        console.log(`  - Adjusting your budget (currently: ${userInput.budget})`);
+        console.log("\nHere are some restaurants that were found (but didn't match well):");
+        scoredRestaurants.slice(0, 3).forEach((restaurant, i) => {
+          console.log(`  ${i + 1}. ${restaurant.name} (${restaurant.cuisine}) - Score: ${restaurant.ai_score}/10`);
+          console.log(`     Reason: ${restaurant.ai_reason}`);
+        });
+        return;
+      }
 
       console.log("\n🎉 PERFECT DATE PLANNED!");
       console.log("=".repeat(50));
 
-      // Display top 3 restaurants with AI reasoning for transparency
       const primaryRestaurant = top3Restaurants[0] || null;
       const backupRestaurants = top3Restaurants.slice(1, 3);
 
@@ -463,6 +533,21 @@ async function main(): Promise<void> {
         console.log(`   Rating: ${primaryRestaurant.rating}`);
         console.log(`   Price: ${primaryRestaurant.price_range}`);
         console.log(`   Location: ${primaryRestaurant.location}`);
+        if (primaryRestaurant.verified) {
+          console.log(`   ✓ Verified by clicking through and inspecting the restaurant page`);
+          if (primaryRestaurant.verified_details) {
+            const details = primaryRestaurant.verified_details;
+            if (details.description) console.log(`   Description: ${details.description}`);
+            if (details.address) console.log(`   Address: ${details.address}`);
+            if (details.phone) console.log(`   Phone: ${details.phone}`);
+            if (details.hours) console.log(`   Hours: ${details.hours}`);
+            if (details.reservation_available !== undefined) {
+              console.log(`   Reservations: ${details.reservation_available ? 'Available' : 'Not available'}`);
+            }
+          }
+        } else {
+          console.log(`   ⚠ Not verified (could not access restaurant page)`);
+        }
         if (primaryRestaurant.ai_score) {
           console.log(`   AI Score: ${primaryRestaurant.ai_score}/10`);
           console.log(`   Why: ${primaryRestaurant.ai_reason}`);
@@ -475,6 +560,15 @@ async function main(): Promise<void> {
         console.log(`🥈 BACKUP OPTIONS:`);
         backupRestaurants.forEach((restaurant, i) => {
           console.log(`   ${i + 1}. ${restaurant.name} (${restaurant.cuisine}) - ${restaurant.rating} - ${restaurant.price_range}`);
+          if (restaurant.verified) {
+            console.log(`      ✓ Verified`);
+            if (restaurant.verified_details?.address) {
+              console.log(`      Address: ${restaurant.verified_details.address}`);
+            }
+            if (restaurant.verified_details?.reservation_available !== undefined) {
+              console.log(`      Reservations: ${restaurant.verified_details.reservation_available ? 'Available' : 'Not available'}`);
+            }
+          }
           if (restaurant.ai_score) {
             console.log(`      AI Score: ${restaurant.ai_score}/10 - ${restaurant.ai_reason}`);
           }
@@ -482,27 +576,23 @@ async function main(): Promise<void> {
         console.log();
       }
 
-      // Step 5: Find nearby activities
       if (primaryRestaurant) {
-        console.log("🎯 NEARBY ACTIVITIES:");
+        console.log("\nFinding nearby activities...");
         const activities = await findNearbyActivities(primaryRestaurant);
+        console.log("🎯 NEARBY ACTIVITIES:");
         activities.forEach(activity => {
           console.log(`   • ${activity}`);
         });
         console.log();
       }
 
-      console.log(
-        `\nDate planning complete! Found ${totalRestaurants} restaurants, analyzed ${scoredRestaurants.length} with AI.`
-      );
+      console.log(`\nDate planning complete! Found ${totalRestaurants} restaurants, analyzed ${scoredRestaurants.length} with AI.`);
     } catch (error) {
-      // Handle AI scoring errors
       console.error("Error scoring restaurants:", error);
       console.log(`Cuisine: ${userInput.cuisine_type}`);
       console.log(`Location: ${userInput.location}`);
     }
   } else {
-    // Handle case where no restaurants were found
     console.log("No restaurants found to score");
     console.log("Try adjusting your search criteria or check if the website is accessible");
   }
@@ -513,6 +603,10 @@ async function main(): Promise<void> {
 
 main().catch((err) => {
   console.error("Application error:", err);
-  console.log("Check your environment variables");
+  console.log("\nCommon issues:");
+  console.log("  - Check .env has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
+  console.log("  - Verify OPENAI_API_KEY is set");
+  console.log("  - Ensure internet access and website accessibility");
+  console.log("  - Check Browserbase project has active credits/sessions available");
   process.exit(1);
 });

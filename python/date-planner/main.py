@@ -3,6 +3,7 @@
 import os
 import asyncio
 from typing import List, Optional
+from urllib.parse import quote
 from dotenv import load_dotenv
 from stagehand import Stagehand, StagehandConfig
 from InquirerPy import inquirer
@@ -19,6 +20,13 @@ class DatePlannerAnswers(BaseModel):
     budget: str
     special_requirements: str
 
+class VerifiedDetails(BaseModel):
+    description: Optional[str] = None
+    hours: Optional[str] = None
+    phone: Optional[str] = None
+    address: Optional[str] = None
+    reservation_available: Optional[bool] = None
+
 class Restaurant(BaseModel):
     name: str
     url: str
@@ -28,6 +36,8 @@ class Restaurant(BaseModel):
     location: str
     ai_score: Optional[int] = None
     ai_reason: Optional[str] = None
+    verified: Optional[bool] = None
+    verified_details: Optional[VerifiedDetails] = None
 
 class SearchResult(BaseModel):
     query: str
@@ -38,10 +48,10 @@ client = OpenAI()
 
 async def generate_search_queries(location: str, cuisine: str, budget: str, requirements: str) -> List[str]:
     """
-    Generate intelligent search queries for restaurant discovery.
+    Generate diverse search queries using AI to discover restaurants from multiple angles.
     
-    Uses AI to create diverse search terms that will find different types of restaurants
-    for the perfect date night experience.
+    Creates 3 different queries: cuisine-specific, romantic spots, and highly-rated options.
+    This diversity helps find a broader range of restaurants than a single query.
     """
     print(f"Generating search queries for {cuisine} restaurants in {location}...")
 
@@ -65,10 +75,11 @@ Return ONLY the search queries, one per line, no dashes, bullets, or numbers. Ju
         max_completion_tokens=150,
     )
 
-    # Parse AI response and clean up formatting
+    # Parse AI response: remove formatting artifacts and extract plain search terms
     content = response.choices[0].message.content
     queries = content.strip().split("\n") if content else []
     queries = [q.strip() for q in queries if q.strip()]
+    print(f"Generated {len(queries[:3])} search queries")
     return queries[:3]
 
 async def score_restaurants(
@@ -78,10 +89,10 @@ async def score_restaurants(
     budget: str
 ) -> List[Restaurant]:
     """
-    Score and rank restaurants based on user requirements using AI.
+    Score and rank restaurants using AI, prioritizing cuisine match and user preferences.
     
-    Analyzes each restaurant against the user's preferences, budget, cuisine match,
-    and special requirements to find the best date night options.
+    Uses strict scoring guidelines: restaurants that don't match cuisine get 1-3 points max.
+    This ensures recommendations actually match what the user requested.
     """
     print("AI is analyzing restaurant options based on your preferences...")
 
@@ -113,12 +124,18 @@ RESTAURANTS TO SCORE:
 {restaurant_list}
 
 For each restaurant, provide a score from 1-10 (10 being perfect match) and a brief reason. Consider:
-- How well it matches the cuisine preference
+- How well it matches the cuisine preference (CRITICAL: Restaurants that don't match {cuisine} cuisine should score 3 or below)
 - Budget appropriateness
 - Special requirements fit
 - Rating and reviews
 - Location convenience
 - Date night atmosphere
+
+IMPORTANT SCORING GUIDELINES:
+- Restaurants that don't match the {cuisine} cuisine preference should score 1-3 points maximum
+- Restaurants that match cuisine but have other issues should score 4-6 points
+- Good matches that meet most criteria should score 7-8 points
+- Perfect matches should score 9-10 points
 
 Return ONLY a valid JSON array (no markdown, no code blocks) with this exact format:
 [
@@ -145,13 +162,14 @@ IMPORTANT:
     )
 
     try:
-        # Clean up AI response by removing markdown code blocks
+        # Clean up AI response: LLMs sometimes wrap JSON in markdown code blocks
         response_content = response.choices[0].message.content.strip() if response.choices[0].message.content else "[]"
         response_content = response_content.replace("```json\n", "").replace("```json", "").replace("```\n", "").replace("```", "")
 
         # Parse JSON response from AI scoring
         import json
         scores_data = json.loads(response_content)
+        print(f"Successfully parsed scores for {len(scores_data)} restaurants")
 
         # Map AI scores back to restaurants using index matching
         scored_restaurants = []
@@ -168,7 +186,7 @@ IMPORTANT:
         print(f"Error parsing AI scores: {error}")
         print("Using fallback scoring (all restaurants scored as 5)")
 
-        # Fallback scoring ensures app continues working even if AI fails
+        # Neutral fallback ensures app continues even if AI response is malformed
         for restaurant in restaurants:
             restaurant.ai_score = 5
             restaurant.ai_reason = "Scoring failed - using neutral score"
@@ -238,7 +256,7 @@ async def get_user_input() -> DatePlannerAnswers:
     )
 
 async def find_nearby_activities(restaurant: Restaurant) -> List[str]:
-    """Find nearby activities to extend the date."""
+    """Suggest nearby date activities using AI, with fallback defaults if API fails."""
     try:
         prompt = f"""
         Suggest 3-5 nearby activities for a date night near {restaurant.name} in {restaurant.location}.
@@ -276,7 +294,7 @@ async def main() -> None:
 
     # Step 1: Collect user input
     user_input = await get_user_input()
-    print(f"User input received: {user_input.cuisine_type} in {user_input.location} for {user_input.date_preference}")
+    print(f"Extracted: {user_input.cuisine_type} in {user_input.location} for {user_input.date_preference}")
 
     # Step 2: Generate search queries using AI
     print("\nGenerating intelligent search queries...")
@@ -348,56 +366,153 @@ async def main() -> None:
                 if session_id:
                     live_view_url = f"https://www.browserbase.com/sessions/{session_id}"
                     print(f"Session {session_index + 1} Live View: {live_view_url}")
+                else:
+                    print(f"Session {session_index + 1}: Waiting for session ID...")
 
-                # Navigate to restaurant search site with location-specific URL
-                print(f"Session {session_index + 1}: Navigating to OpenTable with location filter...")
-                location_slug = user_input.location.lower().replace(" ", "-")
-                location_url = f"https://www.opentable.com/{location_slug}-restaurants"
-                await session_page.goto(location_url)
+                # Navigate to Google for web-wide search (more comprehensive than single-site search)
+                print(f"Session {session_index + 1}: Navigating to Google search for \"{query}\"...")
+                search_url = f"https://www.google.com/search?q={quote(query)}"
+                await session_page.goto(search_url)
+                # Wait for results to load (Google may show captcha or require time)
                 await session_page.wait_for_timeout(3000)
 
-                # Perform search using natural language actions
-                print(f"Session {session_index + 1}: Searching for \"{query}\"...")
-                await session_page.act(f"Search for {query}")
-                await session_page.wait_for_timeout(3000)
-
-                # Extract structured restaurant data using Pydantic schema for type safety
-                print(f"Session {session_index + 1}: Extracting restaurant data...")
+                # Extract restaurant links from Google search results
+                print(f"Session {session_index + 1}: Extracting restaurant links from search results...")
                 
-                # Define Pydantic schemas for structured data extraction
-                class RestaurantItem(BaseModel):
+                # Define Pydantic schemas for extracting restaurant links from Google results
+                class SearchResultItem(BaseModel):
                     name: str = Field(..., description="the name of the restaurant")
-                    url: HttpUrl = Field(..., description="the full URL link to the restaurant page")
-                    rating: str = Field(..., description="the star rating or number of reviews (e.g., '4.5 stars' or '123 reviews')")
-                    price_range: str = Field(..., description="the price range of the restaurant ($, $$, $$$, $$$$)")
-                    cuisine: str = Field(..., description="the cuisine type of the restaurant")
-                    location: str = Field(..., description="the location/neighborhood of the restaurant")
+                    url: str = Field(..., description="the URL link to the restaurant page (from search results or restaurant sites like OpenTable, Yelp, Resy, etc.)")
+                    snippet: Optional[str] = Field(None, description="a brief snippet/description if available from search results")
                 
-                class RestaurantsData(BaseModel):
-                    restaurants: List[RestaurantItem] = Field(..., max_length=3, description="array of the first 3 restaurants from search results")
+                class SearchResultsData(BaseModel):
+                    restaurants: List[SearchResultItem] = Field(..., max_length=5, description="array of up to 5 restaurant results from the search, including links to restaurant websites, OpenTable, Yelp, Resy, or other booking platforms")
                 
-                restaurants_data = await session_page.extract(
-                    "Extract the first 3 restaurants from the search results",
-                    schema=RestaurantsData
-                )
+                try:
+                    search_results_data = await session_page.extract(
+                        "Extract restaurant names and URLs from the search results. Look for links to restaurant websites, OpenTable, Yelp, Resy, or other restaurant listing/booking sites. Get up to 5 results.",
+                        schema=SearchResultsData
+                    )
+                    
+                    # Access restaurants from validated data
+                    restaurants_list = search_results_data.restaurants
+                except Exception as extract_error:
+                    # If validation fails, try to access raw data from the failed validation
+                    print(f"Session {session_index + 1}: Validation failed, accessing raw data...")
+                    restaurants_list = []
+                    try:
+                        # When Pydantic validation fails, Stagehand stores raw data in .data attribute
+                        # Try to re-extract with a more flexible approach
+                        raw_extract = await session_page.extract(
+                            "Extract restaurant names and URLs from the search results. Look for links to restaurant websites, OpenTable, Yelp, Resy, or other restaurant listing/booking sites. Get up to 5 results. Return a JSON object with a 'restaurants' array, where each restaurant has 'name' and 'url' fields.",
+                            schema=None
+                        )
+                        
+                        # Parse raw extraction: Stagehand stores failed validation data in .data attribute
+                        if hasattr(raw_extract, 'data'):
+                            data_dict = raw_extract.data
+                        elif isinstance(raw_extract, dict):
+                            data_dict = raw_extract
+                        else:
+                            data_dict = {}
+                        
+                        # Extract restaurants from raw data and normalize URLs
+                        if isinstance(data_dict, dict) and 'restaurants' in data_dict:
+                            for r in data_dict['restaurants']:
+                                if isinstance(r, dict):
+                                    # Normalize URLs: ensure they're valid strings with protocol
+                                    url = str(r.get('url', ''))
+                                    if url and not url.startswith(('http://', 'https://')):
+                                        # Add https:// if URL looks valid but missing protocol
+                                        if url.startswith('www.') or '.' in url:
+                                            url = 'https://' + url
+                                    
+                                    restaurants_list.append(SearchResultItem(
+                                        name=r.get('name', 'Unknown'),
+                                        url=url,
+                                        snippet=r.get('snippet')
+                                    ))
+                    except Exception as e:
+                        print(f"Session {session_index + 1}: Could not extract restaurant data from raw: {e}")
+                        restaurants_list = []
 
                 print(
-                    f"Session {session_index + 1}: Found {len(restaurants_data.restaurants)} restaurants for \"{query}\""
+                    f"Session {session_index + 1}: Found {len(restaurants_list)} restaurant links for \"{query}\""
                 )
 
-                # Convert to Restaurant objects
-                restaurants = [
-                    Restaurant(
-                        name=r.name,
-                        url=str(r.url),
-                        rating=r.rating,
-                        price_range=r.price_range,
-                        cuisine=r.cuisine,
-                        location=r.location
-                    )
-                    for r in restaurants_data.restaurants
-                ]
+                # Click through and verify top restaurants
+                verified_restaurants = []
+                
+                for i in range(min(3, len(restaurants_list))):
+                    result = restaurants_list[i]
+                    print(f"Session {session_index + 1}: Verifying restaurant {i + 1}/{min(3, len(restaurants_list))}: {result.name}...")
+                    
+                    try:
+                        # Navigate to restaurant page to verify details directly from source
+                        print(f"Session {session_index + 1}: Navigating to {result.url}...")
+                        await session_page.goto(str(result.url))
+                        # Wait for page to load before extraction
+                        await session_page.wait_for_timeout(3000)
+                        
+                        print(f"Session {session_index + 1}: Extracting restaurant details...")
+                        # Extract detailed restaurant information from the page
+                        class RestaurantDetailItem(BaseModel):
+                            name: str = Field(..., description="the name of the restaurant")
+                            rating: str = Field(..., description="the star rating or review information (e.g., '4.5 stars', 'Great reviews', '4.7/5')")
+                            price_range: str = Field(..., description="the price range ($, $$, $$$, $$$$) or price level")
+                            cuisine: str = Field(..., description="the cuisine type")
+                            location: str = Field(..., description="the location, neighborhood, or address")
+                            description: Optional[str] = Field(None, description="a brief description or key features")
+                            hours: Optional[str] = Field(None, description="operating hours if available")
+                            phone: Optional[str] = Field(None, description="phone number if available")
+                            address: Optional[str] = Field(None, description="full address if available")
+                            reservation_available: Optional[bool] = Field(None, description="whether reservations appear to be available")
+                        
+                        class RestaurantDetailData(BaseModel):
+                            restaurant: RestaurantDetailItem = Field(..., description="detailed restaurant information from the page")
+                        
+                        restaurant_detail_data = await session_page.extract(
+                            "Extract detailed information about this restaurant from the page. Look for rating, price range, cuisine type, location, description, hours, contact info, and whether reservations are available.",
+                            schema=RestaurantDetailData
+                        )
+                        
+                        detail = restaurant_detail_data.restaurant
+                        
+                        verified_restaurants.append(Restaurant(
+                            name=detail.name or result.name,
+                            url=str(result.url),
+                            rating=detail.rating or "Rating not available",
+                            price_range=detail.price_range or "Price not specified",
+                            cuisine=detail.cuisine or user_input.cuisine_type,
+                            location=detail.location or user_input.location,
+                            verified=True,
+                            verified_details=VerifiedDetails(
+                                description=detail.description,
+                                hours=detail.hours,
+                                phone=detail.phone,
+                                address=detail.address,
+                                reservation_available=detail.reservation_available,
+                            )
+                        ))
+                        
+                        print(f"Session {session_index + 1}: ✓ Verified {detail.name or result.name}")
+                        
+                    except Exception as error:
+                        print(f"Session {session_index + 1}: ⚠ Could not verify {result.name}, using basic info")
+                        # Fallback: use search result info if page verification fails
+                        verified_restaurants.append(Restaurant(
+                            name=result.name,
+                            url=str(result.url),
+                            rating="Rating not verified",
+                            price_range="Price not verified",
+                            cuisine=user_input.cuisine_type,
+                            location=user_input.location,
+                            verified=False,
+                        ))
 
+                restaurants = verified_restaurants
+
+                print(f"Session {session_index + 1}: Session closed successfully")
                 return SearchResult(
                     query=query,
                     session_index=session_index + 1,
@@ -405,6 +520,14 @@ async def main() -> None:
                 )
         except Exception as error:
             print(f"Session {session_index + 1} failed: {error}")
+
+            try:
+                # Attempt cleanup even on error
+                if 'session_stagehand' in locals():
+                    await session_stagehand.close()
+                    print(f"Session {session_index + 1}: Session closed after error")
+            except Exception:
+                pass
 
             return SearchResult(
                 query=query,
@@ -432,6 +555,7 @@ async def main() -> None:
 
     # Step 4: Score and rank restaurants with AI
     if len(all_restaurants_flat) > 0:
+        print(f"\nScoring {len(all_restaurants_flat)} restaurants with AI...")
         try:
             # AI scores all restaurants and ranks them by relevance to user preferences
             scored_restaurants = await score_restaurants(
@@ -440,7 +564,49 @@ async def main() -> None:
                 user_input.cuisine_type,
                 user_input.budget
             )
-            top3_restaurants = scored_restaurants[:3]
+            
+            print(f"Filtering restaurants (minimum score 5/10, must match {user_input.cuisine_type} cuisine)...")
+            # Filter: minimum score 5/10 and cuisine must match (prevents showing wrong cuisine types)
+            MIN_SCORE_THRESHOLD = 5
+            filtered_restaurants = []
+            for restaurant in scored_restaurants:
+                score = restaurant.ai_score or 0
+                reason = (restaurant.ai_reason or "").lower()
+                
+                # Exclude restaurants with low scores
+                if score < MIN_SCORE_THRESHOLD:
+                    continue
+                
+                # Exclude restaurants explicitly marked as not matching cuisine
+                cuisine_mismatch_indicators = [
+                    f"not {user_input.cuisine_type.lower()}",
+                    "doesn't match cuisine",
+                    "wrong cuisine",
+                    f"not {user_input.cuisine_type.lower()[:-1] if user_input.cuisine_type.lower().endswith('n') else user_input.cuisine_type.lower()} cuisine"
+                ]
+                if any(indicator in reason for indicator in cuisine_mismatch_indicators):
+                    continue
+                
+                filtered_restaurants.append(restaurant)
+            
+            print(f"Found {len(filtered_restaurants)} restaurants meeting quality threshold")
+            
+            # Only take top 3 from filtered restaurants
+            top3_restaurants = filtered_restaurants[:3]
+            
+            # If no good matches found, inform user
+            if len(top3_restaurants) == 0:
+                print("\n⚠️  No restaurants found that match your preferences well enough.")
+                print("The restaurants found didn't meet the quality threshold (minimum score 5/10) or cuisine match.")
+                print("\nTry:")
+                print(f"  - Adjusting your cuisine preference (currently: {user_input.cuisine_type})")
+                print(f"  - Trying a different location (currently: {user_input.location})")
+                print(f"  - Adjusting your budget (currently: {user_input.budget})")
+                print("\nHere are some restaurants that were found (but didn't match well):")
+                for i, restaurant in enumerate(scored_restaurants[:3], 1):
+                    print(f"  {i}. {restaurant.name} ({restaurant.cuisine}) - Score: {restaurant.ai_score}/10")
+                    print(f"     Reason: {restaurant.ai_reason}")
+                return
 
             print("\n🎉 PERFECT DATE PLANNED!")
             print("=" * 50)
@@ -456,6 +622,22 @@ async def main() -> None:
                 print(f"   Rating: {primary_restaurant.rating}")
                 print(f"   Price: {primary_restaurant.price_range}")
                 print(f"   Location: {primary_restaurant.location}")
+                if primary_restaurant.verified:
+                    print(f"   ✓ Verified by clicking through and inspecting the restaurant page")
+                    if primary_restaurant.verified_details:
+                        details = primary_restaurant.verified_details
+                        if details.description:
+                            print(f"   Description: {details.description}")
+                        if details.address:
+                            print(f"   Address: {details.address}")
+                        if details.phone:
+                            print(f"   Phone: {details.phone}")
+                        if details.hours:
+                            print(f"   Hours: {details.hours}")
+                        if details.reservation_available is not None:
+                            print(f"   Reservations: {'Available' if details.reservation_available else 'Not available'}")
+                else:
+                    print(f"   Not verified (could not access restaurant page)")
                 if primary_restaurant.ai_score:
                     print(f"   AI Score: {primary_restaurant.ai_score}/10")
                     print(f"   Why: {primary_restaurant.ai_reason}")
@@ -466,14 +648,22 @@ async def main() -> None:
                 print(f"🥈 BACKUP OPTIONS:")
                 for i, restaurant in enumerate(backup_restaurants, 1):
                     print(f"   {i}. {restaurant.name} ({restaurant.cuisine}) - {restaurant.rating} - {restaurant.price_range}")
+                    if restaurant.verified:
+                        print(f"      ✓ Verified")
+                        if restaurant.verified_details:
+                            if restaurant.verified_details.address:
+                                print(f"      Address: {restaurant.verified_details.address}")
+                            if restaurant.verified_details.reservation_available is not None:
+                                print(f"      Reservations: {'Available' if restaurant.verified_details.reservation_available else 'Not available'}")
                     if restaurant.ai_score:
                         print(f"      AI Score: {restaurant.ai_score}/10 - {restaurant.ai_reason}")
                 print()
 
             # Step 5: Find nearby activities
             if primary_restaurant:
-                print("🎯 NEARBY ACTIVITIES:")
+                print("\nFinding nearby activities...")
                 activities = await find_nearby_activities(primary_restaurant)
+                print("🎯 NEARBY ACTIVITIES:")
                 for activity in activities:
                     print(f"   • {activity}")
                 print()
@@ -497,7 +687,14 @@ async def main() -> None:
 if __name__ == "__main__":
     try:
         asyncio.run(main())
+    except KeyboardInterrupt:
+        print("\nApplication interrupted by user")
+        exit(0)
     except Exception as err:
-        print(f"Application error: {err}")
-        print("Check your environment variables")
+        print(f"\nApplication error: {err}")
+        print("\nCommon issues:")
+        print("  - Check .env has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
+        print("  - Verify OPENAI_API_KEY is set")
+        print("  - Ensure internet access and website accessibility")
+        print("  - Check Browserbase project has active credits/sessions available")
         exit(1)

@@ -3,8 +3,9 @@
 ## AT A GLANCE
 - Goal: Find personalized restaurant recommendations and plan the perfect date using AI-powered search and scoring.
 - AI Integration: Uses OpenAI to generate search queries and score restaurants based on user preferences.
-- Concurrent Sessions: Runs multiple browser sessions simultaneously to search different restaurant sites in parallel.
-- Web Automation: Automates restaurant discovery, availability checking, and reservation attempts.
+- Web-Wide Search: Searches Google to find restaurants across multiple platforms (OpenTable, Yelp, Resy, restaurant websites, etc.).
+- Click-Through Verification: Visits restaurant pages directly to verify details, check availability, and extract comprehensive information.
+- Concurrent Sessions: Runs multiple browser sessions simultaneously to search different queries in parallel.
 
 ## GLOSSARY
 - act: perform UI actions from a prompt (search, click, type)
@@ -24,10 +25,12 @@
 ## EXPECTED OUTPUT
 - Prompts user for date preferences, cuisine, location, budget, and special requirements
 - Generates search queries using OpenAI based on user input
-- Runs concurrent browser sessions to search restaurant sites (OpenTable, Yelp, etc.)
-- Extracts restaurant data using structured schemas
-- AI-scores restaurants based on user preferences
-- Attempts to check availability and make reservations
+- Runs concurrent browser sessions to search the web via Google
+- Extracts restaurant links from search results across multiple platforms
+- Clicks through to restaurant pages to verify details (rating, price, cuisine, hours, contact info, reservations)
+- Extracts comprehensive restaurant information from individual pages
+- AI-scores restaurants based on user preferences (only recommends restaurants scoring 5/10 or higher that match cuisine)
+- Displays verified restaurant details including address, phone, hours, and reservation availability
 - Suggests nearby activities to extend the date
 - Displays comprehensive date plan with primary restaurant, backups, and activities
 
@@ -53,5 +56,6 @@
 ## HELPFUL RESOURCES
 📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
 🎮 Browserbase:        https://www.browserbase.com
-🍽️ Restaurant Sites:  https://opentable.com, https://yelp.com
+🔍 Web Search:         Searches across Google to find restaurants from any platform
+🍽️ Restaurant Sites:  Works with OpenTable, Yelp, Resy, restaurant websites, and more
 📧 Need help?          support@browserbase.com
