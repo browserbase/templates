@@ -54,5 +54,6 @@
 ## HELPFUL RESOURCES
 📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
 🎮 Browserbase:        https://www.browserbase.com
-🛍️ Gift Ideas:         https://firebox.eu/
+💡 Try it out:         https://www.browserbase.com/playground
+🔧 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com

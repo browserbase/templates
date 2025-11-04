@@ -70,5 +70,6 @@
 ## HELPFUL RESOURCES
 📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
 🎮 Browserbase:        https://www.browserbase.com
-🏓 SF Rec & Parks:     https://www.rec.us/organizations/san-francisco-rec-park
+💡 Try it out:         https://www.browserbase.com/playground
+🔧 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com
