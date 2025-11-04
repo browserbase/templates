@@ -19,7 +19,7 @@
 ## QUICKSTART
  1) cd councilEvents
  2) npm install
- 3) cp ../../.env.example .env (or create .env with BROWSERBASE_API_KEY)
+ 3) cp .env.example .env (or create .env with BROWSERBASE_API_KEY)
  4) Add your Browserbase API key to .env
  5) npm start
 
@@ -51,5 +51,7 @@
 ## HELPFUL RESOURCES
 📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
 🎮 Browserbase:        https://www.browserbase.com
+💡 Try it out:         https://www.browserbase.com/playground
+🔧 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com
 

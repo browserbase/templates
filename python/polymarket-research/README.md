@@ -4,7 +4,7 @@
 - Goal: automate research of prediction markets on Polymarket to extract current odds, pricing, and volume data.
 - Flow: navigate to polymarket.com → search for market → select result → extract market data (odds, prices, volume, changes).
 - Benefits: quickly gather market intelligence on prediction markets without manual browsing, structured data ready for analysis or trading decisions.
-  Docs → https://docs.browserbase.com/stagehand
+  Docs → https://docs.stagehand.dev/v3/first-steps/introduction
 
 ## GLOSSARY
 - act: perform UI actions from a prompt (click, type, search).
@@ -50,9 +50,9 @@
 • Automated alerts: Set up scheduled runs to detect significant market movements and send notifications.
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase:        https://www.browserbase.com
 💡 Try it out:         https://www.browserbase.com/playground
-🔧 Templates:          https://github.com/browserbase/stagehand/tree/main/examples
+🔧 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com
 

@@ -1,239 +1,55 @@
-# License Verification Automation
+# Stagehand + Browserbase: Nurse License Verification
 
-This example demonstrates how to automate license verification workflows using Stagehand and Browserbase. The automation navigates to license verification sites, fills in credentials, and extracts structured results.
+## AT A GLANCE
+- Goal: automate verification of nurse licenses by filling forms and extracting structured results from verification sites.
+- Flow: loop through license records → navigate to verification site → fill form → search → extract verification results.
+- Benefits: quickly verify multiple licenses without manual form filling, structured data ready for compliance tracking or HR systems.
+  Docs → https://docs.stagehand.dev/basics/act
 
-## Features
+## GLOSSARY
+- act: perform UI actions from a prompt (type, click, fill forms).
+  Docs → https://docs.stagehand.dev/basics/act
+- extract: pull structured data from a page using AI and Zod schemas.
+  Docs → https://docs.stagehand.dev/basics/extract
+- schema: a Zod definition that enforces data types, optional fields, and validation rules.
+  Docs → https://zod.dev/
+- license verification: process of confirming the validity and status of professional licenses.
 
-- **Automated Form Filling**: Uses AI to fill in license information (first name, last name, license number)
-- **License Verification**: Submits search queries and extracts structured results
-- **Batch Processing**: Can process multiple license records in sequence
-- **Type-Safe Extraction**: Uses Zod schemas for validated data extraction
+## QUICKSTART
+1) cd validateNurses
+2) npm install
+3) cp .env.example .env
+4) Add your Browserbase API key, Project ID, and OpenAI API key to .env
+5) npm start
 
-## Prerequisites
+## EXPECTED OUTPUT
+- Initializes Stagehand session with Browserbase
+- Loops through license records in LicenseRecords array
+- For each record: navigates to verification site, fills form, searches
+- Extracts verification results: name, license number, status, info URL
+- Displays structured JSON output with all verification results
+- Provides live session URL for monitoring
+- Closes session cleanly
 
-- Node.js 18+ installed
-- A Browserbase account with API credentials
-- An OpenAI API key
+## COMMON PITFALLS
+- "Cannot find module 'dotenv'": ensure npm install ran successfully
+- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and OPENAI_API_KEY
+- No results found: check if license numbers are valid or if verification site structure has changed
+- Network issues: ensure internet access and verification sites are accessible
+- Schema validation errors: ensure extracted data matches Zod schema structure
 
-## Setup
+## USE CASES
+• HR compliance: Automate license verification for healthcare staff onboarding and annual reviews.
+• Healthcare staffing: Verify credentials of temporary or contract nurses before assignment.
+• Regulatory reporting: Collect license status data for compliance reporting and audits.
 
-1. **Install dependencies**
+## NEXT STEPS
+• Multi-site support: Add support for different license verification sites and adapt form filling logic.
+• Batch processing: Load license records from CSV/Excel files for large-scale verification.
+• Status monitoring: Set up scheduled runs to track license status changes and expiration dates.
 
-```bash
-npm install
-```
+## HELPFUL RESOURCES
+📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+🎮 Browserbase:        https://www.browserbase.com
+📧 Need help?          support@browserbase.com
 
-2. **Configure environment variables**
-
-Create a `.env` file in the project root:
-
-```env
-BROWSERBASE_API_KEY=your_browserbase_api_key
-BROWSERBASE_PROJECT_ID=your_project_id
-OPENAI_API_KEY=your_openai_api_key
-```
-
-3. **Configure license records**
-
-Edit the `LicenseRecords` array in `index.ts` with your license verification data:
-
-```typescript
-const LicenseRecords = [
-  {
-    Site: "https://pod-search.kalmservices.net/",
-    FirstName: "Ronald",
-    LastName: "Agee",
-    LicenseNumber: "346",
-  },
-  // Add more records as needed
-];
-```
-
-## Usage
-
-Run the automation:
-
-```bash
-npm start
-# or
-npx tsx index.ts
-```
-
-The script will:
-1. Initialize a Browserbase browser session
-2. Navigate to each license verification site
-3. Fill in the license information
-4. Submit the search
-5. Extract and display the verification results
-
-## How It Works
-
-### 1. Navigation
-
-The automation navigates to the specified license verification site:
-
-```typescript
-await page.goto(LicenseRecord.Site);
-await page.waitForLoadState("domcontentloaded");
-```
-
-### 2. Form Filling
-
-Uses Stagehand's `act()` method to fill in form fields:
-
-```typescript
-await stagehand.act(
-  `Type "${LicenseRecord.FirstName}" into the first name field`,
-);
-await stagehand.act(`Type "${LicenseRecord.LastName}" into the last name field`);
-await stagehand.act(
-  `Type "${LicenseRecord.LicenseNumber}" into the license number field`,
-);
-```
-
-### 3. Search Submission
-
-Clicks the search button to submit the form:
-
-```typescript
-await stagehand.act("Click the search button");
-```
-
-### 4. Data Extraction
-
-Extracts structured license verification results using Zod schemas:
-
-```typescript
-const results = await stagehand.extract(
-  "Extract ALL the license verification results from the page",
-  z.object({
-    list_of_licenses: z.array(
-      z.object({
-        name: z.string(),
-        license_number: z.string(),
-        status: z.string(),
-        more_info_url: z.string(),
-      }),
-    ),
-  }),
-);
-```
-
-## Extracting Data
-
-The automation uses Stagehand's `extract()` method with Zod schemas to get structured data:
-
-- **name**: The license holder's name
-- **license_number**: The license identification number
-- **status**: Current status of the license
-- **more_info_url**: URL for additional license information
-
-## Customization
-
-### Adding More License Records
-
-Add additional records to the `LicenseRecords` array:
-
-```typescript
-const LicenseRecords = [
-  {
-    Site: "https://pod-search.kalmservices.net/",
-    FirstName: "Ronald",
-    LastName: "Agee",
-    LicenseNumber: "346",
-  },
-  {
-    Site: "https://another-site.com/",
-    FirstName: "Jane",
-    LastName: "Doe",
-    LicenseNumber: "789",
-  },
-];
-```
-
-### Modifying the Extraction Schema
-
-Update the Zod schema to extract different fields:
-
-```typescript
-const results = await stagehand.extract(
-  "Extract license verification details",
-  z.object({
-    list_of_licenses: z.array(
-      z.object({
-        name: z.string(),
-        license_number: z.string(),
-        status: z.string(),
-        expiration_date: z.string().optional(), // Add new field
-        issue_date: z.string().optional(), // Add new field
-        more_info_url: z.string(),
-      }),
-    ),
-  }),
-);
-```
-
-### Customizing Actions
-
-Modify the actions to handle different form structures:
-
-```typescript
-// For different field names
-await stagehand.act(`Type "${LicenseRecord.LicenseNumber}" into the license ID field`);
-
-// For custom submit buttons
-await stagehand.act("Click the submit or verify button");
-```
-
-## Configuration
-
-### Stagehand Options
-
-The automation uses the following Stagehand configuration:
-
-```typescript
-const stagehand = new Stagehand({
-  env: "BROWSERBASE", // Use cloud-based browsers
-  verbose: 1, // Logging level: 0 (errors), 1 (info), 2 (debug)
-  model: "openai/gpt-4.1", // Model for AI actions and extraction
-});
-```
-
-### Verbose Levels
-
-- `0`: Errors only (use for production with sensitive data)
-- `1`: Info level (default, shows important actions)
-- `2`: Debug level (shows all details, use for troubleshooting)
-
-## Troubleshooting
-
-### Common Issues
-
-1. **"Missing API keys"**: Ensure `.env` file has all required API keys
-2. **"License not found"**: Verify the license data is correct and the site is accessible
-3. **"Page load timeout"**: The site may be slow, increase timeouts in the code
-4. **"Extraction failed"**: Check if the result page structure matches your schema
-
-### Debug Mode
-
-Enable verbose logging to troubleshoot issues:
-
-```typescript
-const stagehand = new Stagehand({
-  verbose: 2, // Shows all debug information
-});
-```
-
-## Live Session View
-
-Each run provides a live session URL to watch the automation in real-time:
-
-```
-Watch live: https://browserbase.com/sessions/{session-id}
-```
-
-## Learn More
-
-- [Stagehand Documentation](https://docs.browserbase.com/stagehand)
-- [Browserbase Docs](https://docs.browserbase.com)
-- [Zod Documentation](https://zod.dev)

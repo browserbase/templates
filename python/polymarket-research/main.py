@@ -111,6 +111,12 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except Exception as err:
-        print(f"Application error: {err}")
+        print(f"Error in polymarket research: {err}")
+        print("Common issues:")
+        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
+        print("  - Verify OPENAI_API_KEY is set in environment")
+        print("  - Ensure internet access and https://polymarket.com is accessible")
+        print("  - Verify Browserbase account has sufficient credits")
+        print("Docs: https://docs.browserbase.com/stagehand")
         exit(1)
 
