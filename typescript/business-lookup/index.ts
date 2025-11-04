@@ -13,9 +13,6 @@ async function main() {
     env: "BROWSERBASE",
     verbose: 1,
     model: "openai/gpt-4.1",
-    browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
-    },
   });
 
   try {
@@ -71,7 +68,6 @@ async function main() {
 
     console.log("Business Information:");
     console.log(JSON.stringify(businessInfo, null, 2));
-
 
   } catch (error) {
     console.error("Error during business lookup:", error);

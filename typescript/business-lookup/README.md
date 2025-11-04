@@ -33,6 +33,7 @@
 - Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
 - Google API access: ensure you have access to Google's gemini-2.5-computer-use-preview-10-2025 model
 - Agent failures: check that the business name exists in the registry and that maxSteps is sufficient for complex searches
+- Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in
 
 ## USE CASES
 • Business verification: Automate registration status checks, license validation, and compliance verification for multiple businesses.
@@ -47,6 +48,6 @@
 ## HELPFUL RESOURCES
 📚 Stagehand Docs:     https://docs.stagehand.dev/stagehand
 🎮 Browserbase:        https://www.browserbase.com
-💡 Templates:          https://github.com/browserbase/stagehand/tree/main/examples
+💡 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com
 

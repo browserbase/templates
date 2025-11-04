@@ -15,7 +15,7 @@
 ## QUICKSTART
 1) python -m venv venv
 2) source venv/bin/activate  # On Windows: venv\Scripts\activate
-3) pip install stagehand python-dotenv pydantic
+3) uvx install stagehand python-dotenv pydantic
 4) cp .env.example .env
 5) Add required API keys/IDs to .env
 6) python main.py
@@ -36,6 +36,7 @@
 - Google API access: ensure you have access to Google's gemini-2.5-computer-use-preview-10-2025 model
 - Agent failures: check that the business name exists in the registry and that max_steps is sufficient for complex searches
 - Import errors: activate your virtual environment if you created one
+- Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in
 
 ## USE CASES
 • Business verification: Automate registration status checks, license validation, and compliance verification for multiple businesses.
@@ -50,6 +51,6 @@
 ## HELPFUL RESOURCES
 📚 Stagehand Docs:     https://docs.stagehand.dev/stagehand
 🎮 Browserbase:        https://www.browserbase.com
-💡 Templates:          https://github.com/browserbase/stagehand/tree/main/examples
+💡 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com
 

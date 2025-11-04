@@ -14,7 +14,6 @@ load_dotenv()
 # Business search variables
 business_name = "Jalebi Street"
 
-
 async def main():
     print("Starting business lookup...")
     
