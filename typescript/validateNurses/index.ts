@@ -50,8 +50,7 @@ async function main() {
       console.log(`Navigating to: ${LicenseRecord.Site}`);
       await page.goto(LicenseRecord.Site);
       await page.waitForLoadState("domcontentloaded");
-      // Brief timeout to ensure form fields are interactive
-      await page.waitForTimeout(1000);
+  
 
       // Fill in form fields with license information
       console.log("Filling in license information...");
@@ -69,7 +68,6 @@ async function main() {
 
       // Wait for search results to load
       await page.waitForLoadState("domcontentloaded");
-      await page.waitForTimeout(1000);
 
       // Extract license verification results
       console.log("Extracting license verification results...");
