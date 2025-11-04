@@ -5,34 +5,11 @@ import { Stagehand } from "@browserbasehq/stagehand";
 import { z } from "zod";
 
 // Domain to analyze - change this to target a different website
-const targetDomain = "www.fabriodesign.com"; // Or extract from email: email.split("@")[1]
-
-// Patterns to detect placeholder/default pages that should return a generic response
-// rather than attempting value prop extraction (avoids wasting LLM credits)
-const unwantedPatterns = [
-	"godaddy",
-	"wordpress",
-	"dns",
-	"domain setup",
-	"domain registration",
-	"nameserver",
-	"domain parking",
-	"domain for sale",
-	"coming soon",
-	"under construction",
-	"website coming soon",
-	"page not found",
-	"error 404",
-	"site maintenance",
-	"temporarily unavailable",
-	"default page",
-	"this domain is for sale",
-];
+const targetDomain = "www.browserbase.com"; // Or extract from email: email.split("@")[1]
 
 /**
  * Analyzes a website's landing page to generate a concise one-liner value proposition.
- * Extracts the value prop using Stagehand, validates it's not a placeholder page,
- * then uses an LLM to format it into a short phrase starting with "your".
+ * Extracts the value prop using Stagehand, then uses an LLM to format it into a short phrase starting with "your".
  */
 async function generateOneLiner(domain: string): Promise<string> {
 	const stagehand = new Stagehand({
@@ -61,21 +38,6 @@ async function generateOneLiner(domain: string): Promise<string> {
 
 		console.log(`✅ Successfully loaded ${domain}`);
 
-		// Early check for GoDaddy placeholder pages via meta tag (more reliable than content analysis)
-		// Return generic fallback response to avoid wasting extraction/LLM calls
-		console.log(`🔍 Checking for placeholder pages...`);
-		const generatorMetadata = await page
-			.evaluate(() => {
-				const meta = document.querySelector('meta[name="generator"]');
-				return meta?.getAttribute("content") || null;
-			})
-			.catch(() => null);
-
-		if (generatorMetadata && generatorMetadata.toLowerCase().includes("go daddy")) {
-			console.log(`🏷️ GoDaddy placeholder detected for ${domain}`);
-			return "your website. Excited to see what you all end up putting together";
-		}
-
 		// Extract value proposition from landing page
 		console.log(`📝 Extracting value proposition for ${domain}...`);
 		const valueProp = await stagehand.extract(
@@ -96,22 +58,6 @@ async function generateOneLiner(domain: string): Promise<string> {
 			console.error(`⚠️ Value prop extraction returned empty or invalid result`);
 			throw new Error(`No value prop found for ${domain}`);
 		}
-
-		// Filter out placeholder/default pages that slipped past the GoDaddy check
-		// Prevents LLM from generating one-liners for non-functional sites
-		console.log(`🔍 Validating value prop doesn't match placeholder patterns...`);
-		const matchedPattern = unwantedPatterns.find((pattern) =>
-			valueProp.value_prop.toLowerCase().includes(pattern),
-		);
-
-		if (matchedPattern) {
-			console.error(`⚠️ Detected unwanted pattern: "${matchedPattern}"`);
-			throw new Error(
-				`Unwanted site pattern detected for ${domain}: "${matchedPattern}"`,
-			);
-		}
-
-		console.log(`✅ Value prop validation passed`);
 
 		// Generate one-liner using OpenAI
 		// Prompt uses few-shot examples to guide LLM toward concise, "your X" format

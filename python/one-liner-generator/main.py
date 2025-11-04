@@ -11,29 +11,7 @@ from openai import OpenAI
 load_dotenv()
 
 # Domain to analyze - change this to target a different website
-target_domain = "www.fabriodesign.com"  # Or extract from email: email.split("@")[1]
-
-# Patterns to detect placeholder/default pages that should return a generic response
-# rather than attempting value prop extraction (avoids wasting LLM credits)
-unwanted_patterns = [
-    "godaddy",
-    "wordpress",
-    "dns",
-    "domain setup",
-    "domain registration",
-    "nameserver",
-    "domain parking",
-    "domain for sale",
-    "coming soon",
-    "under construction",
-    "website coming soon",
-    "page not found",
-    "error 404",
-    "site maintenance",
-    "temporarily unavailable",
-    "default page",
-    "this domain is for sale",
-]
+target_domain = "www.browserbase.com"  # Or extract from email: email.split("@")[1]
 
 # Initialize OpenAI client
 client = OpenAI()
@@ -46,8 +24,7 @@ class ValueProp(BaseModel):
 async def generate_one_liner(domain: str) -> str:
     """
     Analyzes a website's landing page to generate a concise one-liner value proposition.
-    Extracts the value prop using Stagehand, validates it's not a placeholder page,
-    then uses an LLM to format it into a short phrase starting with "your".
+    Extracts the value prop using Stagehand, then uses an LLM to format it into a short phrase starting with "your".
     """
     config = StagehandConfig(
         env="BROWSERBASE",
@@ -86,21 +63,6 @@ async def generate_one_liner(domain: str) -> str:
 
             print(f"✅ Successfully loaded {domain}")
 
-            # Early check for GoDaddy placeholder pages via meta tag (more reliable than content analysis)
-            # Return generic fallback response to avoid wasting extraction/LLM calls
-            print("🔍 Checking for placeholder pages...")
-            generator_metadata = None
-            try:
-                generator_metadata = await page.evaluate(
-                    "() => { const meta = document.querySelector('meta[name=\"generator\"]'); return meta?.getAttribute('content') || null; }"
-                )
-            except Exception:
-                generator_metadata = None
-
-            if generator_metadata and "go daddy" in generator_metadata.lower():
-                print(f"🏷️ GoDaddy placeholder detected for {domain}")
-                return "your website. Excited to see what you all end up putting together"
-
             # Extract value proposition from landing page
             print(f"📝 Extracting value proposition for {domain}...")
             value_prop_data = await page.extract(
@@ -119,22 +81,6 @@ async def generate_one_liner(domain: str) -> str:
             ):
                 print("⚠️ Value prop extraction returned empty or invalid result")
                 raise ValueError(f"No value prop found for {domain}")
-
-            # Filter out placeholder/default pages that slipped past the GoDaddy check
-            # Prevents LLM from generating one-liners for non-functional sites
-            print("🔍 Validating value prop doesn't match placeholder patterns...")
-            matched_pattern = next(
-                (pattern for pattern in unwanted_patterns if pattern in value_prop.lower()),
-                None
-            )
-
-            if matched_pattern:
-                print(f'⚠️ Detected unwanted pattern: "{matched_pattern}"')
-                raise ValueError(
-                    f'Unwanted site pattern detected for {domain}: "{matched_pattern}"'
-                )
-
-            print("✅ Value prop validation passed")
 
             # Generate one-liner using OpenAI
             # Prompt uses few-shot examples to guide LLM toward concise, "your X" format
