@@ -42,7 +42,7 @@
 • Extend capabilities: Add support for file downloads, form submissions, and more complex interaction patterns.
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase:        https://www.browserbase.com
 💡 Try it out:         https://www.browserbase.com/playground
 🔧 Templates:          https://www.browserbase.com/templates

@@ -172,5 +172,5 @@ if __name__ == "__main__":
         print("  - Check .env file has SF_REC_PARK_EMAIL and SF_REC_PARK_PASSWORD")
         print("  - Verify BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY are set")
         print("  - Ensure credentials are valid for SF Rec & Park")
-        print("Docs: https://docs.browserbase.com/stagehand")
+        print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
         exit(1)
