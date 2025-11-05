@@ -2,8 +2,8 @@
 
 ## AT A GLANCE
 - Goal: Automatically extract and format website value propositions into concise one-liners for email personalization
-- Demonstrates Stagehand's `extract` method with Zod schemas to pull structured data from landing pages
-- Shows direct LLM API usage via `stagehand.llmClient` to transform extracted content with custom prompts
+- Demonstrates Stagehand's `extract` method with Pydantic schemas to pull structured data from landing pages
+- Shows direct OpenAI API usage to transform extracted content with custom prompts
 - Includes placeholder page detection and validation logic to filter out non-functional sites
 - Docs → https://docs.browserbase.com/stagehand/extract
 
@@ -13,11 +13,11 @@
 - Value Proposition: The core benefit or unique selling point a company communicates to customers
 
 ## QUICKSTART
-1) cd typescript/one-liner-generator
-2) npm install
+1) cd python/company-value-prop-generator
+2) pip install python-dotenv stagehand openai pydantic
 3) cp .env.example .env
 4) Add required API keys/IDs to .env
-5) npm start
+5) python main.py
 
 ## EXPECTED OUTPUT
 - Stagehand initializes and creates a Browserbase session
@@ -31,7 +31,7 @@
 - Closes browser session
 
 ## COMMON PITFALLS
-- Dependency install errors: ensure npm install completed
+- Dependency install errors: ensure pip install completed
 - Missing credentials:
   - BROWSERBASE_PROJECT_ID (required for browser automation)
   - BROWSERBASE_API_KEY (required for browser automation)
@@ -55,3 +55,4 @@
 🎮 Browserbase:        https://www.browserbase.com
 💡 Templates:          https://github.com/browserbase/stagehand/tree/main/examples
 📧 Need help?          support@browserbase.com
+
