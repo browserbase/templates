@@ -9,22 +9,24 @@
 ## GLOSSARY
 - act: perform UI actions from a prompt (type, click, fill forms).
   Docs → https://docs.stagehand.dev/basics/act
-- extract: pull structured data from a page using AI and Zod schemas.
+- extract: pull structured data from a page using AI and Pydantic schemas.
   Docs → https://docs.stagehand.dev/basics/extract
-- schema: a Zod definition that enforces data types, optional fields, and validation rules.
-  Docs → https://zod.dev/
+- schema: a Pydantic model that enforces data types, optional fields, and validation rules.
+  Docs → https://docs.pydantic.dev/
 - license verification: process of confirming the validity and status of professional licenses.
 
 ## QUICKSTART
-1) cd validateNurses
-2) npm install
-3) cp .env.example .env
-4) Add your Browserbase API key, Project ID, and OpenAI API key to .env
-5) npm start
+ 1) cd nurse-verification
+ 2) python -m venv venv
+ 3) source venv/bin/activate  # On Windows: venv\Scripts\activate
+ 4) pip install stagehand python-dotenv pydantic
+ 5) cp .env.example .env
+ 6) Add your Browserbase API key, Project ID, and OpenAI API key to .env
+ 7) python main.py
 
 ## EXPECTED OUTPUT
 - Initializes Stagehand session with Browserbase
-- Loops through license records in LicenseRecords array
+- Loops through license records in LICENSE_RECORDS array
 - For each record: navigates to verification site, fills form, searches
 - Extracts verification results: name, license number, status, info URL
 - Displays structured JSON output with all verification results
@@ -32,11 +34,12 @@
 - Closes session cleanly
 
 ## COMMON PITFALLS
-- "Cannot find module 'dotenv'": ensure npm install ran successfully
+- "ModuleNotFoundError": ensure all dependencies are installed via pip
 - Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and OPENAI_API_KEY
 - No results found: check if license numbers are valid or if verification site structure has changed
 - Network issues: ensure internet access and verification sites are accessible
-- Schema validation errors: ensure extracted data matches Zod schema structure
+- Schema validation errors: ensure extracted data matches Pydantic schema structure
+- Import errors: activate your virtual environment if you created one
 
 ## USE CASES
 • HR compliance: Automate license verification for healthcare staff onboarding and annual reviews.
@@ -49,7 +52,8 @@
 • Status monitoring: Set up scheduled runs to track license status changes and expiration dates.
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase:        https://www.browserbase.com
+💡 Try it out:         https://www.browserbase.com/playground
+🔧 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com
-
