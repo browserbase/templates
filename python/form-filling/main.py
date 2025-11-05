@@ -94,5 +94,5 @@ if __name__ == "__main__":
         print("Common issues:")
         print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
         print("  - Ensure form fields are available on the contact page")
-        print("Docs: https://docs.browserbase.com/stagehand")
+        print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
         exit(1)
