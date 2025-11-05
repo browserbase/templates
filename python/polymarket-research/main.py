@@ -117,6 +117,6 @@ if __name__ == "__main__":
         print("  - Verify OPENAI_API_KEY is set in environment")
         print("  - Ensure internet access and https://polymarket.com is accessible")
         print("  - Verify Browserbase account has sufficient credits")
-        print("Docs: https://docs.browserbase.com/stagehand")
+        print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
         exit(1)
 

@@ -49,7 +49,7 @@
 • Price alerts: add logic to monitor specific price thresholds and send notifications.
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase:        https://www.browserbase.com
 📧 Need help?          support@browserbase.com
 

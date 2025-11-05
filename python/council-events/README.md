@@ -4,7 +4,7 @@
 - Goal: automate extraction of Philadelphia Council events for 2025 from the official calendar.
 - Flow: navigate to phila.legistar.com → click calendar → select 2025 → extract event data (name, date, time).
 - Benefits: quickly gather upcoming council events without manual browsing, structured data ready for analysis or notifications.
-  Docs → https://docs.browserbase.com/stagehand
+  Docs → https://docs.stagehand.dev/v3/first-steps/introduction
 
 ## GLOSSARY
 - act: perform UI actions from a prompt (click, select, navigate).
@@ -49,7 +49,7 @@
 • Notifications: Set up scheduled runs to detect new events and send alerts via email/Slack.
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase:        https://www.browserbase.com
 💡 Try it out:         https://www.browserbase.com/playground
 🔧 Templates:          https://github.com/browserbase/stagehand/tree/main/examples
