@@ -51,7 +51,7 @@
 • Add caching layer to avoid re-extracting value props for previously analyzed domains
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.stagehand.dev/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction 
 🎮 Browserbase:        https://www.browserbase.com
-💡 Templates:          https://github.com/browserbase/stagehand/tree/main/examples
+💡 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com
