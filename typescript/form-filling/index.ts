@@ -18,7 +18,7 @@ async function main() {
 	// Initialize Stagehand with Browserbase for cloud-based browser automation.
 	const stagehand = new Stagehand({
 		env: "BROWSERBASE",
-		modelName: "openai/gpt-4.1",
+		model: "openai/gpt-4.1",
 		verbose: 1,
 		browserbaseSessionCreateParams: {
 			projectId: process.env.BROWSERBASE_PROJECT_ID!,
@@ -31,7 +31,7 @@ async function main() {
 		console.log("Stagehand initialized successfully!");
 		console.log(`Live View Link: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`);
 
-		const page = stagehand.page;
+		const page = stagehand.context.pages()[0];
 
 		// Navigate to contact page with extended timeout for slow-loading sites.
 		console.log("Navigating to Browserbase contact page...");
@@ -41,10 +41,9 @@ async function main() {
 		});
 
 		// Single observe call to plan all form filling
-		const formFields = await page.observe({
-			instruction: `Find form fields for: first name, last name, company, job title, email, message`,
-			returnAction: true
-		});
+		const formFields = await stagehand.observe(
+			"Find form fields for: first name, last name, company, job title, email, message"
+		);
 
 		// Execute all actions without LLM calls
 		for (const field of formFields) {
@@ -60,7 +59,7 @@ async function main() {
 			else if (desc.includes('message')) value = message;
 			
 			if (value) {
-				await page.act({
+				await stagehand.act({
 					...field,
 					arguments: [value]
 				});
@@ -69,13 +68,12 @@ async function main() {
 		
 		// Language choice in Stagehand act() is crucial for reliable automation.
 		// Use "click" for dropdown interactions rather than "select"
-		await page.act("Click on the How Can we help? dropdown");
-		await page.waitForTimeout(500);
-		await page.act("Click on the first option from the dropdown");
-		// await page.act("Select the first option from the dropdown"); // Less reliable than "click"
+		await stagehand.act("Click on the How Can we help? dropdown");
+		await stagehand.act("Click on the first option from the dropdown");
+		// await stagehand.act("Select the first option from the dropdown"); // Less reliable than "click"
 
 		// Uncomment the line below if you want to submit the form
-		// await page.act("Click the submit button");
+		// await stagehand.act("Click the submit button");
 	
 		console.log("Form filled successfully! Waiting 3 seconds...");
 		await page.waitForTimeout(30000);
@@ -94,6 +92,6 @@ main().catch((err) => {
 	console.error("Common issues:");
 	console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
 	console.error("  - Ensure form fields are available on the contact page");
-	console.error("Docs: https://docs.browserbase.com/stagehand");
+	console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
 	process.exit(1);
 });

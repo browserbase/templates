@@ -68,7 +68,8 @@
 • Template it: strip out "pickleball" wording and reuse as a boilerplate for any authenticate → filter → extract → book workflow
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase:        https://www.browserbase.com
-🏓 SF Rec & Parks:     https://www.rec.us/organizations/san-francisco-rec-park
+💡 Try it out:         https://www.browserbase.com/playground
+🔧 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com

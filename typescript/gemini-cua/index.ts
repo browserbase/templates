@@ -24,8 +24,7 @@ async function main() {
 
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    // modelName: "google/gemini-2.5-pro", // this is the model stagehand uses in act, observe, extract (not agent)
-    useAPI: false,
+    // model: "google/gemini-2.5-pro", // this is the model stagehand uses in act, observe, extract (not agent)
     verbose: 1,
     // 0 = errors only, 1 = info, 2 = debug 
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
@@ -48,9 +47,9 @@ async function main() {
     // Initialize browser session to start automation.
     await stagehand.init();
     console.log("Stagehand initialized successfully!");
-    console.log(`Live View Link: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`);
+    console.log(`Live View Link: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`);
 
-    const page = stagehand.page;
+    const page = stagehand.context.pages()[0];
 
     // Navigate to search engine with extended timeout for slow-loading sites.
     await page.goto("https://www.google.com/", {
@@ -59,21 +58,21 @@ async function main() {
 
     // Create agent with computer use capabilities for autonomous web browsing.
     const agent = stagehand.agent({
-      provider: "google",
-      model: "gemini-2.5-computer-use-preview-10-2025",
-      instructions: `You are a helpful assistant that can use a web browser.
-      You are currently on the following page: ${page.url()}.
-      Do not ask follow up questions, the user will trust your judgement. If you are getting blocked on google, try another search engine.`,
-      options: {
-        apiKey: process.env.GOOGLE_API_KEY,
+      cua: true,
+      model: {
+        modelName: "google/gemini-2.5-computer-use-preview-10-2025",
+        apiKey: process.env.GOOGLE_API_KEY
       },
+      systemPrompt: `You are a helpful assistant that can use a web browser.
+      You are currently on the following page: ${page.url()}.
+      Do not ask follow up questions, the user will trust your judgement. If you are getting blocked on google, try another search engine.`
     });
 
     console.log("Executing instruction:", instruction);
     const result = await agent.execute({
       instruction: instruction,
       maxSteps: 30,
-      autoScreenshot: true
+      highlightCursor: true
     });
 
     if (result.success === true) {
@@ -96,6 +95,6 @@ main().catch((err) => {
   console.error("Common issues:");
   console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
   console.error("  - Verify GOOGLE_API_KEY is set for the agent");
-  console.error("Docs: https://docs.browserbase.com/stagehand");
+  console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
   process.exit(1);
 });

@@ -43,8 +43,8 @@
 • Secure lifecycle: Rotate, refresh, and delete contexts programmatically to enforce security policies.
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase:        https://www.browserbase.com
 💡 Try it out:         https://www.browserbase.com/playground
-🔧 Templates:          https://github.com/browserbase/stagehand/tree/main/examples
+🔧 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com

@@ -49,7 +49,8 @@
 • Scale & geo-test: Fan out more concurrent sessions and run a geo matrix via proxies (e.g., UK/EU/US) to compare localized inventory and pricing.
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase:        https://www.browserbase.com
-🛍️ Gift Ideas:         https://firebox.eu/
+💡 Try it out:         https://www.browserbase.com/playground
+🔧 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com

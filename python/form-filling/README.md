@@ -50,6 +50,8 @@
 • Handle complex widgets: Add file uploads, multi-step flows, dropdown/radio/datepickers, and basic anti-bot tactics (delays/proxies).
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase:        https://www.browserbase.com
+💡 Try it out:         https://www.browserbase.com/playground
+🔧 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com

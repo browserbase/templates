@@ -48,7 +48,7 @@ A comprehensive collection of ready-to-use automation templates demonstrating th
 ## 📚 Resources
 
 ### Documentation
-- **Stagehand Docs**: https://docs.browserbase.com/stagehand
+- **Stagehand Docs**: https://docs.stagehand.dev/v3/first-steps/introduction
 - **Browserbase Docs**: https://docs.browserbase.com
 - **API Reference**: https://docs.browserbase.com/api
 

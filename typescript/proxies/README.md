@@ -39,6 +39,8 @@
 • Improve reliability: Add retries and fallbacks to handle proxy errors like ERR_TUNNEL_CONNECTION_FAILED.
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
+📚 Stagehand Docs:     https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase:        https://www.browserbase.com
+💡 Try it out:         https://www.browserbase.com/playground
+🔧 Templates:          https://www.browserbase.com/templates
 📧 Need help?          support@browserbase.com
