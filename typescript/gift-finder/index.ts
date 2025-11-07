@@ -2,9 +2,16 @@
 
 import "dotenv/config";
 import { Stagehand } from "@browserbasehq/stagehand";
-import inquirer from "inquirer";
 import OpenAI from "openai";
 import { z } from "zod";
+
+// ============= CONFIGURATION =============
+// Update these values to customize your gift search
+const CONFIG = {
+  recipient: "Friend", // Options: "Mum", "Dad", "Sister", "Brother", "Friend", "Boss"
+  description: "loves cooking and trying new recipes", // Describe their interests, hobbies, age, etc.
+};
+// =========================================
 
 interface GiftFinderAnswers {
   recipient: string;
@@ -174,29 +181,15 @@ IMPORTANT:
 async function getUserInput(): Promise<GiftFinderAnswers> {
   console.log("Welcome to the Gift Finder App!");
   console.log("Find the perfect gift with intelligent web browsing");
+  console.log(`\nSearching for gifts for: ${CONFIG.recipient}`);
+  console.log(`Profile: ${CONFIG.description}\n`);
 
-  // Use inquirer for interactive CLI prompts with validation
-  const answers = await inquirer.prompt([
-    {
-      type: "list",
-      name: "recipient",
-      message: "Who are you buying a gift for?",
-      choices: ["Mum", "Dad", "Sister", "Brother", "Friend", "Boss"],
-    },
-    {
-      type: "input",
-      name: "description",
-      message: "Please provide a short description about them (interests, hobbies, age, etc.):",
-      validate: (input: string) => {
-        if (input.trim().length < 5) {
-          return "Please provide at least 5 characters for a better gift recommendation.";
-        }
-        return true;
-      },
-    },
-  ]);
+  // Validate description length
+  if (CONFIG.description.trim().length < 5) {
+    throw new Error("Description must be at least 5 characters long. Please update the CONFIG at the top of the file.");
+  }
 
-  return answers as GiftFinderAnswers;
+  return CONFIG;
 }
 
 async function main(): Promise<void> {

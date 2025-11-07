@@ -5,12 +5,19 @@ import asyncio
 from typing import List, Optional
 from dotenv import load_dotenv
 from stagehand import Stagehand, StagehandConfig
-from InquirerPy import inquirer
 from openai import OpenAI
 from pydantic import BaseModel, Field, HttpUrl
 
 # Load environment variables
 load_dotenv()
+
+# ============= CONFIGURATION =============
+# Update these values to customize your gift search
+CONFIG = {
+    "recipient": "Friend",  # Options: "Mum", "Dad", "Sister", "Brother", "Friend", "Boss"
+    "description": "loves cooking and trying new recipes",  # Describe their interests, hobbies, age, etc.
+}
+# =========================================
 
 
 class GiftFinderAnswers(BaseModel):
@@ -191,37 +198,20 @@ async def get_user_input() -> GiftFinderAnswers:
     """
     Collect user input for gift recipient and description.
     
-    Uses interactive CLI prompts with validation to gather information
-    needed for intelligent gift recommendations.
+    Uses the CONFIG dictionary at the top of the file for configuration.
     """
     print("Welcome to the Gift Finder App!")
     print("Find the perfect gift with intelligent web browsing")
+    print(f"\nSearching for gifts for: {CONFIG['recipient']}")
+    print(f"Profile: {CONFIG['description']}\n")
 
-    # Use InquirerPy for interactive CLI prompts with validation
-    def get_recipient():
-        return inquirer.select(
-            message="Who are you buying a gift for?",
-            choices=["Mum", "Dad", "Sister", "Brother", "Friend", "Boss"],
-        ).execute()
-    
-    recipient = await asyncio.to_thread(get_recipient)
-
-    def validate_description(text):
-        if len(text.strip()) < 5:
-            raise ValueError("Please provide at least 5 characters for a better gift recommendation.")
-        return True
-
-    def get_description():
-        return inquirer.text(
-            message="Please provide a short description about them (interests, hobbies, age, etc.):",
-            validate=validate_description,
-        ).execute()
-    
-    description = await asyncio.to_thread(get_description)
+    # Validate description length
+    if len(CONFIG["description"].strip()) < 5:
+        raise ValueError("Description must be at least 5 characters long. Please update the CONFIG at the top of the file.")
 
     return GiftFinderAnswers(
-        recipient=recipient,
-        description=description
+        recipient=CONFIG["recipient"],
+        description=CONFIG["description"]
     )
 
 
