@@ -99,9 +99,9 @@ async def main():
         env="BROWSERBASE",  # Use Browserbase's cloud infrastructure instead of local browsers
         api_key=os.environ.get("BROWSERBASE_API_KEY"),
         project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_name="google/gemini-2.0-flash-exp",  # AI model for interpreting natural language actions
+        model_name="google/gemini-2.5-flash-preview-05-20",  # AI model for interpreting natural language actions
         model_api_key=os.environ.get("GOOGLE_API_KEY"),
-        verbose=0,
+        verbose=2,
         # Logging levels: 0 = errors only, 1 = info, 2 = debug 
         # When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs
         # https://docs.stagehand.dev/configuration/logging
@@ -116,7 +116,9 @@ async def main():
             
             # Display live view URL for debugging and monitoring
             # Live view allows real-time observation of browser automation
-            print(f"Live View Link: https://www.browserbase.com/sessions/{stagehand.session_id}")
+            live_view_links = bb.sessions.debug(stagehand.session_id)
+            live_view_link = live_view_links.debuggerFullscreenUrl
+            print(f"🔍 Live View Link: {live_view_link}")
             
             # Navigate to Apple homepage with extended timeout for slow-loading sites
             print("Navigating to Apple.com...")
@@ -125,7 +127,7 @@ async def main():
             # Navigate to investor relations section using natural language actions
             # act() uses AI to interpret instructions and perform browser interactions
             print("Navigating to Investors section...")
-            await page.act("Click the 'Investors' button at the bottom of the page'")
+            await page.act("Click the 'Investors' button at the bottom of the page")
             await page.act("Scroll down to the Financial Data section of the page")
             await page.act("Under Quarterly Earnings Reports, click on '2025'")
             

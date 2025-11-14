@@ -67,7 +67,6 @@ async function main(): Promise<void> {
     // Initialize Stagehand with Browserbase for cloud-based browser automation
     const stagehand: Stagehand = new Stagehand({
         env: "BROWSERBASE",
-        model: "google/gemini-2.5-flash",
         verbose: 0,
         // 0 = errors only, 1 = info, 2 = debug 
         // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
