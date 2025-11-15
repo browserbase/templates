@@ -15,7 +15,7 @@
   Docs → https://docs.browserbase.com/features/session-live-view
 
 ## QUICKSTART
- 1) cd python/download-example
+ 1) cd python/download-financial-statements
  2) cp .env.example .env
  3) Add your Browserbase API key and Project ID to .env
  4) uvx --with browserbase --with python-dotenv stagehand main.py
