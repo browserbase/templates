@@ -15,7 +15,7 @@
   Docs → https://docs.browserbase.com/features/session-live-view
 
 ## QUICKSTART
- 1) cd download-example
+ 1) cd download-financial-statements
  2) npm install
  3) cp .env.example .env
  4) Add your Browserbase API key and Project ID to .env
