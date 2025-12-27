@@ -1,0 +1,18 @@
+{
+  "name": "basic-screenshots-template",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@browserbasehq/sdk": "latest",
+    "@browserbasehq/stagehand": "latest",
+    "dotenv": "^16.4.7",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.0.0"
+  }
+}
