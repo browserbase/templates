@@ -1,0 +1,24 @@
+{
+  "name": "reducto-browserbase",
+  "version": "1.0.0",
+  "description": "Download PDFs from websites using Browserbase and extract structured data with Reducto",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts",
+    "dev": "tsx watch index.ts"
+  },
+  "dependencies": {
+    "@browserbasehq/sdk": "^1.0.0",
+    "@browserbasehq/stagehand": "^3.0.0",
+    "adm-zip": "^0.5.16",
+    "dotenv": "^16.4.5",
+    "reductoai": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}
+
