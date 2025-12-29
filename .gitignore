@@ -2,6 +2,7 @@
 .env
 cursorrules.md
 .cursorrules
+.cursor
 
 # Dependencies
 node_modules/
