@@ -1,0 +1,22 @@
+{
+  "name": "manual-mfa-with-contexts",
+  "version": "1.0.0",
+  "description": "Stagehand + Browserbase: Manual MFA with Contexts",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts",
+    "dev": "tsx watch index.ts"
+  },
+  "dependencies": {
+    "@browserbasehq/sdk": "^1.0.0",
+    "@browserbasehq/stagehand": "^3.0.0",
+    "dotenv": "^16.4.5",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.16.0",
+    "typescript": "^5.5.0"
+  }
+}

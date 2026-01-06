@@ -1,0 +1,6 @@
+browserbase
+python-dotenv
+pydantic
+stagehand
+requests
+
