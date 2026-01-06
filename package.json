@@ -11,7 +11,9 @@
     "lint:fix": "eslint \"**/*.{ts,tsx,js,jsx}\" --fix",
     "lint:python": "uvx ruff check python/",
     "lint:python:fix": "uvx ruff check --fix python/",
-    "format:python": "uvx ruff format python/"
+    "format:python": "uvx ruff format python/",
+    "format:python:check": "uvx ruff format --check python/",
+    "check": "npm run format:check && npm run lint && npm run lint:python && npm run format:python:check"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.50.1",
