@@ -195,15 +195,16 @@ async function checkAndExtractCourts(stagehand: Stagehand, timeOfDay: string): P
         },
         index: number,
       ) => {
-      console.log(`${index + 1}. ${court.name}`);
-      console.log(`   Opening Times: ${court.openingTimes}`);
-      console.log(`   Location: ${court.location}`);
-      console.log(`   Availability: ${court.availability}`);
-      if (court.duration) {
-        console.log(`   Duration: ${court.duration} minutes`);
-      }
-      console.log("");
-    });
+        console.log(`${index + 1}. ${court.name}`);
+        console.log(`   Opening Times: ${court.openingTimes}`);
+        console.log(`   Location: ${court.location}`);
+        console.log(`   Availability: ${court.availability}`);
+        if (court.duration) {
+          console.log(`   Duration: ${court.duration} minutes`);
+        }
+        console.log("");
+      },
+    );
   } else {
     console.log("No court data available to display");
   }

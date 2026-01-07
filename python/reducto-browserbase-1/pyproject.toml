@@ -1,0 +1,16 @@
+[project]
+name = "reducto-browserbase"
+version = "1.0.0"
+description = "Download PDFs from websites using Browserbase and extract structured data with Reducto"
+requires-python = ">=3.10"
+dependencies = [
+    "browserbase>=1.0.0",
+    "python-dotenv>=1.0.0",
+    "reductoai>=1.0.0",
+    "stagehand-ai>=2.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+

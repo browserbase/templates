@@ -170,7 +170,9 @@ async function processCompany(companyName: string): Promise<CompanyData> {
           console.log(`[${companyName}] Address found in Terms of Service: ${address}`);
         }
       } catch (error) {
-        console.log(`[${companyName}] Could not extract address from Terms of Service page: ${error}`);
+        console.log(
+          `[${companyName}] Could not extract address from Terms of Service page: ${error}`,
+        );
       }
     }
 
@@ -197,7 +199,9 @@ async function processCompany(companyName: string): Promise<CompanyData> {
           console.log(`[${companyName}] Address found in Privacy Policy: ${address}`);
         }
       } catch (error) {
-        console.log(`[${companyName}] Could not extract address from Privacy Policy page: ${error}`);
+        console.log(
+          `[${companyName}] Could not extract address from Privacy Policy page: ${error}`,
+        );
       }
     }
 

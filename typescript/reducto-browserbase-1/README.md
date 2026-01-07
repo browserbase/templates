@@ -43,25 +43,13 @@
 - Outputs extracted financial data as formatted JSON
 - Closes session cleanly
 
-## COMMON PITFALLS
-
-- **Missing credentials**: Verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and REDUCTOAI_API_KEY
-- **Download timeout**: Files sync in real-time; larger PDFs may take longer. Increase `retryForSeconds` parameter if needed (default 45s)
-- **Empty ZIP file**: Browserbase returns a minimal ZIP (22 bytes) when no downloads are ready. The polling logic checks `byteLength > 0` to detect when files are available
-- **PDF extraction fails**: Ensure the downloaded ZIP contains PDF files. Some sites may serve different file types or require additional navigation steps
-- **Reducto extraction returns empty**: Verify your schema matches the document structure. Financial statements may use different table formats or terminology
-- **Session closed errors**: The polling function handles session closure gracefully, but ensure downloads complete before closing the session
-- **Schema mismatch**: Reducto extract requires exact schema definitions. Review the PDF structure and adjust field names/descriptions if extraction fails.
-
 ## NEXT STEPS
 
 • **Parameterize extraction**: Accept different schema definitions or document types as configuration to extract various financial metrics or data structures.
 • **Batch processing**: Process multiple quarters or companies by looping through different navigation paths and extracting data for each.
-• **Error recovery**: Add retry logic for Reducto extraction failures and implement fallback strategies if schema doesn't match document structure.
-• **Data validation**: Add Zod schema validation on extracted data to ensure quality before storing or processing further.
 • **Multi-document support**: Handle ZIP archives with multiple PDFs and extract data from each, aggregating results into a unified dataset.
 • **Optimize extraction**: Use Reducto's agentic mode selectively (only for complex tables or low-quality scans) to reduce latency and credit usage. Enable `scope: "table"` only when tables are misaligned or have merged cells.
-  Docs → https://docs.reducto.ai/parse/best-practices#2-enable-agentic-mode-only-when-needed
+Docs → https://docs.reducto.ai/parse/best-practices#2-enable-agentic-mode-only-when-needed
 
 ## HELPFUL RESOURCES
 
@@ -73,4 +61,3 @@
 🔧 Templates: https://www.browserbase.com/templates
 📧 Need help? support@browserbase.com
 💬 Discord: http://stagehand.dev/discord
-
