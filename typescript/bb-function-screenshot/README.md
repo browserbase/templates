@@ -75,7 +75,7 @@
 
 Start the dev server:
 ```bash
-pnpm dev
+pnpm bb dev index.ts
 ```
 
 Test with curl:
@@ -101,7 +101,7 @@ curl -X POST http://127.0.0.1:14113/v1/functions/screenshot/invoke \
 
 Deploy your function:
 ```bash
-pnpm publish
+pnpm dev publish index.ts
 ```
 
 This returns a function ID (e.g., `func_abc123xyz`). Invoke it via API:

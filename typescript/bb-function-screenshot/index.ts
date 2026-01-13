@@ -16,10 +16,9 @@ interface ScreenshotParams {
  * Screenshot Function - Captures a screenshot of any web page
  *
  * This Browserbase Function takes a URL and returns a base64-encoded screenshot
- * with customizable viewport size, full-page capture, and wait time options.
+ * with customization options for full-page capture and wait time .
  *
  * Features:
- * - Customizable viewport dimensions
  * - Full-page screenshot support
  * - Configurable wait time for dynamic content
  * - Returns base64-encoded PNG for easy integration
