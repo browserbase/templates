@@ -8,6 +8,7 @@ cursorrules.md
 node_modules/
 .pnp
 .pnp.js
+.pnpm-store/
 
 # Python
 __pycache__/
