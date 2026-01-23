@@ -2,42 +2,14 @@
 
 A comprehensive collection of ready-to-use automation templates demonstrating the power of Stagehand and Browserbase for web automation, data extraction, and AI-powered browser interactions.
 
+> All templates also live on [browserbase.com/templates](https://www.browserbase.com/templates)
+
 ## 🚀 Quick Start
 
 1. **Choose your language**: TypeScript or Python
 2. **Browse available templates** in the respective language folder
 3. **Read the template's README** for detailed setup instructions and use cases
 4. **Start automating!**
-
-## 📁 Available Templates
-
-### TypeScript Templates (`/typescript/`)
-
-- **context** - AI-powered context switching and page analysis
-- **CUA** - Computer Use Agent for autonomous web browsing and decision-making
-- **formFilling** - Automated form submission and data entry
-- **giftfinder** - AI-powered product discovery and recommendation
-- **pickleball** - Court booking automation with user interaction
-- **proxies** - Proxy testing and geolocation verification
-- **realEstateCheck** - License verification and data extraction
-
-### Python Templates (`/python/`)
-
-- **context** - AI-powered context switching and page analysis
-- **CUA** - Computer Use Agent for autonomous web browsing and decision-making
-- **formFilling** - Automated form submission and data entry
-- **giftfinder** - AI-powered product discovery and recommendation
-- **pickleball** - Court booking automation with user interaction
-- **proxies** - Proxy testing and geolocation verification
-- **realEstateCheck** - License verification and data extraction
-
-> **📖 Each template includes a comprehensive README with:**
->
-> - Detailed setup instructions
-> - Required environment variables
-> - Use cases and examples
-> - Troubleshooting guides
-> - Dependencies and installation steps
 
 ## 🔧 Getting Started
 
@@ -54,7 +26,6 @@ A comprehensive collection of ready-to-use automation templates demonstrating th
 
 - **Stagehand Docs**: https://docs.stagehand.dev/v3/first-steps/introduction
 - **Browserbase Docs**: https://docs.browserbase.com
-- **API Reference**: https://docs.browserbase.com/api
 
 ### Support
 
@@ -88,13 +59,6 @@ We welcome contributions! Here's how you can help:
 ## 📄 License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
-
-## 🙏 Acknowledgments
-
-- **Stagehand Team**: For the amazing automation framework
-- **Browserbase Team**: For reliable cloud browser infrastructure
-- **Community Contributors**: For templates and improvements
-- **Open Source Projects**: For the tools and libraries we build upon
 
 ---
 

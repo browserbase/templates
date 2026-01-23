@@ -15,12 +15,14 @@
 
 ## QUICKSTART
 
-1. cd manual-MFA-with-contexts
-2. pnpm install
-3. cp .env.example .env
-4. Add your Browserbase API key, Project ID, GitHub username, and password to .env
-5. Ensure 2FA is enabled on your GitHub test account (Settings → Password and authentication → Enable two-factor authentication)
-6. pnpm start
+1. cd manual-mfa-with-contexts
+2. uv venv venv
+3. source venv/bin/activate # On Windows: venv\Scripts\activate
+4. uvx install stagehand browserbase python-dotenv pydantic requests
+5. cp .env.example .env
+6. Add your Browserbase API key, Project ID, GitHub username, and password to .env
+7. Ensure 2FA is enabled on your GitHub test account (Settings → Password and authentication → Enable two-factor authentication)
+8. python main.py
 
 ## EXPECTED OUTPUT
 
@@ -35,11 +37,11 @@
 
 ## COMMON PITFALLS
 
-- "Cannot find module 'dotenv'": ensure pnpm install ran successfully
+- "ModuleNotFoundError": ensure all dependencies are installed via uvx install
 - Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, GITHUB_USERNAME, and GITHUB_PASSWORD
 - MFA timeout: ensure you complete MFA within 2 minutes, or increase timeout value
 - 2FA not enabled: GitHub account must have 2FA enabled for this demo to work
-- Context not persisting: verify context.persist is set to true in browserSettings
+- Context not persisting: verify context.persist is set to true in browser_settings
 
 ## USE CASES
 
