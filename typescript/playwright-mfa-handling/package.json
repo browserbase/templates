@@ -1,0 +1,31 @@
+{
+  "name": "playwright-mfa-handling-template",
+  "version": "1.0.0",
+  "description": "Playwright + Browserbase: MFA Handling - TOTP Automation",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts",
+    "dev": "tsx watch index.ts"
+  },
+  "keywords": [
+    "playwright",
+    "browserbase",
+    "automation",
+    "mfa",
+    "totp",
+    "2fa"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@browserbasehq/sdk": "^2.0.0",
+    "dotenv": "^16.0.0",
+    "playwright-core": "^1.40.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.0"
+  }
+}

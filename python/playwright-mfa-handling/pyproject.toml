@@ -1,0 +1,33 @@
+[project]
+name = "playwright-mfa-handling"
+version = "0.1.0"
+description = "Playwright + Browserbase: MFA Handling - TOTP Automation"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "playwright",
+    "browserbase",
+    "python-dotenv",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
