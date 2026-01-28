@@ -27,4 +27,3 @@ export default tseslint.config(
     ignores: ["node_modules/**", "dist/**", "build/**", "*.config.js"],
   },
 );
-

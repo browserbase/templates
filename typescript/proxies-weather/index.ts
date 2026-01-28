@@ -64,7 +64,7 @@ async function getWeatherForLocation(geolocation: GeolocationConfig): Promise<We
     console.log(`Page loaded for ${cityName}`);
 
     // Wait a bit for weather data to render
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
 
     // Extract structured temperature data using Stagehand and Zod schema for type safety
     console.log(`Extracting temperature data for ${cityName}...`);

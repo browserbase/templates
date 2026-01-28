@@ -21,13 +21,12 @@ const instruction = `Search for the next visible solar eclipse in North America 
 // ============================================================================
 
 async function main() {
-
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
     // model: "google/gemini-2.5-pro", // this is the model Stagehand uses for act, observe, extract (not agent)
     verbose: 1,
-    // 0 = errors only, 1 = info, 2 = debug 
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.) 
+    // 0 = errors only, 1 = info, 2 = debug
+    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
     // https://docs.stagehand.dev/configuration/logging
     browserbaseSessionCreateParams: {
       projectId: process.env.BROWSERBASE_PROJECT_ID!,
@@ -37,8 +36,8 @@ async function main() {
         blockAds: true,
         viewport: {
           width: 1288,
-          height: 711
-        }
+          height: 711,
+        },
       },
     },
   });
@@ -47,31 +46,33 @@ async function main() {
     // Initialize browser session to start automation.
     await stagehand.init();
     console.log("Stagehand initialized successfully!");
-    console.log(`Live View Link: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`);
+    console.log(
+      `Live View Link: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`,
+    );
 
     const page = stagehand.context.pages()[0];
 
     // Navigate to search engine with extended timeout for slow-loading sites.
     await page.goto("https://www.google.com/", {
-      waitUntil: 'domcontentloaded',
+      waitUntil: "domcontentloaded",
     });
 
     // Create agent with Gemini 3 Flash for autonomous web browsing.
     const agent = stagehand.agent({
       model: {
         modelName: "google/gemini-3-flash-preview",
-        apiKey: process.env.GOOGLE_API_KEY
+        apiKey: process.env.GOOGLE_API_KEY,
       },
       systemPrompt: `You are a helpful assistant that can use a web browser.
       You are currently on the following page: ${page.url()}.
-      Do not ask follow up questions, the user will trust your judgement. If you are getting blocked on google, try another search engine.`
+      Do not ask follow up questions, the user will trust your judgement. If you are getting blocked on google, try another search engine.`,
     });
 
     console.log("Executing instruction:", instruction);
     const result = await agent.execute({
       instruction: instruction,
       maxSteps: 30,
-      highlightCursor: true
+      highlightCursor: true,
     });
 
     if (result.success === true) {
@@ -80,7 +81,6 @@ async function main() {
     } else {
       console.log("Task failed or was incomplete");
     }
-
   } catch (error) {
     console.error("Error executing Gemini 3 Flash agent:", error);
   } finally {
