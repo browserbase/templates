@@ -1,0 +1,22 @@
+{
+  "name": "exa-browserbase",
+  "version": "1.0.0",
+  "description": "Stagehand + Browserbase + Exa: AI-Powered Job Search and Application",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts"
+  },
+  "dependencies": {
+    "@browserbasehq/stagehand": "latest",
+    "dotenv": "latest",
+    "exa-js": "latest",
+    "playwright-core": "latest",
+    "zod": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "tsx": "latest",
+    "typescript": "latest"
+  }
+}
