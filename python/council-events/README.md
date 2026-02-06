@@ -18,11 +18,10 @@
 ## QUICKSTART
 
 1.  cd council-events
-2.  uv venv venv
-3.  source venv/bin/activate # On Windows: venv\Scripts\activate
-4.  pip install stagehand python-dotenv pydantic
-5.  cp .env.example .env # Add your Browserbase API key, Project ID, and OpenAI API key to .env
-6.  python main.py
+2.  uv venv && source .venv/bin/activate # On Windows: .venv\Scripts\activate
+3.  pip install stagehand python-dotenv pydantic
+4.  cp .env.example .env # Add your Browserbase API key, Project ID, and OpenAI API key to .env
+5.  python main.py
 
 ## EXPECTED OUTPUT
 

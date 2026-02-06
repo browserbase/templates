@@ -1,15 +1,15 @@
 # Manual MFA with Browserbase Contexts - See README.md for full documentation
 
-import asyncio
 import os
 import time
 
 import requests
 from browserbase import Browserbase
 from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 
-from stagehand import Stagehand, StagehandConfig
+from stagehand import Stagehand
 
 # Load environment variables
 load_dotenv()
@@ -17,7 +17,7 @@ load_dotenv()
 bb = Browserbase(api_key=os.environ.get("BROWSERBASE_API_KEY"))
 
 
-async def create_session_with_context():
+def create_session_with_context():
     """First session: Create context and login (with MFA)"""
     print("Creating new Browserbase context...")
 
@@ -26,87 +26,90 @@ async def create_session_with_context():
     print(f"Context created: {context.id}")
     print("First session: Performing login with MFA...")
 
-    config = StagehandConfig(
-        env="BROWSERBASE",
-        api_key=os.environ.get("BROWSERBASE_API_KEY"),
+    # Create session with context
+    session = bb.sessions.create(
         project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_name="google/gemini-2.5-flash",
-        model_api_key=os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY"),
-        browserbase_session_create_params={
-            "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
-            "browser_settings": {
-                "context": {
-                    "id": context.id,
-                    "persist": True,  # Save authentication state including MFA
-                }
-            },
+        browser_settings={
+            "context": {
+                "id": context.id,
+                "persist": True,
+            }
         },
-        verbose=0,  # 0 = errors only, 1 = info, 2 = debug
-        # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-        # https://docs.stagehand.dev/configuration/logging
+    )
+    session_id = session.id
+
+    # Initialize Stagehand with Browserbase for cloud-based browser automation
+    client = Stagehand(
+        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
+        model_api_key=os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY"),
     )
 
-    async with Stagehand(config) as stagehand:
-        session_id = None
-        if hasattr(stagehand, "session_id"):
-            session_id = stagehand.session_id
-        elif hasattr(stagehand, "browserbase_session_id"):
-            session_id = stagehand.browserbase_session_id
+    print(f"Watch live: https://browserbase.com/sessions/{session_id}")
 
-        if session_id:
-            print(f"Watch live: https://browserbase.com/sessions/{session_id}")
-
-        page = stagehand.page
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.connect_over_cdp(
+            f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
+        )
+        ctx = browser.contexts[0]
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
 
         # Navigate to GitHub login
         print("Navigating to GitHub login...")
-        await page.goto("https://github.com/login", wait_until="domcontentloaded")
+        page.goto("https://github.com/login", wait_until="domcontentloaded")
 
         # Fill in credentials
         print("Entering username...")
-        await page.act(f"Type '{os.environ.get('GITHUB_USERNAME')}' into the username field")
+        client.sessions.act(
+            id=session_id,
+            input=f"Type '{os.environ.get('GITHUB_USERNAME')}' into the username field",
+        )
 
         print("Entering password...")
-        await page.act(f"Type '{os.environ.get('GITHUB_PASSWORD')}' into the password field")
+        client.sessions.act(
+            id=session_id,
+            input=f"Type '{os.environ.get('GITHUB_PASSWORD')}' into the password field",
+        )
 
         print("Clicking Sign in...")
-        await page.act("Click the Sign in button")
+        client.sessions.act(
+            id=session_id,
+            input="Click the Sign in button",
+        )
 
-        await page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("networkidle")
 
         # Check if MFA is required
         class MFARequired(BaseModel):
             mfa_required: bool = Field(..., description="Whether MFA is required")
 
-        mfa_check = await page.extract(
+        mfa_response = client.sessions.extract(
+            id=session_id,
             instruction="Is there a two-factor authentication or verification code prompt on the page?",
-            schema=MFARequired,
+            schema=MFARequired.model_json_schema(),
         )
+        mfa_check = mfa_response.data.result
 
-        if mfa_check.mfa_required:
+        if mfa_check.get("mfa_required"):
             print("MFA DETECTED!")
             print("═══════════════════════════════════════════════════════════")
             print("PAUSED: Please complete MFA in the browser")
             print("═══════════════════════════════════════════════════════════")
-            if session_id:
-                print(
-                    f"1. Open the Browserbase session in your browser: https://browserbase.com/sessions/{session_id}"
-                )
-            else:
-                print("1. Open the Browserbase session in your browser")
+            print(
+                f"1. Open the Browserbase session in your browser: https://browserbase.com/sessions/{session_id}"
+            )
             print("2. Enter your 2FA code from authenticator app")
             print("3. Click 'Verify' or submit")
             print("4. Wait for login to complete")
             print("\nThe script will wait for you to complete MFA...\n")
 
-            # Wait for MFA completion (poll until we're no longer on login page)
+            # Wait for MFA completion
             login_complete = False
             start_time = time.time()
             timeout = 120  # 2 minutes
 
             while not login_complete and (time.time() - start_time) < timeout:
-                await asyncio.sleep(3)  # Check every 3 seconds
-
+                time.sleep(3)
                 current_url = page.url
                 if "/login" not in current_url and "/sessions/two-factor" not in current_url:
                     login_complete = True
@@ -123,73 +126,77 @@ async def create_session_with_context():
         print("   - MFA trust/remember device state")
         print("   - All authentication data\n")
 
+        browser.close()
+
+    client.sessions.end(id=session_id)
     return context.id
 
 
-async def reuse_context(context_id: str):
+def reuse_context(context_id: str):
     """Second session: Reuse context - NO MFA needed!"""
     print(f"Second session: Reusing context {context_id}")
     print("   (No login, no MFA required - auth state persisted)\n")
 
-    config = StagehandConfig(
-        env="BROWSERBASE",
-        api_key=os.environ.get("BROWSERBASE_API_KEY"),
+    # Create session with existing context
+    session = bb.sessions.create(
         project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_name="google/gemini-2.5-flash",
-        model_api_key=os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY"),
-        browserbase_session_create_params={
-            "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
-            "browser_settings": {
-                "context": {
-                    "id": context_id,
-                    "persist": True,
-                }
-            },
+        browser_settings={
+            "context": {
+                "id": context_id,
+                "persist": True,
+            }
         },
-        verbose=0,  # 0 = errors only, 1 = info, 2 = debug
-        # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-        # https://docs.stagehand.dev/configuration/logging
+    )
+    session_id = session.id
+
+    # Initialize Stagehand with Browserbase for cloud-based browser automation
+    client = Stagehand(
+        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
+        model_api_key=os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY"),
     )
 
-    async with Stagehand(config) as stagehand:
-        session_id = None
-        if hasattr(stagehand, "session_id"):
-            session_id = stagehand.session_id
-        elif hasattr(stagehand, "browserbase_session_id"):
-            session_id = stagehand.browserbase_session_id
+    print(f"Watch live: https://browserbase.com/sessions/{session_id}")
 
-        if session_id:
-            print(f"Watch live: https://browserbase.com/sessions/{session_id}")
-
-        page = stagehand.page
+    with sync_playwright() as playwright:
+        browser = playwright.chromium.connect_over_cdp(
+            f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
+        )
+        ctx = browser.contexts[0]
+        page = ctx.pages[0] if ctx.pages else ctx.new_page()
 
         # Navigate directly to GitHub (should already be logged in)
         print("Navigating to GitHub...")
-        await page.goto("https://github.com", wait_until="domcontentloaded")
-        await page.wait_for_load_state("networkidle")
+        page.goto("https://github.com", wait_until="domcontentloaded")
+        page.wait_for_load_state("networkidle")
 
         # Check if we're logged in
         class Username(BaseModel):
             username: str = Field(..., description="The logged-in username")
 
-        username_result = await page.extract(
+        username_response = client.sessions.extract(
+            id=session_id,
             instruction="Extract the logged-in username or check if we're authenticated",
-            schema=Username,
+            schema=Username.model_json_schema(),
         )
+        username_result = username_response.data.result
 
         print("\nSUCCESS! Already logged in without MFA!")
-        print(f"   Username: {username_result.username}")
+        print(f"   Username: {username_result.get('username')}")
         print("\nThis is the power of Browserbase Contexts:")
         print("   - First session: User completes MFA once")
         print("   - Context saves trusted device state")
         print("   - All future sessions: No MFA required\n")
 
+        browser.close()
 
-async def delete_context(context_id: str):
+    client.sessions.end(id=session_id)
+
+
+def delete_context(context_id: str):
     """Clean up context"""
     print(f"Deleting context: {context_id}")
     try:
-        # Delete via API (SDK doesn't have delete method)
         response = requests.delete(
             f"https://api.browserbase.com/v1/contexts/{context_id}",
             headers={
@@ -207,10 +214,9 @@ async def delete_context(context_id: str):
         print("   Context will auto-expire after 30 days\n")
 
 
-async def main():
+def main():
     print("Starting Browserbase Context MFA Persistence Demo...")
 
-    # Check environment variables
     if not os.environ.get("BROWSERBASE_API_KEY") or not os.environ.get("BROWSERBASE_PROJECT_ID"):
         print("\nError: Missing Browserbase credentials")
         print("   Set BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID in .env")
@@ -231,17 +237,13 @@ async def main():
         print("   2. Second session: No login, no MFA needed")
         print("   3. Clean up context\n")
 
-        # First session: Create context and login with MFA
-        context_id = await create_session_with_context()
+        context_id = create_session_with_context()
 
         print("Waiting 5 seconds before reusing context...\n")
-        await asyncio.sleep(5)
+        time.sleep(5)
 
-        # Second session: Reuse context (NO MFA!)
-        await reuse_context(context_id)
-
-        # Clean up
-        await delete_context(context_id)
+        reuse_context(context_id)
+        delete_context(context_id)
 
         print("═══════════════════════════════════════════════════════════")
         print("Key Takeaway:")
@@ -261,11 +263,11 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except Exception as err:
         print(f"Application error: {err}")
         print("Common issues:")
         print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
         print("  - Verify GOOGLE_GENERATIVE_AI_API_KEY is set in environment")
-        print("Docs: https://docs.stagehand.dev/v2/first-steps/introduction")
+        print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
         exit(1)

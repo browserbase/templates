@@ -1,16 +1,19 @@
 # Stagehand + Browserbase: AI-Powered Gift Finder - See README.md for full documentation
 
-import asyncio
+import json
 import os
+import time
 
 from dotenv import load_dotenv
 from openai import OpenAI
+from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field, HttpUrl
 
-from stagehand import Stagehand, StagehandConfig
+from stagehand import Stagehand
 
 # Load environment variables
 load_dotenv()
+
 
 # ============= CONFIGURATION =============
 # Update these values to customize your gift search
@@ -41,10 +44,28 @@ class SearchResult(BaseModel):
     products: list[Product]
 
 
-client = OpenAI()
+class ProductItem(BaseModel):
+    title: str = Field(..., description="the title/name of the product")
+    url: HttpUrl = Field(..., description="the full URL link to the product page")
+    price: str = Field(..., description="the price of the product (include currency symbol)")
+    rating: str = Field(
+        ...,
+        description="the star rating or number of reviews (e.g., '4.5 stars' or '123 reviews')",
+    )
 
 
-async def generate_search_queries(recipient: str, description: str) -> list[str]:
+class ProductsData(BaseModel):
+    products: list[ProductItem] = Field(
+        ...,
+        max_length=3,
+        description="array of the first 3 products from search results",
+    )
+
+
+openai_client = OpenAI()
+
+
+def generate_search_queries(recipient: str, description: str) -> list[str]:
     """
     Generate intelligent search queries based on recipient profile.
 
@@ -55,8 +76,7 @@ async def generate_search_queries(recipient: str, description: str) -> list[str]
 
     # Use AI to generate search terms based on recipient profile
     # This avoids generic searches and focuses on thoughtful, complementary gifts
-    response = await asyncio.to_thread(
-        client.chat.completions.create,
+    response = openai_client.chat.completions.create(
         model="gpt-4.1",
         messages=[
             {
@@ -89,7 +109,7 @@ Return ONLY the search terms, one per line, no dashes, bullets, or numbers. Just
     return queries[:3]
 
 
-async def score_products(
+def score_products(
     products: list[Product],
     recipient: str,
     description: str,
@@ -119,8 +139,7 @@ async def score_products(
 
     print(f"Scoring {len(all_products)} products...")
 
-    response = await asyncio.to_thread(
-        client.chat.completions.create,
+    response = openai_client.chat.completions.create(
         model="gpt-4.1",
         messages=[
             {
@@ -180,8 +199,6 @@ IMPORTANT:
         )
 
         # Parse JSON response from AI scoring
-        import json
-
         scores_data = json.loads(response_content)
 
         # Map AI scores back to products using index matching
@@ -211,7 +228,7 @@ IMPORTANT:
         return all_products
 
 
-async def get_user_input() -> GiftFinderAnswers:
+def get_user_input() -> GiftFinderAnswers:
     """
     Collect user input for gift recipient and description.
 
@@ -231,21 +248,129 @@ async def get_user_input() -> GiftFinderAnswers:
     return GiftFinderAnswers(recipient=CONFIG["recipient"], description=CONFIG["description"])
 
 
-async def main() -> None:
+def run_single_search(query: str, session_index: int) -> SearchResult:
+    """Run a single search session for a given query."""
+    print(f'Starting search session {session_index + 1} for: "{query}"')
+
+    # Initialize Stagehand with Browserbase for cloud-based browser automation
+    client = Stagehand(
+        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
+        model_api_key=os.environ.get("OPENAI_API_KEY"),
+    )
+
+    # Start a new session
+    start_response = client.sessions.start(
+        model_name="openai/gpt-4.1",
+    )
+    session_id = start_response.data.session_id
+
+    try:
+        live_view_url = f"https://www.browserbase.com/sessions/{session_id}"
+        print(f"Session {session_index + 1} Live View: {live_view_url}")
+
+        # Connect to the browser via CDP
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(
+                f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
+            )
+            context = browser.contexts[0]
+            page = context.pages[0] if context.pages else context.new_page()
+
+            # Navigate to European gift site
+            print(f"Session {session_index + 1}: Navigating to Firebox.eu...")
+            page.goto("https://firebox.eu/")
+
+            # Perform search using natural language actions
+            print(f'Session {session_index + 1}: Searching for "{query}"...')
+            client.sessions.act(
+                id=session_id,
+                input=f"Type {query} into the search bar",
+            )
+            client.sessions.act(
+                id=session_id,
+                input="Click the search button",
+            )
+            time.sleep(1)
+
+            # Extract structured product data using inline schema (avoids $ref issues)
+            print(f"Session {session_index + 1}: Extracting product data...")
+
+            products_schema = {
+                "type": "object",
+                "properties": {
+                    "products": {
+                        "type": "array",
+                        "description": "array of the first 3 products from search results",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "title": {
+                                    "type": "string",
+                                    "description": "the title/name of the product",
+                                },
+                                "url": {
+                                    "type": "string",
+                                    "description": "the full URL link to the product page",
+                                },
+                                "price": {
+                                    "type": "string",
+                                    "description": "the price of the product (include currency symbol)",
+                                },
+                                "rating": {
+                                    "type": "string",
+                                    "description": "the star rating or number of reviews",
+                                },
+                            },
+                            "required": ["title", "url", "price", "rating"],
+                        },
+                    }
+                },
+                "required": ["products"],
+            }
+            extract_response = client.sessions.extract(
+                id=session_id,
+                instruction="Extract the first 3 products from the search results",
+                schema=products_schema,
+            )
+            products_data = extract_response.data.result
+
+            print(
+                f'Session {session_index + 1}: Found {len(products_data.get("products", []))} products for "{query}"'
+            )
+
+            # Convert to Product objects
+            products = [
+                Product(title=p["title"], url=str(p["url"]), price=p["price"], rating=p["rating"])
+                for p in products_data.get("products", [])
+            ]
+
+            browser.close()
+
+        client.sessions.end(id=session_id)
+        return SearchResult(query=query, session_index=session_index + 1, products=products)
+
+    except Exception as error:
+        print(f"Session {session_index + 1} failed: {error}")
+        client.sessions.end(id=session_id)
+        return SearchResult(query=query, session_index=session_index + 1, products=[])
+
+
+def main() -> None:
     """
     Main application entry point.
 
     Orchestrates the entire gift finding process:
     1. Collects user input
     2. Generates intelligent search queries
-    3. Runs concurrent browser searches
+    3. Runs browser searches sequentially
     4. Scores and ranks products with AI
     5. Displays top recommendations
     """
     print("Starting Gift Finder Application...")
 
     # Step 1: Collect user input
-    user_input = await get_user_input()
+    user_input = get_user_input()
     recipient = user_input.recipient
     description = user_input.description
     print(f"User input received: {recipient} - {description}")
@@ -253,7 +378,7 @@ async def main() -> None:
     # Step 2: Generate search queries using AI
     print("\nGenerating intelligent search queries...")
     try:
-        search_queries = await generate_search_queries(recipient, description)
+        search_queries = generate_search_queries(recipient, description)
 
         print("\nGenerated Search Queries:")
         for index, query in enumerate(search_queries):
@@ -265,125 +390,17 @@ async def main() -> None:
         search_queries = ["gifts", "accessories", "items"]
         print("Using fallback search queries")
 
-    # Step 3: Start concurrent browser searches
-    print("\nStarting concurrent browser searches...")
-
-    async def run_single_search(query: str, session_index: int) -> SearchResult:
-        print(f'Starting search session {session_index + 1} for: "{query}"')
-
-        # Create separate Stagehand instance for each search to run concurrently
-        # Each session searches independently to maximize speed and parallel processing
-        config = StagehandConfig(
-            env="BROWSERBASE",
-            api_key=os.environ.get("BROWSERBASE_API_KEY"),
-            project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-            verbose=1,  # Silent logging to avoid cluttering output
-            # Logging levels: 0 = errors only, 1 = info, 2 = debug
-            # When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs
-            # https://docs.stagehand.dev/configuration/logging
-            model_name="openai/gpt-4.1",
-            model_api_key=os.environ.get("OPENAI_API_KEY"),
-            browserbase_session_create_params={
-                "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
-                # Proxies require Developer Plan or higher - uncomment if you have a Developer Plan or higher
-                # "proxies": [
-                #     {
-                #         "type": "browserbase",
-                #         "geolocation": {
-                #             "city": "LONDON",
-                #             "country": "GB"
-                #         }
-                #     }
-                # ],
-                "region": "us-east-1",
-                "timeout": 900,
-                "browser_settings": {
-                    "viewport": {
-                        "width": 1920,
-                        "height": 1080,
-                    }
-                },
-            },
-        )
-
-        try:
-            # Initialize browser session with Stagehand
-            async with Stagehand(config) as session_stagehand:
-                session_page = session_stagehand.page
-
-                # Display live view URL for debugging and monitoring
-                session_id = None
-                if hasattr(session_stagehand, "session_id"):
-                    session_id = session_stagehand.session_id
-                elif hasattr(session_stagehand, "browserbase_session_id"):
-                    session_id = session_stagehand.browserbase_session_id
-
-                if session_id:
-                    live_view_url = f"https://www.browserbase.com/sessions/{session_id}"
-                    print(f"Session {session_index + 1} Live View: {live_view_url}")
-
-                # Navigate to European gift site
-                print(f"Session {session_index + 1}: Navigating to Firebox.eu...")
-                await session_page.goto("https://firebox.eu/")
-
-                # Perform search using natural language actions
-                print(f'Session {session_index + 1}: Searching for "{query}"...')
-                await session_page.act(f"Type {query} into the search bar")
-                await session_page.act("Click the search button")
-                await session_page.wait_for_timeout(1000)
-
-                # Extract structured product data using Pydantic schema for type safety
-                print(f"Session {session_index + 1}: Extracting product data...")
-
-                # Define Pydantic schemas for structured data extraction
-                class ProductItem(BaseModel):
-                    title: str = Field(..., description="the title/name of the product")
-                    url: HttpUrl = Field(..., description="the full URL link to the product page")
-                    price: str = Field(
-                        ..., description="the price of the product (include currency symbol)"
-                    )
-                    rating: str = Field(
-                        ...,
-                        description="the star rating or number of reviews (e.g., '4.5 stars' or '123 reviews')",
-                    )
-
-                class ProductsData(BaseModel):
-                    products: list[ProductItem] = Field(
-                        ...,
-                        max_length=3,
-                        description="array of the first 3 products from search results",
-                    )
-
-                products_data = await session_page.extract(
-                    "Extract the first 3 products from the search results", schema=ProductsData
-                )
-
-                print(
-                    f'Session {session_index + 1}: Found {len(products_data.products)} products for "{query}"'
-                )
-
-                # Convert to Product objects
-                products = [
-                    Product(title=p.title, url=str(p.url), price=p.price, rating=p.rating)
-                    for p in products_data.products
-                ]
-
-                return SearchResult(query=query, session_index=session_index + 1, products=products)
-        except Exception as error:
-            print(f"Session {session_index + 1} failed: {error}")
-
-            return SearchResult(query=query, session_index=session_index + 1, products=[])
-
-    # Create concurrent search tasks for all generated queries
-    search_promises = [
-        run_single_search(query, index) for index, query in enumerate(search_queries)
-    ]
+    # Step 3: Start browser searches sequentially
+    print("\nStarting browser searches...")
 
     print("\nBrowser Sessions Starting...")
     print("Live view links will appear as each session initializes")
 
-    # Execute all searches concurrently using asyncio.gather()
-    all_results = await asyncio.gather(*search_promises)
+    # Execute searches sequentially
+    all_results = []
+    for index, query in enumerate(search_queries):
+        result = run_single_search(query, index)
+        all_results.append(result)
 
     # Calculate total products found across all search sessions
     total_products = sum(len(result.products) for result in all_results)
@@ -398,7 +415,7 @@ async def main() -> None:
     if len(all_products_flat) > 0:
         try:
             # AI scores all products and ranks them by relevance to recipient
-            scored_products = await score_products(all_products_flat, recipient, description)
+            scored_products = score_products(all_products_flat, recipient, description)
             top3_products = scored_products[:3]
 
             print("\nTOP 3 RECOMMENDED GIFTS:")
@@ -433,7 +450,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except Exception as err:
         print(f"Application error: {err}")
         print("Check your environment variables")

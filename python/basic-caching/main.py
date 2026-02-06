@@ -1,15 +1,15 @@
 # Stagehand + Browserbase: Basic Caching - See README.md for full documentation
 
-import asyncio
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any
 
-import aiofiles
 from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
 
-from stagehand import Stagehand, StagehandConfig
+from stagehand import Stagehand
 
 # Load environment variables
 load_dotenv()
@@ -18,12 +18,11 @@ load_dotenv()
 CACHE_FILE = Path(__file__).parent / "cache.json"
 
 
-async def get_cache(key: str) -> dict[str, Any] | None:
+def get_cache(key: str) -> dict[str, Any] | None:
     """Get the cached value (None if it doesn't exist)"""
     try:
-        # Read cache file asynchronously for better performance
-        async with aiofiles.open(CACHE_FILE) as f:
-            cache_content = await f.read()
+        with open(CACHE_FILE) as f:
+            cache_content = f.read()
             parsed = json.loads(cache_content)
             return parsed.get(key)
     except (FileNotFoundError, json.JSONDecodeError):
@@ -31,12 +30,12 @@ async def get_cache(key: str) -> dict[str, Any] | None:
         return None
 
 
-async def set_cache(key: str, value: Any) -> None:
+def set_cache(key: str, value: Any) -> None:
     """Set the cache value - converts ObserveResult (Pydantic model) to dict if needed"""
     try:
         # Read existing cache file to preserve other cached entries
-        async with aiofiles.open(CACHE_FILE) as f:
-            cache_content = await f.read()
+        with open(CACHE_FILE) as f:
+            cache_content = f.read()
             parsed = json.loads(cache_content)
     except (FileNotFoundError, json.JSONDecodeError):
         # Cache file doesn't exist - start with empty dict
@@ -57,11 +56,11 @@ async def set_cache(key: str, value: Any) -> None:
         parsed[key] = dict(value) if hasattr(value, "__dict__") else value
 
     # Write updated cache back to file
-    async with aiofiles.open(CACHE_FILE, "w") as f:
-        await f.write(json.dumps(parsed, indent=2, default=str))
+    with open(CACHE_FILE, "w") as f:
+        f.write(json.dumps(parsed, indent=2, default=str))
 
 
-async def act_with_cache(page, key: str, prompt: str, self_heal: bool = False):
+def act_with_cache(client, session_id: str, key: str, prompt: str, self_heal: bool = False):
     """
     Check the cache, get the action, and run it.
     If self_heal is true, we'll attempt to self-heal if the action fails.
@@ -74,7 +73,7 @@ async def act_with_cache(page, key: str, prompt: str, self_heal: bool = False):
     """
     try:
         # Check if action is already cached
-        cache_exists = await get_cache(key)
+        cache_exists = get_cache(key)
 
         if cache_exists:
             # Use the already-retrieved cached action - no LLM inference needed
@@ -83,131 +82,143 @@ async def act_with_cache(page, key: str, prompt: str, self_heal: bool = False):
         else:
             # Get the observe result (the action) - this requires LLM inference
             print(f"  → Observing: {prompt}")
-            actions = await page.observe(prompt)
-            action = actions[0]
-
+            observe_response = client.sessions.observe(
+                id=session_id,
+                instruction=prompt,
+            )
+            action = observe_response.data.results[0] if observe_response.data.results else {}
             # Cache the action for future use
-            await set_cache(key, action)
+            set_cache(key, action)
             print(f"  ✓ Cached action for: {prompt}")
 
         # Run the action (no LLM inference when using cached action)
-        await page.act(action)
+        if isinstance(action, dict):
+            client.sessions.act(id=session_id, input=action)
+        else:
+            client.sessions.act(id=session_id, input=prompt)
     except Exception as e:
         print(f"  ✗ Error: {e}")
         # In self_heal mode, retry the action with a fresh LLM call
         if self_heal:
             print("  → Attempting to self-heal...")
-            await page.act(prompt)
+            client.sessions.act(id=session_id, input=prompt)
         else:
             raise e
 
 
-async def run_without_cache():
+def run_without_cache():
     """Run workflow without caching (baseline) - demonstrates normal LLM usage"""
     print("RUN 1: WITHOUT CACHING")
 
-    start_time = asyncio.get_event_loop().time()
+    start_time = time.time()
 
-    # Initialize Stagehand with Browserbase for cloud-based browser automation.
-    # Note: set verbose: 0 to prevent API keys from appearing in logs when handling sensitive data.
-    config = StagehandConfig(
-        env="BROWSERBASE",
-        api_key=os.getenv("BROWSERBASE_API_KEY"),
-        project_id=os.getenv("BROWSERBASE_PROJECT_ID"),
-        model_name="google/gemini-2.5-flash",
+    # Initialize Stagehand with Browserbase for cloud-based browser automation
+    client = Stagehand(
+        browserbase_api_key=os.getenv("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.getenv("BROWSERBASE_PROJECT_ID"),
         model_api_key=os.getenv("GOOGLE_API_KEY"),
-        verbose=0,  # 0 = errors only, 1 = info, 2 = debug
-        # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-        # https://docs.stagehand.dev/configuration/logging
-        browserbase_session_create_params={
-            "project_id": os.getenv("BROWSERBASE_PROJECT_ID"),
-        },
     )
 
-    # Use async context manager for automatic resource management
-    async with Stagehand(config) as stagehand:
-        page = stagehand.page
+    start_response = client.sessions.start(model_name="google/gemini-2.5-flash")
+    session_id = start_response.data.session_id
 
-        try:
+    try:
+        # Connect to the browser via CDP
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(
+                f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
+            )
+            context = browser.contexts[0]
+            page = context.pages[0] if context.pages else context.new_page()
+
             # Navigate to Stripe checkout demo page
             print("Navigating to Stripe checkout...")
-            await page.goto("https://checkout.stripe.dev/preview", wait_until="domcontentloaded")
+            page.goto("https://checkout.stripe.dev/preview", wait_until="domcontentloaded")
 
             # Each act() call requires LLM inference - no caching enabled
-            await page.act("Click on the View Demo button")
-            await page.act("Type 'test@example.com' into the email field")
-            await page.act("Type '4242424242424242' into the card number field")
-            await page.act("Type '12/34' into the expiration date field")
+            client.sessions.act(id=session_id, input="Click on the View Demo button")
+            client.sessions.act(id=session_id, input="Type 'test@example.com' into the email field")
+            client.sessions.act(
+                id=session_id, input="Type '4242424242424242' into the card number field"
+            )
+            client.sessions.act(id=session_id, input="Type '12/34' into the expiration date field")
 
-            elapsed = f"{(asyncio.get_event_loop().time() - start_time):.2f}"
+            elapsed = f"{(time.time() - start_time):.2f}"
 
             print(f"Total time: {elapsed}s")
             print("Cost: ~$0.01-0.05 (4 LLM calls)")
             print("API calls: 4 (one per action)\n")
 
-            return {"elapsed": elapsed, "llm_calls": 4}
-        except Exception as error:
-            print(f"Error: {error}")
-            raise
+            browser.close()
+
+        client.sessions.end(id=session_id)
+        return {"elapsed": elapsed, "llm_calls": 4}
+
+    except Exception as error:
+        print(f"Error: {error}")
+        client.sessions.end(id=session_id)
+        raise
 
 
-async def run_with_cache():
+def run_with_cache():
     """Run workflow with caching enabled - demonstrates cost and latency savings"""
     print("RUN 2: WITH CACHING\n")
 
-    start_time = asyncio.get_event_loop().time()
+    start_time = time.time()
 
-    # Initialize Stagehand with Browserbase for cloud-based browser automation.
-    config = StagehandConfig(
-        env="BROWSERBASE",
-        api_key=os.getenv("BROWSERBASE_API_KEY"),
-        project_id=os.getenv("BROWSERBASE_PROJECT_ID"),
-        model_name="google/gemini-2.5-flash",
+    # Initialize Stagehand with Browserbase for cloud-based browser automation
+    client = Stagehand(
+        browserbase_api_key=os.getenv("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.getenv("BROWSERBASE_PROJECT_ID"),
         model_api_key=os.getenv("GOOGLE_API_KEY"),
-        verbose=0,  # 0 = errors only, 1 = info, 2 = debug
-        # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-        # https://docs.stagehand.dev/configuration/logging
-        browserbase_session_create_params={
-            "project_id": os.getenv("BROWSERBASE_PROJECT_ID"),
-        },
     )
 
-    # Use async context manager for automatic resource management
-    async with Stagehand(config) as stagehand:
-        page = stagehand.page
+    start_response = client.sessions.start(model_name="google/gemini-2.5-flash")
+    session_id = start_response.data.session_id
 
-        try:
+    try:
+        # Connect to the browser via CDP
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(
+                f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
+            )
+            context = browser.contexts[0]
+            page = context.pages[0] if context.pages else context.new_page()
+
             # Navigate to Stripe checkout demo page
             print("Navigating to Stripe checkout...")
-            await page.goto("https://checkout.stripe.dev/preview", wait_until="domcontentloaded")
+            page.goto("https://checkout.stripe.dev/preview", wait_until="domcontentloaded")
 
             # Use cached actions - first run will observe and cache, subsequent runs use cache
-            await act_with_cache(
-                page, "Click on the View Demo button", "Click on the View Demo button"
+            act_with_cache(
+                client, session_id, "Click on the View Demo button", "Click on the View Demo button"
             )
-            await act_with_cache(
-                page,
+            act_with_cache(
+                client,
+                session_id,
                 "Type 'test@example.com' into the email field",
                 "Type 'test@example.com' into the email field",
             )
-            await act_with_cache(
-                page,
+            act_with_cache(
+                client,
+                session_id,
                 "Type '4242424242424242' into the card number field",
                 "Type '4242424242424242' into the card number field",
             )
-            await act_with_cache(
-                page,
+            act_with_cache(
+                client,
+                session_id,
                 "Type '12/34' into the expiration date field",
                 "Type '12/34' into the expiration date field",
             )
 
-            elapsed = f"{(asyncio.get_event_loop().time() - start_time):.2f}"
+            elapsed = f"{(time.time() - start_time):.2f}"
             cache_exists = CACHE_FILE.exists()
 
             # Count cache entries to determine if this was a cache hit or miss
             if cache_exists:
-                async with aiofiles.open(CACHE_FILE) as f:
-                    cache_content = await f.read()
+                with open(CACHE_FILE) as f:
+                    cache_content = f.read()
                     cache_data = json.loads(cache_content)
                     cache_count = len(cache_data)
             else:
@@ -228,13 +239,18 @@ async def run_with_cache():
                 print("📂Cache created")
             print()
 
-            return {"elapsed": elapsed, "llm_calls": 0 if cache_count >= 4 else 4}
-        except Exception as error:
-            print(f"Error: {error}")
-            raise
+            browser.close()
+
+        client.sessions.end(id=session_id)
+        return {"elapsed": elapsed, "llm_calls": 0 if cache_count >= 4 else 4}
+
+    except Exception as error:
+        print(f"Error: {error}")
+        client.sessions.end(id=session_id)
+        raise
 
 
-async def main():
+def main():
     """Main function demonstrating caching benefits with side-by-side comparison"""
     print("\n╔═══════════════════════════════════════════════════════════╗")
     print("║  Caching Demo - Run This Script TWICE!                     ║")
@@ -255,8 +271,8 @@ async def main():
 
     if cache_exists:
         # Read cache file to count entries
-        async with aiofiles.open(CACHE_FILE) as f:
-            cache_content = await f.read()
+        with open(CACHE_FILE) as f:
+            cache_content = f.read()
             cache_data = json.loads(cache_content)
             cache_count = len(cache_data)
         print(f"📂 Cache found: {cache_count} entries")
@@ -267,8 +283,8 @@ async def main():
     print("\nRunning comparison: without cache vs with cache...\n")
 
     # Run both workflows for comparison
-    without_cache = await run_without_cache()
-    with_cache = await run_with_cache()
+    without_cache = run_without_cache()
+    with_cache = run_with_cache()
 
     # Display comparison results
     print("\n=== Comparison ===")
@@ -286,11 +302,11 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except Exception as err:
         print(f"Error in caching demo: {err}")
         print("Common issues:")
         print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
         print("  - Verify GOOGLE_API_KEY is set for the model")
-        print("Docs: https://docs.stagehand.dev/v2/first-steps/introduction")
+        print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
         exit(1)

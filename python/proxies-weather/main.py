@@ -1,12 +1,14 @@
 # Stagehand + Browserbase: Weather Proxy Demo - See README.md for full documentation
 
-import asyncio
 import os
+import time
 
+from browserbase import Browserbase
 from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 
-from stagehand import Stagehand, StagehandConfig
+from stagehand import Stagehand
 
 load_dotenv()
 
@@ -36,7 +38,7 @@ class TemperatureData(BaseModel):
     unit: str = Field(..., description="The temperature unit")
 
 
-async def get_weather_for_location(geolocation: GeolocationConfig) -> WeatherResult:
+def get_weather_for_location(geolocation: GeolocationConfig) -> WeatherResult:
     """Fetch weather data for a specific location using geolocation proxies."""
     city_name = geolocation.city.replace("_", " ")
     print(f"\n=== Getting weather for {city_name}, {geolocation.country} ===")
@@ -50,72 +52,79 @@ async def get_weather_for_location(geolocation: GeolocationConfig) -> WeatherRes
 
     # Build proxy configuration for geolocation routing
     proxy_config = {
-        "type": "browserbase",  # Use Browserbase's managed proxy infrastructure for reliable geolocation routing
+        "type": "browserbase",
         "geolocation": {
-            "city": geolocation.city,  # City name (case-insensitive, e.g., "NEW_YORK", "new_york", "New York" all work)
-            "country": geolocation.country,  # ISO country code (case-insensitive, e.g., "US", "us", "gb", "GB" all work)
+            "city": geolocation.city,
+            "country": geolocation.country,
         },
     }
-    # Add state if provided (required for US locations to ensure accurate geolocation, case-insensitive)
     if geolocation.state:
         proxy_config["geolocation"]["state"] = geolocation.state
 
-    # Initialize Stagehand with geolocation proxy configuration
-    # This ensures all browser traffic routes through the specified geographic location
-    config = StagehandConfig(
-        env="BROWSERBASE",
-        api_key=os.environ.get("BROWSERBASE_API_KEY"),
+    # Initialize Browserbase SDK for session creation with proxy
+    bb = Browserbase(api_key=os.environ.get("BROWSERBASE_API_KEY"))
+
+    # Create session with geolocation proxy
+    session = bb.sessions.create(
         project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_name=os.environ.get("MODEL_NAME", "google/gemini-2.5-flash"),
+        proxies=[proxy_config],
+    )
+    session_id = session.id
+
+    # Initialize Stagehand with Browserbase for cloud-based browser automation
+    client = Stagehand(
+        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         model_api_key=model_api_key,
-        verbose=0,
-        # 0 = errors only, 1 = info, 2 = debug
-        # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-        # https://docs.stagehand.dev/configuration/logging
-        browserbase_session_create_params={
-            "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
-            "proxies": [proxy_config],
-        },
     )
 
-    stagehand = Stagehand(config)
-
     try:
-        # Initialize browser session to start automation
         print(f"Initializing Stagehand for {city_name}...")
-        await stagehand.init()
-        print(f"Stagehand initialized successfully for {city_name}")
+        print(f"Session URL: https://browserbase.com/sessions/{session_id}")
 
-        # Navigate to weather service - geolocation proxy ensures location-specific weather data
-        print(f"Navigating to weather service for {city_name}...")
-        await stagehand.page.goto("https://www.windy.com/", wait_until="networkidle")  # Wait for network to be idle to ensure weather data is loaded
-        print(f"Page loaded for {city_name}")
+        # Connect to the browser via CDP
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(
+                f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
+            )
+            context = browser.contexts[0]
+            page = context.pages[0] if context.pages else context.new_page()
 
-        # Wait a bit for weather data to render
-        await asyncio.sleep(2)
+            print(f"Stagehand initialized successfully for {city_name}")
 
-        # Extract structured temperature data using Stagehand and Pydantic schema for type safety
-        print(f"Extracting temperature data for {city_name}...")
-        extract_result = await stagehand.page.extract(
-            instruction="Extract the current temperature and its unit",
-            schema=TemperatureData,
-        )
+            # Navigate to weather service
+            print(f"Navigating to weather service for {city_name}...")
+            page.goto("https://www.windy.com/", wait_until="networkidle")
+            print(f"Page loaded for {city_name}")
 
-        print(
-            f"Successfully extracted weather data for {city_name}: {extract_result.temperature} {extract_result.unit}"
-        )
+            # Wait a bit for weather data to render
+            time.sleep(2)
 
-        # Close Stagehand session to release resources
-        await stagehand.close()
+            # Extract structured temperature data
+            print(f"Extracting temperature data for {city_name}...")
+            extract_response = client.sessions.extract(
+                id=session_id,
+                instruction="Extract the current temperature and its unit",
+                schema=TemperatureData.model_json_schema(),
+            )
+
+            result_data = extract_response.data.result
+            print(
+                f"Successfully extracted weather data for {city_name}: {result_data.get('temperature')} {result_data.get('unit')}"
+            )
+
+            browser.close()
+
+        client.sessions.end(id=session_id)
 
         return WeatherResult(
             city=city_name,
             country=geolocation.country,
-            temperature=extract_result.temperature,
-            unit=extract_result.unit,
+            temperature=result_data.get("temperature", 0.0),
+            unit=result_data.get("unit", ""),
         )
     except Exception as error:
-        await stagehand.close()
+        client.sessions.end(id=session_id)
         print(f"Error getting weather for {city_name}: {error}")
         return WeatherResult(
             city=city_name,
@@ -136,13 +145,10 @@ def display_results(results: list[WeatherResult]):
             print(f"{result.city}, {result.country}: {result.temperature} {result.unit}")
 
 
-async def main():
+def main():
     """Main orchestration function: processes multiple locations sequentially using geolocation proxies."""
-    # Define locations to test - demonstrating the power of geolocation proxies
-    # Each location will route traffic through its respective geographic proxy to get location-specific weather
-    # Note: All geolocation fields (city, country, state) are case-insensitive
     locations = [
-        GeolocationConfig(city="NEW_YORK", state="NY", country="US"),  # State required for US locations (case-insensitive)
+        GeolocationConfig(city="NEW_YORK", state="NY", country="US"),
         GeolocationConfig(city="LONDON", country="GB"),
         GeolocationConfig(city="TOKYO", country="JP"),
         GeolocationConfig(city="SAO_PAULO", country="BR"),
@@ -152,24 +158,20 @@ async def main():
     print(f"Processing {len(locations)} locations with geolocation proxies...")
     print("Each location will use a different proxy to fetch location-specific weather data\n")
 
-    # Collect all results for final summary
     results: list[WeatherResult] = []
 
-    # Run each location sequentially to show different weather based on proxy location
-    # Sequential processing ensures clear demonstration of proxy-based location differences
     for i, location in enumerate(locations, 1):
         print(f"\n[{i}/{len(locations)}] Processing {location.city}, {location.country}...")
-        result = await get_weather_for_location(location)
+        result = get_weather_for_location(location)
         results.append(result)
 
-    # Display all results in formatted summary
     display_results(results)
     print("\n=== All locations completed ===")
 
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except Exception as err:
         print(f"Application error: {err}")
         print("Common issues:")

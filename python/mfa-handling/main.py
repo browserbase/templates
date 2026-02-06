@@ -1,12 +1,13 @@
 # Stagehand + Browserbase: MFA Handling - TOTP Automation - See README.md for full documentation
 
-import asyncio
 import hashlib
 import hmac
 import os
 import time
+import traceback
 
 from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 
 from stagehand import Stagehand
@@ -79,133 +80,156 @@ class RetryResult(BaseModel):
     success: bool = Field(..., description="Whether the retry login was successful")
 
 
-async def main():
+def main():
     print("Starting MFA Handling - TOTP Automation...")
 
     # Initialize Stagehand with Browserbase for cloud-based browser automation
-    # Note: set verbose: 0 to prevent API keys from appearing in logs when handling sensitive data.
-    stagehand = Stagehand(
-        env="BROWSERBASE",
-        api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model="openai/gpt-4.1",
+    client = Stagehand(
+        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         model_api_key=os.environ.get("OPENAI_API_KEY"),
-        verbose=0,  # 0 = errors only, 1 = info, 2 = debug
-        # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-        # https://docs.stagehand.dev/configuration/logging
     )
 
+    # Start a new session
+    start_response = client.sessions.start(model_name="openai/gpt-4.1")
+    session_id = start_response.data.session_id
+
     try:
-        # Initialize browser session
-        await stagehand.init()
         print("Stagehand initialized successfully!")
+        print(f"Live View Link: https://browserbase.com/sessions/{session_id}")
 
-        # Get session ID if available
-        session_id = getattr(stagehand, "session_id", None) or getattr(
-            stagehand, "browserbase_session_id", None
-        )
-        if session_id:
-            print(f"Live View Link: https://browserbase.com/sessions/{session_id}")
+        # Connect to the browser via CDP
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(
+                f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
+            )
+            context = browser.contexts[0]
+            page = context.pages[0] if context.pages else context.new_page()
 
-        # Get the page object
-        page = stagehand.page
+            # Navigate to TOTP challenge demo page
+            print("Navigating to TOTP Challenge page...")
+            page.goto(DEMO_URL, wait_until="domcontentloaded")
 
-        # Navigate to TOTP challenge demo page
-        print("Navigating to TOTP Challenge page...")
-        await page.goto(DEMO_URL, wait_until="domcontentloaded")
+            # Extract test credentials and TOTP secret from the page
+            print("Extracting test credentials and TOTP secret...")
+            extract_response = client.sessions.extract(
+                id=session_id,
+                instruction="Extract the test email, password, and TOTP secret key shown on the page",
+                schema=Credentials.model_json_schema(),
+            )
+            credentials_data = extract_response.data.result
 
-        # Extract test credentials and TOTP secret from the page
-        print("Extracting test credentials and TOTP secret...")
-        credentials = await page.extract(
-            instruction="Extract the test email, password, and TOTP secret key shown on the page",
-            schema=Credentials,
-        )
+            print(f"Credentials extracted - Email: {credentials_data.get('email')}")
 
-        print(f"Credentials extracted - Email: {credentials.email}")
+            # Generate TOTP code using RFC 6238 algorithm
+            totp_code = generate_totp(credentials_data.get("totp_secret", ""))
+            seconds_left = 30 - (int(time.time()) % 30)
+            print(f"Generated TOTP code: {totp_code} (valid for {seconds_left} seconds)")
 
-        # Generate TOTP code using RFC 6238 algorithm
-        totp_code = generate_totp(credentials.totp_secret)
-        seconds_left = 30 - (int(time.time()) % 30)
-        print(f"Generated TOTP code: {totp_code} (valid for {seconds_left} seconds)")
-
-        # Fill in login form with email and password
-        print("Filling in email...")
-        await page.act(f"Type '{credentials.email}' into the email field")
-
-        print("Filling in password...")
-        await page.act(f"Type '{credentials.password}' into the password field")
-
-        # Fill in TOTP code
-        print("Filling in TOTP code...")
-        await page.act(f"Type '{totp_code}' into the TOTP code field")
-
-        # Submit the form
-        print("Submitting form...")
-        await page.act("Click the submit or login button")
-
-        # Wait for response - be tolerant of sites that never reach full "networkidle"
-        try:
-            print("Waiting for page to finish loading after submit...")
-            await page.wait_for_load_state("networkidle", timeout=15000)
-        except Exception:
-            print(
-                "Timed out waiting for 'networkidle' after submit; continuing because the login likely succeeded."
+            # Fill in login form with email and password
+            print("Filling in email...")
+            client.sessions.act(
+                id=session_id,
+                input=f"Type '{credentials_data.get('email')}' into the email field",
             )
 
-        # Check if login succeeded
-        print("Checking authentication result...")
-        result = await page.extract(
-            instruction="Check if the login was successful or if there's an error message",
-            schema=AuthResult,
-        )
+            print("Filling in password...")
+            client.sessions.act(
+                id=session_id,
+                input=f"Type '{credentials_data.get('password')}' into the password field",
+            )
 
-        if result.success:
-            print("SUCCESS! TOTP authentication completed automatically!")
-            print(f"Authentication Result: {result.message}")
-        else:
-            print(f"Authentication may have failed. Message: {result.message}")
-            print("Retrying with a fresh TOTP code...")
+            # Fill in TOTP code
+            print("Filling in TOTP code...")
+            client.sessions.act(
+                id=session_id,
+                input=f"Type '{totp_code}' into the TOTP code field",
+            )
 
-            # Regenerate and retry with new code (handles time window edge cases)
-            new_code = generate_totp(credentials.totp_secret)
-            print(f"New TOTP code: {new_code}")
+            # Submit the form
+            print("Submitting form...")
+            client.sessions.act(
+                id=session_id,
+                input="Click the submit or login button",
+            )
 
-            await page.act("Clear the TOTP code field")
-            await page.act(f"Type '{new_code}' into the TOTP code field")
-            await page.act("Click the submit or login button")
-
+            # Wait for response - be tolerant of sites that never reach full "networkidle"
             try:
-                print("Waiting for page to finish loading after retry submit...")
-                await page.wait_for_load_state("networkidle", timeout=15000)
+                print("Waiting for page to finish loading after submit...")
+                page.wait_for_load_state("networkidle", timeout=15000)
             except Exception:
                 print(
-                    "Timed out waiting for 'networkidle' after retry submit; continuing because the login likely succeeded."
+                    "Timed out waiting for 'networkidle' after submit; continuing because the login likely succeeded."
                 )
 
-            retry_result = await page.extract(
-                instruction="Check if the login was successful",
-                schema=RetryResult,
+            # Check if login succeeded
+            print("Checking authentication result...")
+            result_response = client.sessions.extract(
+                id=session_id,
+                instruction="Check if the login was successful or if there's an error message",
+                schema=AuthResult.model_json_schema(),
             )
+            result = result_response.data.result
 
-            if retry_result.success:
-                print("Success on retry!")
+            if result.get("success"):
+                print("SUCCESS! TOTP authentication completed automatically!")
+                print(f"Authentication Result: {result.get('message')}")
             else:
-                print("Authentication failed after retry")
+                print(f"Authentication may have failed. Message: {result.get('message')}")
+                print("Retrying with a fresh TOTP code...")
 
-        await stagehand.close()
+                # Regenerate and retry with new code (handles time window edge cases)
+                new_code = generate_totp(credentials_data.get("totp_secret", ""))
+                print(f"New TOTP code: {new_code}")
+
+                client.sessions.act(
+                    id=session_id,
+                    input="Clear the TOTP code field",
+                )
+                client.sessions.act(
+                    id=session_id,
+                    input=f"Type '{new_code}' into the TOTP code field",
+                )
+                client.sessions.act(
+                    id=session_id,
+                    input="Click the submit or login button",
+                )
+
+                try:
+                    print("Waiting for page to finish loading after retry submit...")
+                    page.wait_for_load_state("networkidle", timeout=15000)
+                except Exception:
+                    print(
+                        "Timed out waiting for 'networkidle' after retry submit; continuing because the login likely succeeded."
+                    )
+
+                retry_response = client.sessions.extract(
+                    id=session_id,
+                    instruction="Check if the login was successful",
+                    schema=RetryResult.model_json_schema(),
+                )
+                retry_result = retry_response.data.result
+
+                if retry_result.get("success"):
+                    print("Success on retry!")
+                else:
+                    print("Authentication failed after retry")
+
+            browser.close()
+
+        client.sessions.end(id=session_id)
         print("Session closed successfully")
 
     except Exception as error:
         print(f"Error during MFA handling: {error}")
-        import traceback
-
         traceback.print_exc()
+        client.sessions.end(id=session_id)
         raise
 
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except Exception as err:
         print(f"Error in MFA handling: {err}")
         print("Common issues:")
@@ -213,5 +237,5 @@ if __name__ == "__main__":
         print("  - Check .env file has OPENAI_API_KEY (or set model_api_key for your chosen model)")
         print("  - TOTP code may have expired (try running again)")
         print("  - Page structure may have changed")
-        print("Docs: https://docs.stagehand.dev/v2/first-steps/introduction")
+        print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
         exit(1)

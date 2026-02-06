@@ -1,12 +1,13 @@
 # Stagehand + Browserbase: Automated Nurse License Verification - See README.md for full documentation
 
-import asyncio
+import json
 import os
 
 from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 
-from stagehand import Stagehand, StagehandConfig
+from stagehand import Stagehand
 
 # Load environment variables
 load_dotenv()
@@ -40,7 +41,7 @@ LICENSE_RECORDS = [
 ]
 
 
-async def main():
+def main():
     """
     Automated nurse license verification using AI-powered browser automation.
     Processes multiple license records and extracts verification results.
@@ -48,35 +49,30 @@ async def main():
     print("Starting Nurse License Verification Automation...")
 
     # Initialize Stagehand with Browserbase for cloud-based browser automation
-    config = StagehandConfig(
-        env="BROWSERBASE",
-        api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_name="openai/gpt-4.1",
+    client = Stagehand(
+        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         model_api_key=os.environ.get("OPENAI_API_KEY"),
-        verbose=1,
-        # 0 = errors only, 1 = info, 2 = debug
-        # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-        # https://docs.stagehand.dev/configuration/logging
     )
 
+    # Start a new session
+    start_response = client.sessions.start(
+        model_name="openai/gpt-4.1",
+    )
+    session_id = start_response.data.session_id
+
     try:
-        # Use async context manager for automatic resource management
-        async with Stagehand(config) as stagehand:
-            print("Initializing browser session...")
-            print("Stagehand session started successfully")
+        print("Initializing browser session...")
+        print("Stagehand session started successfully")
+        print(f"Watch live: https://browserbase.com/sessions/{session_id}")
 
-            # Provide live session URL for debugging and monitoring
-            session_id = None
-            if hasattr(stagehand, "session_id"):
-                session_id = stagehand.session_id
-            elif hasattr(stagehand, "browserbase_session_id"):
-                session_id = stagehand.browserbase_session_id
-
-            if session_id:
-                print(f"Watch live: https://browserbase.com/sessions/{session_id}")
-
-            page = stagehand.page
+        # Connect to the browser via CDP
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(
+                f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
+            )
+            context = browser.contexts[0]
+            page = context.pages[0] if context.pages else context.new_page()
 
             # Process each license record sequentially
             for license_record in LICENSE_RECORDS:
@@ -86,41 +82,83 @@ async def main():
 
                 # Navigate to license verification site
                 print(f"Navigating to: {license_record['Site']}")
-                await page.goto(license_record["Site"])
-                await page.wait_for_load_state("domcontentloaded")
+                page.goto(license_record["Site"])
+                page.wait_for_load_state("domcontentloaded")
                 # Brief timeout to ensure form fields are interactive
-                await page.wait_for_timeout(1000)
+                page.wait_for_timeout(1000)
 
                 # Fill in form fields with license information
                 print("Filling in license information...")
-                await page.act(f'Type "{license_record["FirstName"]}" into the first name field')
-                await page.act(f'Type "{license_record["LastName"]}" into the last name field')
-                await page.act(
-                    f'Type "{license_record["LicenseNumber"]}" into the license number field'
+                client.sessions.act(
+                    id=session_id,
+                    input=f'Type "{license_record["FirstName"]}" into the first name field',
+                )
+                client.sessions.act(
+                    id=session_id,
+                    input=f'Type "{license_record["LastName"]}" into the last name field',
+                )
+                client.sessions.act(
+                    id=session_id,
+                    input=f'Type "{license_record["LicenseNumber"]}" into the license number field',
                 )
 
                 # Submit search
                 print("Clicking search button...")
-                await page.act("Click the search button")
+                client.sessions.act(
+                    id=session_id,
+                    input="Click the search button",
+                )
 
                 # Wait for search results to load
-                await page.wait_for_load_state("domcontentloaded")
-                await page.wait_for_timeout(1000)
+                page.wait_for_load_state("domcontentloaded")
+                page.wait_for_timeout(1000)
 
-                # Extract license verification results
+                # Extract license verification results using inline schema (avoids $ref issues)
                 print("Extracting license verification results...")
-                results = await page.extract(
-                    "Extract ALL the license verification results from the page, including name, license number and status",
-                    schema=LicenseResults,
+                license_schema = {
+                    "type": "object",
+                    "properties": {
+                        "list_of_licenses": {
+                            "type": "array",
+                            "description": "array of license verification results",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "the name of the license holder",
+                                    },
+                                    "license_number": {
+                                        "type": "string",
+                                        "description": "the license number",
+                                    },
+                                    "status": {
+                                        "type": "string",
+                                        "description": "the status of the license",
+                                    },
+                                    "more_info_url": {
+                                        "type": "string",
+                                        "description": "URL for more information",
+                                    },
+                                },
+                                "required": ["name", "license_number", "status", "more_info_url"],
+                            },
+                        }
+                    },
+                    "required": ["list_of_licenses"],
+                }
+                extract_response = client.sessions.extract(
+                    id=session_id,
+                    instruction="Extract ALL the license verification results from the page, including name, license number and status",
+                    schema=license_schema,
                 )
 
                 print("License verification results extracted:")
+                print(json.dumps(extract_response.data.result, indent=2))
 
-                # Display results in formatted JSON
-                import json
+            browser.close()
 
-                print(json.dumps(results.model_dump(), indent=2))
-
+        client.sessions.end(id=session_id)
         print("Session closed successfully")
 
     except Exception as error:
@@ -133,12 +171,13 @@ async def main():
         print("3. Ensure internet access and license verification site is accessible")
         print("4. Verify Browserbase account has sufficient credits")
 
+        client.sessions.end(id=session_id)
         raise
 
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except Exception as err:
         print(f"Application error: {err}")
         exit(1)

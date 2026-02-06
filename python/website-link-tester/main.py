@@ -1,16 +1,17 @@
 # Stagehand + Browserbase: Website Link Tester - See README.md for full documentation
 
-import asyncio
 import json
 import os
 
 from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field, HttpUrl
 
-from stagehand import Stagehand, StagehandConfig
+from stagehand import Stagehand
 
 # Load environment variables
 load_dotenv()
+
 
 # Base URL whose links we want to crawl and verify
 URL = "https://www.browserbase.com"
@@ -71,33 +72,15 @@ SOCIAL_DOMAINS = [
 ]
 
 
-def create_stagehand() -> Stagehand:
-    """Creates a preconfigured Stagehand instance for Browserbase sessions."""
-    config = StagehandConfig(
-        env="BROWSERBASE",
-        api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_name="google/gemini-2.5-pro",
-        model_api_key=os.environ.get("GOOGLE_API_KEY"),
-        browserbase_session_create_params={
-            "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
-        },
-        verbose=0,  # 0 = errors only, 1 = info, 2 = debug
-        # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-        # https://docs.stagehand.dev/configuration/logging
-    )
-    return Stagehand(config)
-
-
-def deduplicate_links(extracted_links: ExtractedLinks) -> list[ExtractedLink]:
+def deduplicate_links(extracted_links: dict) -> list[dict]:
     """
     Removes duplicate links by URL while preserving the first occurrence.
     """
     seen_urls: set[str] = set()
-    unique_links: list[ExtractedLink] = []
+    unique_links: list[dict] = []
 
-    for link in extracted_links.links:
-        url = str(link.url)
+    for link in extracted_links.get("links", []):
+        url = str(link.get("url", ""))
         if url in seen_urls:
             continue
         seen_urls.add(url)
@@ -106,88 +89,133 @@ def deduplicate_links(extracted_links: ExtractedLinks) -> list[ExtractedLink]:
     return unique_links
 
 
-async def collect_links_from_homepage() -> list[ExtractedLink]:
+def collect_links_from_homepage() -> list[dict]:
     """
     Opens the homepage and uses Stagehand `extract()` to collect all links.
     Returns a de-duplicated list of link objects that we will later verify.
     """
     print("Collecting links from homepage...")
 
-    stagehand: Stagehand | None = None
+    # Initialize Stagehand with Browserbase for cloud-based browser automation
+    client = Stagehand(
+        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
+        model_api_key=os.environ.get("GOOGLE_API_KEY"),
+    )
+
+    # Start a new session
+    start_response = client.sessions.start(
+        model_name="google/gemini-2.5-pro",
+    )
+    session_id = start_response.data.session_id
 
     try:
-        stagehand = create_stagehand()
-        async with stagehand:
-            await stagehand.init()
+        print(f"Watch live: https://browserbase.com/sessions/{session_id}")
 
-            session_id = getattr(stagehand, "session_id", None) or getattr(
-                stagehand, "browserbase_session_id", None
+        # Connect to the browser via CDP
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(
+                f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
             )
-            if session_id:
-                print(f"Watch live: https://browserbase.com/sessions/{session_id}")
-
-            page = stagehand.page
+            context = browser.contexts[0]
+            page = context.pages[0] if context.pages else context.new_page()
 
             # Navigate to the base URL where we will harvest links
             print(f"Navigating to {URL}...")
-            await page.goto(URL, wait_until="domcontentloaded")
+            page.goto(URL, wait_until="domcontentloaded")
 
             print(f"Successfully loaded {URL}. Extracting links...")
 
-            extracted_links: ExtractedLinks = await page.extract(
-                "Extract all links on the page with their link text.",
-                schema=ExtractedLinks,
+            # Inline schema to avoid $ref issues
+            links_schema = {
+                "type": "object",
+                "properties": {
+                    "links": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "url": {
+                                    "type": "string",
+                                    "description": "Destination URL of the link",
+                                },
+                                "link_text": {
+                                    "type": "string",
+                                    "description": "Visible text of the link",
+                                },
+                            },
+                            "required": ["url", "link_text"],
+                        },
+                    }
+                },
+                "required": ["links"],
+            }
+            extract_response = client.sessions.extract(
+                id=session_id,
+                instruction="Extract all links on the page with their link text.",
+                schema=links_schema,
             )
+            extracted_links = extract_response.data.result
 
             # Remove duplicate URLs and log both raw and unique counts for visibility
             unique_links = deduplicate_links(extracted_links)
 
             print(
-                f"All links on the page ({len(extracted_links.links)} total, {len(unique_links)} unique):"
+                f"All links on the page ({len(extracted_links.get('links', []))} total, {len(unique_links)} unique):"
             )
-            print(
-                json.dumps(
-                    {"links": [link.model_dump(mode="json") for link in unique_links]}, indent=2
-                )
-            )
+            print(json.dumps({"links": unique_links}, indent=2))
 
-            return unique_links
+            browser.close()
+
+        client.sessions.end(id=session_id)
+        return unique_links
 
     except Exception as error:
         print(f"Error while collecting links: {error}")
+        client.sessions.end(id=session_id)
         raise
 
 
-async def verify_single_link(link: ExtractedLink) -> LinkVerificationResult:
+def verify_single_link(link: dict) -> LinkVerificationResult:
     """
     Verifies a single link by opening it in a dedicated browser session.
     - Confirms the page loads successfully.
     - For non-social links, uses `extract()` to check that the page content
       matches what the link text suggests.
     """
-    print(f"\nChecking: {link.link_text} ({link.url})")
+    link_text = link.get("link_text", "Unknown")
+    link_url = link.get("url", "")
 
-    stagehand: Stagehand | None = None
+    print(f"\nChecking: {link_text} ({link_url})")
+
+    # Initialize Stagehand with Browserbase for cloud-based browser automation
+    client = Stagehand(
+        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
+        model_api_key=os.environ.get("GOOGLE_API_KEY"),
+    )
+
+    # Start a new session
+    start_response = client.sessions.start(
+        model_name="google/gemini-2.5-pro",
+    )
+    session_id = start_response.data.session_id
 
     try:
-        stagehand = create_stagehand()
-        async with stagehand:
-            await stagehand.init()
+        print(f"[{link_text}] Live View: https://browserbase.com/sessions/{session_id}")
 
-            session_id = getattr(stagehand, "session_id", None) or getattr(
-                stagehand, "browserbase_session_id", None
+        # Connect to the browser via CDP
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(
+                f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
             )
-            if session_id:
-                print(
-                    f"[{link.link_text}] Live View: https://browserbase.com/sessions/{session_id}"
-                )
-
-            page = stagehand.page
+            context = browser.contexts[0]
+            page = context.pages[0] if context.pages else context.new_page()
 
             # Detect if this is a social link (we treat those differently)
-            is_social_link = any(domain in str(link.url) for domain in SOCIAL_DOMAINS)
+            is_social_link = any(domain in str(link_url) for domain in SOCIAL_DOMAINS)
 
-            await page.goto(str(link.url), wait_until="domcontentloaded", timeout=30000)
+            page.goto(str(link_url), wait_until="domcontentloaded", timeout=30000)
 
             current_url = page.url
 
@@ -195,14 +223,16 @@ async def verify_single_link(link: ExtractedLink) -> LinkVerificationResult:
             if not current_url or current_url == "about:blank":
                 raise Exception("Page failed to load - invalid URL detected")
 
-            print(f"Link opened successfully: {link.link_text}")
+            print(f"Link opened successfully: {link_text}")
 
             # For social links, we consider a successful load good enough
             if is_social_link:
-                print(f"[{link.link_text}] Social media link - skipping content verification")
+                print(f"[{link_text}] Social media link - skipping content verification")
+                browser.close()
+                client.sessions.end(id=session_id)
                 return LinkVerificationResult(
-                    link_text=link.link_text,
-                    url=link.url,
+                    link_text=link_text,
+                    url=link_url,
                     success=True,
                     page_title="Social Media Link",
                     content_matches=True,
@@ -210,50 +240,58 @@ async def verify_single_link(link: ExtractedLink) -> LinkVerificationResult:
                 )
 
             # Ask the model to read the page and decide whether it matches the link text
-            print(f"[{link.link_text}] Verifying page content against link text...")
-            verification: PageVerificationSummary = await page.extract(
-                f'Does the page content match what the link text "{link.link_text}" suggests? Extract the page title and provide a brief assessment (maximum 8 words).',
-                schema=PageVerificationSummary,
+            print(f"[{link_text}] Verifying page content against link text...")
+            extract_response = client.sessions.extract(
+                id=session_id,
+                instruction=f'Does the page content match what the link text "{link_text}" suggests? Extract the page title and provide a brief assessment (maximum 8 words).',
+                schema=PageVerificationSummary.model_json_schema(),
             )
+            verification = extract_response.data.result
 
-            print(f"[{link.link_text}] Page Title: {verification.page_title}")
+            print(f"[{link_text}] Page Title: {verification.get('page_title')}")
             print(
-                f"[{link.link_text}] Content Matches: {'YES' if verification.content_matches else 'NO'}"
+                f"[{link_text}] Content Matches: {'YES' if verification.get('content_matches') else 'NO'}"
             )
-            print(f"[{link.link_text}] Assessment: {verification.assessment}")
+            print(f"[{link_text}] Assessment: {verification.get('assessment')}")
 
-            return LinkVerificationResult(
-                link_text=link.link_text,
-                url=link.url,
-                success=True,
-                page_title=verification.page_title,
-                content_matches=verification.content_matches,
-                assessment=verification.assessment,
-            )
+            browser.close()
+
+        client.sessions.end(id=session_id)
+
+        return LinkVerificationResult(
+            link_text=link_text,
+            url=link_url,
+            success=True,
+            page_title=verification.get("page_title"),
+            content_matches=verification.get("content_matches"),
+            assessment=verification.get("assessment"),
+        )
 
     except Exception as error:
         error_message = str(error)
 
-        print(f'Failed to verify link "{link.link_text}": {error_message}')
+        print(f'Failed to verify link "{link_text}": {error_message}')
+
+        client.sessions.end(id=session_id)
 
         # On failure, return a structured result capturing the error message
         return LinkVerificationResult(
-            link_text=link.link_text,
-            url=link.url,
+            link_text=link_text,
+            url=link_url,
             success=False,
             error=error_message,
         )
 
 
-async def verify_links_in_batches(
-    links: list[ExtractedLink],
+def verify_links_in_batches(
+    links: list[dict],
 ) -> list[LinkVerificationResult]:
     """
-    Verifies all links in batches to avoid opening too many concurrent sessions.
+    Verifies all links sequentially.
     Returns a list of LinkVerificationResult objects for all processed links.
     """
     max_concurrent = max(1, MAX_CONCURRENT_LINKS)
-    print(f"\nVerifying links in batches of {max_concurrent}...")
+    print(f"\nVerifying links (batch size: {max_concurrent})...")
 
     results: list[LinkVerificationResult] = []
 
@@ -264,8 +302,10 @@ async def verify_links_in_batches(
 
         print(f"\n=== Processing batch {batch_number}/{total_batches} ({len(batch)} links) ===")
 
-        batch_results = await asyncio.gather(*[verify_single_link(link) for link in batch])
-        results.extend(batch_results)
+        # Process links sequentially
+        for link in batch:
+            result = verify_single_link(link)
+            results.append(result)
 
         print(f"\nBatch {batch_number}/{total_batches} complete ({len(results)} total verified)")
 
@@ -300,7 +340,7 @@ def output_results(results: list[LinkVerificationResult], label: str = "FINAL RE
     print("\n" + "=" * 80)
 
 
-async def main():
+def main():
     """
     Orchestrates the full flow:
     1. Collect all links from the homepage.
@@ -312,12 +352,12 @@ async def main():
     results: list[LinkVerificationResult] = []
 
     try:
-        links = await collect_links_from_homepage()
+        links = collect_links_from_homepage()
         print(f"Collected {len(links)} links, starting verification...")
 
-        results = await verify_links_in_batches(links)
+        results = verify_links_in_batches(links)
 
-        print("\n✓ All links verified!")
+        print("\nAll links verified!")
         print(f"Results array length: {len(results)}")
 
         output_results(results)
@@ -337,7 +377,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except Exception as err:
         print("Application error:", err)
         print("Common issues:")

@@ -1,13 +1,13 @@
 # Stagehand + Browserbase: Value Prop One-Liner Generator - See README.md for full documentation
 
-import asyncio
 import os
 
 from dotenv import load_dotenv
 from openai import OpenAI
+from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 
-from stagehand import Stagehand, StagehandConfig
+from stagehand import Stagehand
 
 # Load environment variables
 load_dotenv()
@@ -16,48 +16,45 @@ load_dotenv()
 target_domain = "www.browserbase.com"  # Or extract from email: email.split("@")[1]
 
 # Initialize OpenAI client
-client = OpenAI()
+openai_client = OpenAI()
 
 
 class ValueProp(BaseModel):
     value_prop: str = Field(..., description="the value proposition from the landing page")
 
 
-async def generate_one_liner(domain: str) -> str:
+def generate_one_liner(domain: str) -> str:
     """
     Analyzes a website's landing page to generate a concise one-liner value proposition.
     Extracts the value prop using Stagehand, then uses an LLM to format it into a short phrase starting with "your".
     """
-    config = StagehandConfig(
-        env="BROWSERBASE",
-        api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_name="openai/gpt-4.1",
+    # Initialize Stagehand with Browserbase for cloud-based browser automation
+    client = Stagehand(
+        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         model_api_key=os.environ.get("OPENAI_API_KEY"),
-        browserbase_session_create_params={
-            "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
-        },
-        verbose=0,  # 0 = errors only, 1 = info, 2 = debug
     )
 
+    # Start a new session
+    start_response = client.sessions.start(model_name="openai/gpt-4.1")
+    session_id = start_response.data.session_id
+
     try:
-        async with Stagehand(config) as stagehand:
-            print("Stagehand initialized successfully!")
-            session_id = None
-            if hasattr(stagehand, "session_id"):
-                session_id = stagehand.session_id
-            elif hasattr(stagehand, "browserbase_session_id"):
-                session_id = stagehand.browserbase_session_id
+        print("Stagehand initialized successfully!")
+        print(f"Live View Link: https://browserbase.com/sessions/{session_id}")
 
-            if session_id:
-                print(f"Live View Link: https://browserbase.com/sessions/{session_id}")
-
-            page = stagehand.page
+        # Connect to the browser via CDP
+        with sync_playwright() as playwright:
+            browser = playwright.chromium.connect_over_cdp(
+                f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
+            )
+            context = browser.contexts[0]
+            page = context.pages[0] if context.pages else context.new_page()
 
             # Navigate to domain
             print(f"🌐 Navigating to https://{domain}...")
             # 5min timeout to handle slow-loading sites or network issues
-            await page.goto(
+            page.goto(
                 f"https://{domain}/",
                 wait_until="domcontentloaded",
                 timeout=300000,
@@ -67,12 +64,13 @@ async def generate_one_liner(domain: str) -> str:
 
             # Extract value proposition from landing page
             print(f"📝 Extracting value proposition for {domain}...")
-            value_prop_data = await page.extract(
-                "extract the value proposition from the landing page",
-                schema=ValueProp,
+            extract_response = client.sessions.extract(
+                id=session_id,
+                instruction="extract the value proposition from the landing page",
+                schema=ValueProp.model_json_schema(),
             )
 
-            value_prop = value_prop_data.value_prop
+            value_prop = extract_response.data.result.get("value_prop", "")
             print(f"📊 Extracted value prop for {domain}: {value_prop}")
 
             # Validate extraction returned meaningful content
@@ -85,8 +83,7 @@ async def generate_one_liner(domain: str) -> str:
             # System prompt enforces constraints (9 words max, no quotes, must start with "your")
             print(f"🤖 Generating email one-liner for {domain}...")
 
-            response = await asyncio.to_thread(
-                client.chat.completions.create,
+            response = openai_client.chat.completions.create(
                 model="gpt-4.1",
                 messages=[
                     {
@@ -126,24 +123,28 @@ Response:""",
                 )
 
             print(f"✨ Generated one-liner for {domain}: {one_liner}")
-            return one_liner
+
+            browser.close()
+
+        client.sessions.end(id=session_id)
+        print("Session closed successfully")
+        return one_liner
 
     except Exception as error:
         error_message = str(error) if isinstance(error, Exception) else error
         print(f"❌ Generation failed for {domain}: {error_message}")
+        client.sessions.end(id=session_id)
         raise
-    finally:
-        print("Session closed successfully")
 
 
-async def main():
+def main():
     """
     Main entry point: generates a one-liner value proposition for the target domain.
     """
     print("Starting One-Liner Generator...")
 
     try:
-        one_liner = await generate_one_liner(target_domain)
+        one_liner = generate_one_liner(target_domain)
         print("\n✅ Success!")
         print(f"One-liner: {one_liner}")
     except Exception as error:
@@ -162,7 +163,7 @@ async def main():
 
 if __name__ == "__main__":
     try:
-        asyncio.run(main())
+        main()
     except Exception as err:
         print(f"Fatal error: {err}")
         exit(1)
