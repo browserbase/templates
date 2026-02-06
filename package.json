@@ -13,15 +13,31 @@
     "lint:python:fix": "uvx ruff check --fix python/",
     "format:python": "uvx ruff format python/",
     "format:python:check": "uvx ruff format --check python/",
-    "check": "npm run format:check && npm run lint && npm run lint:python && npm run format:python:check"
+    "check": "npm run format:check && npm run lint && npm run lint:python && npm run format:python:check",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.50.1",
     "@typescript-eslint/parser": "^8.50.1",
     "eslint": "^9.39.2",
     "eslint-config-prettier": "^10.1.8",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
     "prettier": "^3.2.5",
     "typescript-eslint": "^8.50.1"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@9.0.0",
+  "lint-staged": {
+    "*.{ts,tsx,js,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ],
+    "*.py": [
+      "uvx ruff check --fix",
+      "uvx ruff format"
+    ]
+  }
 }
