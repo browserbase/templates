@@ -39,3 +39,29 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# TypeScript
+*.tsbuildinfo
+dist/
+build/
+*.js.map
+
+# Go
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Misc
+*.tmp
+*.temp
+.cache/

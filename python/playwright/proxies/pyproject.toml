@@ -1,0 +1,13 @@
+[project]
+name = "playwright-proxies"
+version = "1.0.0"
+description = "Browserbase + Playwright: Proxy testing (built-in, geolocation, custom external)"
+requires-python = ">=3.10"
+dependencies = [
+    "browserbase",
+    "playwright",
+    "python-dotenv",
+]
+
+[project.scripts]
+start = "python:main"
