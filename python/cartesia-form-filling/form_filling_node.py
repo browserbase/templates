@@ -7,20 +7,19 @@ filling during conversation without blocking the voice flow.
 """
 
 import asyncio
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from typing import AsyncGenerator, Dict, List, Optional, Union
 
 from config import DEFAULT_MODEL_ID, DEFAULT_TEMPERATURE
 from google.genai import types as gemini_types
-from loguru import logger
-from pydantic import BaseModel, Field
-from stagehand_form_filler import StagehandFormFiller
-
 from line.events import AgentResponse, EndCall, ToolResult
 from line.nodes.conversation_context import ConversationContext
 from line.nodes.reasoning import ReasoningNode
 from line.tools.system_tools import EndCallArgs, end_call
 from line.utils.gemini_utils import convert_messages_to_gemini
+from loguru import logger
+from pydantic import BaseModel, Field
+from stagehand_form_filler import StagehandFormFiller
 
 
 class RecordFormFieldArgs(BaseModel):
@@ -42,7 +41,7 @@ class RecordFormFieldTool:
         return "Record a value for a form field that needs to be filled"
 
     @staticmethod
-    def parameters() -> Dict:
+    def parameters() -> dict:
         return RecordFormFieldArgs.model_json_schema()
 
     @staticmethod
@@ -110,12 +109,12 @@ class FormFillingNode(ReasoningNode):
 
         # Browser automation
         self.form_url = form_url
-        self.stagehand_filler: Optional[StagehandFormFiller] = None
+        self.stagehand_filler: StagehandFormFiller | None = None
 
         # Form state
-        self.collected_data: Dict[str, str] = {}
+        self.collected_data: dict[str, str] = {}
         # Pre-initialize questions so conversation can start immediately
-        self.questions: List[FormQuestion] = self._create_questions()
+        self.questions: list[FormQuestion] = self._create_questions()
         self.current_question_index = 0
 
         # Browser initialization
@@ -194,7 +193,7 @@ class FormFillingNode(ReasoningNode):
         finally:
             self.browser_initializing = False
 
-    def _create_questions(self) -> List[FormQuestion]:
+    def _create_questions(self) -> list[FormQuestion]:
         """Create questions for the form.
 
         Returns:
@@ -204,13 +203,22 @@ class FormFillingNode(ReasoningNode):
         # This matches form at https://forms.fillout.com/t/34ccsqafUFus
         form_questions = [
             FormQuestion(
-                field_name="full_name", question="What is your full name?", field_type="text", required=True
+                field_name="full_name",
+                question="What is your full name?",
+                field_type="text",
+                required=True,
             ),
             FormQuestion(
-                field_name="email", question="What is your email address?", field_type="email", required=True
+                field_name="email",
+                question="What is your email address?",
+                field_type="email",
+                required=True,
             ),
             FormQuestion(
-                field_name="phone", question="What is your phone number?", field_type="phone", required=False
+                field_name="phone",
+                question="What is your phone number?",
+                field_type="phone",
+                required=False,
             ),
             FormQuestion(
                 field_name="work_eligibility",
@@ -324,7 +332,7 @@ class FormFillingNode(ReasoningNode):
             logger.error(f"Error submitting form: {e}")
             return False
 
-    def get_current_question(self) -> Optional[FormQuestion]:
+    def get_current_question(self) -> FormQuestion | None:
         """Get the current question to ask.
 
         Returns:
@@ -336,7 +344,7 @@ class FormFillingNode(ReasoningNode):
 
     async def process_context(
         self, context: ConversationContext
-    ) -> AsyncGenerator[Union[AgentResponse, EndCall], None]:
+    ) -> AsyncGenerator[AgentResponse | EndCall, None]:
         """Process conversation context with real-time form filling.
 
         Args:
@@ -385,7 +393,11 @@ class FormFillingNode(ReasoningNode):
 
         # Check if all questions have been answered
         # Only submit if we've actually collected data
-        if not current_question and self.current_question_index > 0 and len(self.collected_data) > 0:
+        if (
+            not current_question
+            and self.current_question_index > 0
+            and len(self.collected_data) > 0
+        ):
             # All questions answered - submit the form
             logger.info(f"All {self.current_question_index} questions answered")
             logger.info(f"Collected data for {len(self.collected_data)} fields")
@@ -454,7 +466,9 @@ class FormFillingNode(ReasoningNode):
             if msg.function_calls:
                 for function_call in msg.function_calls:
                     if function_call.name == RecordFormFieldTool.name():
-                        field_name = function_call.args.get("field_name", current_question.field_name)
+                        field_name = function_call.args.get(
+                            "field_name", current_question.field_name
+                        )
                         value = function_call.args.get("value", "")
 
                         logger.info(f"Recording: {field_name} = {value}")

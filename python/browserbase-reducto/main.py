@@ -9,6 +9,7 @@ from pathlib import Path
 from browserbase import Browserbase
 from dotenv import load_dotenv
 from reducto import Reducto
+
 from stagehand import AsyncStagehand
 
 # Load environment variables from .env file

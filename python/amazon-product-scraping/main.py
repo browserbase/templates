@@ -4,10 +4,10 @@
 import asyncio
 import json
 import os
-from typing import List
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
+
 from stagehand import AsyncStagehand
 
 
@@ -24,7 +24,7 @@ class Product(BaseModel):
 class ProductsList(BaseModel):
     """Schema for extracting a list of Amazon products."""
 
-    products: List[Product] = Field(description="Array of the first 3 products from search results")
+    products: list[Product] = Field(description="Array of the first 3 products from search results")
 
 
 def dereference_schema(schema: dict) -> dict:

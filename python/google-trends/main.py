@@ -3,10 +3,10 @@
 import asyncio
 import json
 import os
-from typing import List
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
+
 from stagehand import AsyncStagehand
 
 
@@ -20,7 +20,7 @@ class TrendingKeyword(BaseModel):
 class TrendingKeywordsList(BaseModel):
     """Schema for extracting a list of trending keywords."""
 
-    trending_keywords: List[TrendingKeyword] = Field(
+    trending_keywords: list[TrendingKeyword] = Field(
         description="List of trending keywords extracted from Google Trends"
     )
 

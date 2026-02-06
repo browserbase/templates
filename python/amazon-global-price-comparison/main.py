@@ -4,7 +4,6 @@ import asyncio
 import json
 import os
 from dataclasses import dataclass
-from typing import Optional
 
 from browserbase import Browserbase
 from dotenv import load_dotenv
@@ -29,9 +28,7 @@ class Product(BaseModel):
             "'29.99 GBP'). If no price is visible, return 'N/A'"
         ),
     )
-    rating: str = Field(
-        default="N/A", description="The star rating (e.g., '4.5 out of 5 stars')"
-    )
+    rating: str = Field(default="N/A", description="The star rating (e.g., '4.5 out of 5 stars')")
     reviews_count: str = Field(
         default="N/A", description="The number of customer reviews (e.g., '1,234')"
     )
@@ -56,7 +53,7 @@ class ProductsResult(BaseModel):
 class CountryConfig:
     name: str
     code: str
-    city: Optional[str]
+    city: str | None
     currency: str
 
 
@@ -79,7 +76,7 @@ class CountryResult:
     country_code: str
     currency: str
     products: list[dict]
-    error: Optional[str] = None
+    error: str | None = None
 
 
 # Initialize Browserbase SDK for session management with proxies
@@ -168,11 +165,26 @@ async def get_products_for_country(
                     "items": {
                         "type": "object",
                         "properties": {
-                            "name": {"type": "string", "description": "The full product title/name"},
-                            "price": {"type": "string", "description": "The product price including currency symbol (e.g., '$29.99'). If no price is visible, return 'N/A'"},
-                            "rating": {"type": "string", "description": "The star rating (e.g., '4.5 out of 5 stars')"},
-                            "reviews_count": {"type": "string", "description": "The number of customer reviews (e.g., '1,234')"},
-                            "product_url": {"type": "string", "description": "The full href URL link to the product detail page"},
+                            "name": {
+                                "type": "string",
+                                "description": "The full product title/name",
+                            },
+                            "price": {
+                                "type": "string",
+                                "description": "The product price including currency symbol (e.g., '$29.99'). If no price is visible, return 'N/A'",
+                            },
+                            "rating": {
+                                "type": "string",
+                                "description": "The star rating (e.g., '4.5 out of 5 stars')",
+                            },
+                            "reviews_count": {
+                                "type": "string",
+                                "description": "The number of customer reviews (e.g., '1,234')",
+                            },
+                            "product_url": {
+                                "type": "string",
+                                "description": "The full href URL link to the product detail page",
+                            },
                         },
                         "required": ["name"],
                     },
@@ -188,7 +200,7 @@ async def get_products_for_country(
             3. rating: the star rating text (like "4.5 out of 5 stars")
             4. reviews_count: the number of reviews (like "2,508")
             5. product_url: the href link to the product page (starts with /dp/ or https://)
-            
+
             Only extract actual product listings, skip sponsored ads or recommendations.""",
             schema=products_schema,
         )
@@ -276,9 +288,7 @@ def display_comparison_table(results: list[CountryResult]) -> None:
                 break
 
         if product_name:
-            truncated_name = (
-                product_name[:77] + "..." if len(product_name) > 80 else product_name
-            )
+            truncated_name = product_name[:77] + "..." if len(product_name) > 80 else product_name
             print(f"Product: {truncated_name}")
 
         print("\nPrices by Country:")
@@ -296,9 +306,7 @@ def display_comparison_table(results: list[CountryResult]) -> None:
                 rating_short = rating.split(" out")[0] if " out" in rating else rating
                 rating_pad = rating_short.ljust(6)
                 reviews = product.get("reviews_count", "N/A")
-                print(
-                    f"  {country_pad} | {price_pad} | {rating_pad} stars | {reviews} reviews"
-                )
+                print(f"  {country_pad} | {price_pad} | {rating_pad} stars | {reviews} reviews")
             else:
                 print(f"  {country_pad} | Not available in this country")
 
@@ -332,10 +340,7 @@ async def main():
     print(f"\nFetching prices from {len(COUNTRIES)} countries concurrently...")
 
     results = await asyncio.gather(
-        *[
-            get_products_for_country(search_query, country, results_count)
-            for country in COUNTRIES
-        ]
+        *[get_products_for_country(search_query, country, results_count) for country in COUNTRIES]
     )
 
     # Display formatted comparison table

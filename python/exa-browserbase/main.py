@@ -4,12 +4,12 @@
 import asyncio
 import json
 import os
-from pathlib import Path
 from urllib.parse import urlparse
 
 from dotenv import load_dotenv
 from exa_py import Exa
 from playwright.async_api import async_playwright
+
 from stagehand import AsyncStagehand
 
 # Load environment variables from .env file

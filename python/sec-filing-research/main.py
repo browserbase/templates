@@ -3,10 +3,10 @@
 import asyncio
 import json
 import os
-from typing import List, Optional
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
+
 from stagehand import AsyncStagehand
 
 
@@ -24,13 +24,13 @@ class Filing(BaseModel):
     date: str = Field(description="Filing date in YYYY-MM-DD format")
     description: str = Field(description="Full description of the filing")
     accessionNumber: str = Field(description="SEC accession number")
-    fileNumber: Optional[str] = Field(default=None, description="File/Film number")
+    fileNumber: str | None = Field(default=None, description="File/Film number")
 
 
 class FilingsList(BaseModel):
     """Schema for extracting a list of SEC filings."""
 
-    filings: List[Filing] = Field(description="List of SEC filings")
+    filings: list[Filing] = Field(description="List of SEC filings")
 
 
 def dereference_schema(schema: dict) -> dict:
@@ -131,9 +131,7 @@ async def main():
             if extracted and isinstance(extracted, dict) and extracted.get("companyName"):
                 company_info = extracted
         except Exception as error:
-            print(
-                f"Could not extract company info, using search query as company name: {error}"
-            )
+            print(f"Could not extract company info, using search query as company name: {error}")
 
         # Extract filing metadata from the filings table using structured schema
         print(f"Extracting the {NUM_FILINGS} most recent filings...")
@@ -145,9 +143,7 @@ async def main():
         filings_data = filings_response.data.result
 
         # Build result object with company info and normalized filing list
-        filings_list = (
-            (filings_data.get("filings") or [])[:NUM_FILINGS] if filings_data else []
-        )
+        filings_list = (filings_data.get("filings") or [])[:NUM_FILINGS] if filings_data else []
         result = {
             "company": company_info.get("companyName", SEARCH_QUERY),
             "cik": company_info.get("cik", "Unknown"),

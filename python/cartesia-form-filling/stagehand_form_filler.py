@@ -6,12 +6,12 @@ mapping, field filling, and form submission.
 """
 
 import asyncio
+import os
 from dataclasses import dataclass
 from enum import Enum
-import os
-from typing import Dict, List, Optional
 
 from loguru import logger
+
 from stagehand import AsyncStagehand
 
 
@@ -33,7 +33,7 @@ class FormField:
     field_type: FieldType
     label: str
     required: bool = False
-    options: Optional[List[str]] = None
+    options: list[str] | None = None
 
 
 class FormFieldMapping:
@@ -110,7 +110,7 @@ class FormFieldMapping:
             ),
         }
 
-    def get_form_field(self, question_id: str) -> Optional[FormField]:
+    def get_form_field(self, question_id: str) -> FormField | None:
         """Get the form field mapping for a question ID.
 
         Args:
@@ -127,11 +127,11 @@ class StagehandFormFiller:
 
     def __init__(self, form_url: str):
         self.form_url = form_url
-        self.client: Optional[AsyncStagehand] = None
+        self.client: AsyncStagehand | None = None
         self.session = None
         self.is_initialized = False
         self.field_mapper = FormFieldMapping()
-        self.collected_data: Dict[str, str] = {}
+        self.collected_data: dict[str, str] = {}
 
     async def initialize(self) -> None:
         """Initialize Stagehand and open the form.
@@ -151,7 +151,9 @@ class StagehandFormFiller:
                 model_api_key=os.environ.get("GEMINI_API_KEY"),
             )
 
-            self.session = await self.client.sessions.create(model_name="google/gemini-3-flash-preview")
+            self.session = await self.client.sessions.create(
+                model_name="google/gemini-3-flash-preview"
+            )
 
             logger.info(f"Session started: {self.session.id}")
 
