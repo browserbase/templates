@@ -5,7 +5,6 @@ import asyncio
 import csv
 import json
 import os
-import re
 import webbrowser
 import zipfile
 from pathlib import Path
@@ -17,17 +16,16 @@ from stagehand import AsyncStagehand
 
 # Load environment variables from .env file
 # Required: BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, GOOGLE_API_KEY
-# Optional: EXTEND_API_KEY, EXTEND_PROCESSOR_ID
+# Optional: EXTEND_API_KEY
 load_dotenv()
 
 
 # Receipt extraction config for Extend AI
-# Uses extraction_light base processor with parse_performance engine for low latency
+# Uses extraction_light base extractor with parse_performance engine for low latency
 RECEIPT_EXTRACTION_CONFIG = {
-    "type": "EXTRACT",
     "baseProcessor": "extraction_light",
     "baseVersion": "3.4.0",
-    "parser": {
+    "parseConfig": {
         "engine": "parse_performance",
         "target": "markdown",
         "blockOptions": {
@@ -285,69 +283,14 @@ def extract_files_from_zip(zip_path: str, output_dir: str = "output/documents") 
     return extracted_files
 
 
-# Gets existing Extend processor or creates a new one, saving the ID to .env for reuse.
-# This avoids recreating the processor on every run.
-async def get_or_create_processor(extend_client: Extend) -> str:
-    """
-    Get an existing Extend processor or create a new one.
-
-    Checks for EXTEND_PROCESSOR_ID in environment. If not found, creates a new
-    'Receipt Extractor' processor and saves the ID to .env for future runs.
-
-    Args:
-        extend_client: Extend client instance for API calls
-
-    Returns:
-        str: The processor ID
-    """
-    # Check if a processor ID already exists in environment
-    existing_id = os.environ.get("EXTEND_PROCESSOR_ID")
-    if existing_id and existing_id != "YOUR_EXTEND_PROCESSOR_ID_HERE":
-        print(f"Using existing processor: {existing_id}")
-        return existing_id
-
-    # Create a new Receipt Extractor processor via the Extend API
-    print("No EXTEND_PROCESSOR_ID found. Creating 'Receipt Extractor' processor...")
-
-    response = await asyncio.to_thread(
-        extend_client.processor.create,
-        name="Receipt Extractor",
-        type="EXTRACT",
-        config=RECEIPT_EXTRACTION_CONFIG,
-    )
-
-    processor_id = response.processor.id
-    print(f"Created processor: {processor_id}")
-    print(f"  View in dashboard: https://dashboard.extend.app/studio/processors/{processor_id}")
-
-    # Persist the processor ID to .env so we don't recreate on next run
-    env_path = Path(".env")
-    if env_path.exists():
-        env_content = env_path.read_text()
-        if "EXTEND_PROCESSOR_ID=" in env_content:
-            env_content = re.sub(
-                r"EXTEND_PROCESSOR_ID=.*",
-                f"EXTEND_PROCESSOR_ID={processor_id}",
-                env_content,
-            )
-        else:
-            env_content += f"\nEXTEND_PROCESSOR_ID={processor_id}\n"
-        env_path.write_text(env_content)
-    else:
-        with open(env_path, "a") as f:
-            f.write(f"EXTEND_PROCESSOR_ID={processor_id}\n")
-    print("  Saved EXTEND_PROCESSOR_ID to .env for future runs.")
-
-    return processor_id
-
-
 # Uploads receipt files to Extend AI, runs extraction, and saves results as JSON and CSV
 async def parse_receipts_with_extend(file_paths: list[str]) -> None:
     """
     Upload receipt files to Extend AI, run extraction, and save results.
 
-    Initializes the Extend client, gets or creates a processor, uploads each file,
-    runs synchronous extraction, and saves results as JSON and CSV.
+    Initializes the Extend client, uploads each file, runs synchronous extraction
+    using inline config (no need to pre-create an extractor resource), and saves
+    results as JSON and CSV.
 
     Args:
         file_paths: List of file paths to receipt documents
@@ -361,14 +304,10 @@ async def parse_receipts_with_extend(file_paths: list[str]) -> None:
 
     print("\n=== Parsing Receipts with Extend AI ===\n")
 
-    # Initialize Extend AI client and get or create the receipt processor
+    # Initialize Extend AI client
     extend_client = Extend(token=extend_api_key)
-    processor_id = await get_or_create_processor(extend_client)
 
-    print(f"Processing {len(file_paths)} receipts...")
-    runs_url = f"https://dashboard.extend.app/studio/processors/{processor_id}?tab=Runs"
-    print(f"View all runs: {runs_url}\n")
-    open_in_browser(runs_url)
+    print(f"Processing {len(file_paths)} receipts with inline config...\n")
 
     # Process all files with retry on rate limiting (429 errors)
     results: list[dict] = []
@@ -384,39 +323,31 @@ async def parse_receipts_with_extend(file_paths: list[str]) -> None:
                 with open(file_path, "rb") as f:
                     file_bytes = f.read()
                 upload_response = await asyncio.to_thread(
-                    extend_client.file.upload,
+                    extend_client.files.upload,
                     file=(file_name, file_bytes),
                 )
-                file_id = upload_response.file.id
+                file_id = upload_response.id
 
-                # Run extraction on the uploaded file
-                extraction_response = await asyncio.to_thread(
-                    extend_client.processor_run.create,
-                    processor_id=processor_id,
-                    file={"fileId": file_id},
-                    sync=True,
+                # Run extraction using inline config — no need to pre-create an extractor
+                result = await asyncio.to_thread(
+                    extend_client.extract,
                     config=RECEIPT_EXTRACTION_CONFIG,
+                    file={"id": file_id},
                 )
 
-                parsed_data = extraction_response.processor_run
-                run_id = parsed_data.id
-                run_url = (
-                    f"https://dashboard.extend.app/studio/processors/{processor_id}/runs/{run_id}"
-                )
-                print(f"  Parsed {file_name}")
-                print(f"    -> {run_url}")
+                run_id = result.id
+                print(f"  Parsed {file_name} (run: {run_id})")
 
                 # Convert to dict for JSON serialization
-                data = parsed_data
-                if hasattr(parsed_data, "to_dict"):
-                    data = parsed_data.to_dict()
-                elif hasattr(parsed_data, "dict"):
-                    data = parsed_data.dict()
+                data = result
+                if hasattr(result, "to_dict"):
+                    data = result.to_dict()
+                elif hasattr(result, "dict"):
+                    data = result.dict()
 
                 return {
                     "file": file_name,
                     "runId": run_id,
-                    "runUrl": run_url,
                     "data": data,
                 }
             except Exception as error:
@@ -457,7 +388,6 @@ async def parse_receipts_with_extend(file_paths: list[str]) -> None:
         writer.writerow(
             [
                 "file",
-                "run_url",
                 "vendor_name",
                 "receipt_date",
                 "receipt_number",
@@ -480,7 +410,6 @@ async def parse_receipts_with_extend(file_paths: list[str]) -> None:
             writer.writerow(
                 [
                     result.get("file", ""),
-                    result.get("runUrl", ""),
                     output.get("vendor_name", ""),
                     output.get("receipt_date", ""),
                     output.get("receipt_number", ""),
@@ -496,7 +425,6 @@ async def parse_receipts_with_extend(file_paths: list[str]) -> None:
             )
 
     print(f"Saved CSV:  {csv_path}")
-    print(f"\nView all runs: {runs_url}")
 
 
 async def main() -> None:

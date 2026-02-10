@@ -91,12 +91,11 @@ function extractFilesFromZip(zipPath: string, outputDir: string = "output/docume
 }
 
 // Receipt extraction config for Extend AI
-// Uses extraction_light base processor with parse_performance engine for low latency
+// Uses extraction_light base extractor with parse_performance engine for low latency
 const receiptExtractionConfig = {
-  type: "EXTRACT",
   baseProcessor: "extraction_light",
   baseVersion: "3.4.0",
-  parser: {
+  parseConfig: {
     engine: "parse_performance",
     target: "markdown",
     blockOptions: {
@@ -228,50 +227,6 @@ const receiptExtractionConfig = {
   },
 };
 
-// Gets existing Extend processor or creates a new one, saving the ID to .env for reuse.
-// This avoids recreating the processor on every run.
-async function getOrCreateProcessor(client: ExtendClient): Promise<string> {
-  // Check if a processor ID already exists in environment
-  const existingId = process.env.EXTEND_PROCESSOR_ID;
-  if (existingId && existingId !== "YOUR_EXTEND_PROCESSOR_ID_HERE") {
-    console.log(`Using existing processor: ${existingId}`);
-    return existingId;
-  }
-
-  // Create a new Receipt Extractor processor via the Extend API
-  console.log("No EXTEND_PROCESSOR_ID found. Creating 'Receipt Extractor' processor...");
-
-  const response = await client.processor.create({
-    name: "Receipt Extractor",
-    type: "EXTRACT",
-    config: receiptExtractionConfig as Parameters<typeof client.processor.create>[0]["config"],
-  });
-
-  const processorId = response.processor.id;
-  console.log(`Created processor: ${processorId}`);
-  console.log(`  View in dashboard: https://dashboard.extend.app/studio/processors/${processorId}`);
-
-  // Persist the processor ID to .env so we don't recreate on next run
-  const envPath = path.resolve(".env");
-  if (fs.existsSync(envPath)) {
-    let envContent = fs.readFileSync(envPath, "utf-8");
-    if (envContent.includes("EXTEND_PROCESSOR_ID=")) {
-      envContent = envContent.replace(
-        /EXTEND_PROCESSOR_ID=.*/,
-        `EXTEND_PROCESSOR_ID=${processorId}`,
-      );
-    } else {
-      envContent += `\nEXTEND_PROCESSOR_ID=${processorId}\n`;
-    }
-    fs.writeFileSync(envPath, envContent);
-  } else {
-    fs.writeFileSync(envPath, `EXTEND_PROCESSOR_ID=${processorId}\n`, { flag: "a" });
-  }
-  console.log("  Saved EXTEND_PROCESSOR_ID to .env for future runs.");
-
-  return processorId;
-}
-
 // Uploads receipt files to Extend AI, runs extraction, and saves results as JSON and CSV
 async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
   // Skip parsing if Extend API key is not configured
@@ -283,18 +238,14 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
 
   console.log("\n=== Parsing Receipts with Extend AI ===\n");
 
-  // Initialize Extend AI client and get or create the receipt processor
+  // Initialize Extend AI client
   // SDK auto-retries 429s and 5xx errors with exponential backoff
   const client = new ExtendClient({ token: process.env.EXTEND_API_KEY });
-  const processorId = await getOrCreateProcessor(client);
 
-  console.log(`Processing ${filePaths.length} receipts...`);
-  const runsUrl = `https://dashboard.extend.app/studio/processors/${processorId}?tab=Runs`;
-  console.log(`View all runs: ${runsUrl}\n`);
-  openInBrowser(runsUrl);
+  console.log(`Processing ${filePaths.length} receipts with inline config...\n`);
 
   // Process all files - SDK handles retries automatically with exponential backoff
-  const results: { file: string; runId?: string; runUrl?: string; data: unknown }[] = [];
+  const results: { file: string; runId?: string; data: unknown }[] = [];
 
   // Process in batches of 9 to balance speed and reliability
   for (let i = 0; i < filePaths.length; i += 9) {
@@ -306,31 +257,24 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
           // Upload the file to Extend
           const fileBuffer = fs.readFileSync(filePath);
           const blob = new Blob([fileBuffer]);
-          const uploadResponse = await client.file.upload(
-            blob as Parameters<typeof client.file.upload>[0],
+          const uploadResponse = await client.files.upload(
+            blob as Parameters<typeof client.files.upload>[0],
             { maxRetries: 4 },
           );
-          const fileId = uploadResponse.file.id;
+          const fileId = uploadResponse.id;
 
-          // Run extraction on the uploaded file
-          const extractionResponse = await client.processorRun.create(
+          // Run extraction using inline config — no need to pre-create an extractor resource
+          const result = await client.extract(
             {
-              processorId,
-              file: { fileId },
-              sync: true,
-              config: receiptExtractionConfig as Parameters<
-                typeof client.processorRun.create
-              >[0]["config"],
+              config: receiptExtractionConfig as Parameters<typeof client.extract>[0]["config"],
+              file: { id: fileId },
             },
             { maxRetries: 4 },
           );
 
-          const parsedData = extractionResponse.processorRun;
-          const runId = parsedData.id;
-          const runUrl = `https://dashboard.extend.app/studio/processors/${processorId}/runs/${runId}`;
-          console.log(`  Parsed ${fileName}`);
-          console.log(`    → ${runUrl}`);
-          return { file: fileName, runId, runUrl, data: parsedData };
+          const runId = result.id;
+          console.log(`  Parsed ${fileName} (run: ${runId})`);
+          return { file: fileName, runId, data: result };
         } catch (error) {
           const errorMsg = error instanceof Error ? error.message : String(error);
           console.error(`  Failed to parse ${fileName}:`, errorMsg);
@@ -349,10 +293,10 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
   // Convert results to CSV for easy viewing in spreadsheet tools
   const csvRows: string[] = [];
   csvRows.push(
-    "file,run_url,vendor_name,receipt_date,receipt_number,total_amount,currency,subtotal,tax,payment_method,line_items_count",
+    "file,vendor_name,receipt_date,receipt_number,total_amount,currency,subtotal,tax,payment_method,line_items_count",
   );
 
-  // Shape of the extracted receipt data from Extend processor runs
+  // Shape of the extracted receipt data from Extend extract runs
   type ReceiptOutput = {
     vendor_name?: string;
     receipt_date?: string;
@@ -370,7 +314,6 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
     const output: ReceiptOutput = data?.output?.value || {};
     const row = [
       result.file,
-      result.runUrl || "",
       output.vendor_name || "",
       output.receipt_date || "",
       output.receipt_number || "",
@@ -389,8 +332,6 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
   const csvPath = "output/results/receipts.csv";
   fs.writeFileSync(csvPath, csvRows.join("\n"));
   console.log(`Saved CSV:  ${csvPath}`);
-
-  console.log(`\nView all runs: ${runsUrl}`);
 }
 
 async function main(): Promise<void> {
