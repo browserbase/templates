@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "browserbase>=1.4.0",
-    "extend-ai>=0.0.21",
+    "extend-ai>=1.0.0",
     "python-dotenv>=1.2.1",
     "stagehand>=3.5.0",
 ]

@@ -12,7 +12,7 @@
     "@browserbasehq/stagehand": "^3.0.8",
     "adm-zip": "^0.5.16",
     "dotenv": "^17.2.4",
-    "extend-ai": "^0.0.18",
+    "extend-ai": "^1.0.2",
     "open": "^11.0.0"
   },
   "devDependencies": {

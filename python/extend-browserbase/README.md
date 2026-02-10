@@ -6,7 +6,7 @@
 - **Pattern Template**: Demonstrates the integration pattern of Browserbase (browser automation + download capture) + Extend AI (schema-based document extraction).
 - **Workflow**: Stagehand navigates the expense portal and clicks each receipt's download link; Browserbase captures downloads. The script polls for the session's download ZIP, extracts files, then optionally sends them to Extend for structured extraction (vendor, date, totals, line items, etc.).
 - **Download Handling**: Implements retry/polling around Browserbase's Session Downloads API until the ZIP is available.
-- **Structured Extraction**: Extend EXTRACT processor with a receipt JSON schema; results written to `output/results/receipts.json` and `receipts.csv`.
+- **Structured Extraction**: Extend AI extraction with inline receipt JSON schema config; results written to `output/results/receipts.json` and `receipts.csv`.
 - Docs → [Browserbase Downloads](https://docs.browserbase.com/features/downloads) | [Extend AI](https://docs.extend.app)
 
 ## GLOSSARY
@@ -17,7 +17,7 @@
   Docs → https://docs.stagehand.dev/basics/observe
 - **Browserbase Downloads**: When files are downloaded during a browser session, Browserbase captures and stores them. Files are retrieved via the Session Downloads API as a ZIP archive.
   Docs → https://docs.browserbase.com/features/downloads
-- **Extend EXTRACT processor**: A configurable document extraction pipeline that parses files against a JSON schema and returns structured data. Processors are reusable and persist across runs.
+- **Extend AI extraction**: A configurable document extraction pipeline that parses files against a JSON schema and returns structured data. Config can be passed inline or via a saved extractor resource.
   Docs → https://docs.extend.app
 - **Download polling**: Browserbase syncs downloads in real-time; the script retries every 2 seconds until the ZIP is available or a timeout is reached.
 
@@ -42,8 +42,7 @@
 - Navigates to the expense portal and finds all per-receipt download links via observe
 - Clicks each download button; Browserbase captures files
 - After closing the session, polls for the session's download ZIP and extracts to `output/documents/`
-- If `EXTEND_API_KEY` is set: creates/uses an Extend "Receipt Extractor" processor, uploads each file, runs extraction, writes `output/results/receipts.json` and `receipts.csv`
-- Opens the Extend dashboard runs page in your browser for review
+- If `EXTEND_API_KEY` is set: uploads each file to Extend and runs extraction with inline config, writes `output/results/receipts.json` and `receipts.csv`
 - Closes session cleanly
 
 ## COMMON PITFALLS
