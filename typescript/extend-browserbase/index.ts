@@ -6,6 +6,7 @@ import { Stagehand } from "@browserbasehq/stagehand";
 import fs from "fs";
 import path from "path";
 import AdmZip from "adm-zip";
+import type { Extend } from "extend-ai";
 import { ExtendClient } from "extend-ai";
 import open from "open";
 
@@ -92,7 +93,8 @@ function extractFilesFromZip(zipPath: string, outputDir: string = "output/docume
 
 // Receipt extraction config for Extend AI
 // Uses extraction_light base extractor with parse_performance engine for low latency
-const receiptExtractionConfig = {
+// Typed as ExtractConfigJson for type safety and autocomplete (no type casting)
+const receiptExtractionConfig: Extend.ExtractConfigJson = {
   baseProcessor: "extraction_light",
   baseVersion: "3.4.0",
   parseConfig: {
@@ -266,7 +268,7 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
           // Run extraction using inline config — no need to pre-create an extractor resource
           const result = await client.extract(
             {
-              config: receiptExtractionConfig as Parameters<typeof client.extract>[0]["config"],
+              config: receiptExtractionConfig,
               file: { id: fileId },
             },
             { maxRetries: 4 },
