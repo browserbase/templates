@@ -117,15 +117,16 @@ const receiptExtractionConfig: Extend.ExtractConfigJson = {
       },
     },
     engineVersion: "1.0.1",
+    // API accepts more options than SDK types; assert for known-valid extras (engine, agenticOcrEnabled, pageBreaksEnabled)
     advancedOptions: {
       engine: "parse_performance",
       agenticOcrEnabled: false,
       pageBreaksEnabled: true,
       pageRotationEnabled: false,
       verticalGroupingThreshold: 1,
-    },
+    } as Extend.ParseConfigAdvancedOptions,
     chunkingStrategy: { type: "document" },
-  },
+  } as Extend.ParseConfig, // engineVersion and other API-accepted fields not in SDK type
   schema: {
     type: "object",
     required: [
@@ -219,6 +220,7 @@ const receiptExtractionConfig: Extend.ExtractConfigJson = {
     },
     additionalProperties: false,
   },
+  // API accepts advancedFigureParsingEnabled; SDK type is narrower
   advancedOptions: {
     advancedMultimodalEnabled: false,
     citationsEnabled: true,
@@ -226,7 +228,7 @@ const receiptExtractionConfig: Extend.ExtractConfigJson = {
     pageRanges: [],
     chunkingOptions: {},
     advancedFigureParsingEnabled: true,
-  },
+  } as Extend.ExtractAdvancedOptions,
 };
 
 // Uploads receipt files to Extend AI, runs extraction, and saves results as JSON and CSV
@@ -256,11 +258,9 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
       batch.map(async (filePath) => {
         const fileName = path.basename(filePath);
         try {
-          // Upload the file to Extend
-          const fileBuffer = fs.readFileSync(filePath);
-          const blob = new Blob([fileBuffer]);
+          // Upload the file to Extend (ReadStream is accepted by SDK, no cast needed)
           const uploadResponse = await client.files.upload(
-            blob as Parameters<typeof client.files.upload>[0],
+            fs.createReadStream(filePath),
             { maxRetries: 4 },
           );
           const fileId = uploadResponse.id;
