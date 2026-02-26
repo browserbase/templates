@@ -229,7 +229,7 @@ async function main() {
     // Clean up
     await deleteContext(contextId);
 
-    console.log("════════════════════════════════════���══════════════════════");
+    console.log("═══════════════════════════════════════════════════════════");
     console.log("Key Takeaway:");
     console.log("═══════════════════════════════════════════════════════════");
     console.log("✅ First session: User completes MFA once");
