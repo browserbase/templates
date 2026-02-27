@@ -2,7 +2,7 @@
 
 import "dotenv/config";
 import { Stagehand } from "@browserbasehq/stagehand";
-import Browserbase from "@browserbasehq/sdk";
+import { Browserbase } from "@browserbasehq/sdk";
 import { z } from "zod";
 
 const bb = new Browserbase({
@@ -15,9 +15,7 @@ const bb = new Browserbase({
 async function createSessionWithContext() {
   console.log("Creating new Browserbase context...");
 
-  const context = await bb.contexts.create({
-    projectId: process.env.BROWSERBASE_PROJECT_ID!,
-  });
+  const context = await bb.createContext()
 
   console.log(`Context created: ${context.id}`);
   console.log("First session: Performing login with MFA...");
