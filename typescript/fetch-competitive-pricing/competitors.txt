@@ -1,0 +1,8 @@
+# Competitor pricing pages — one URL per line
+# Lines starting with # or empty lines are ignored
+
+https://www.browserbase.com/pricing
+https://www.kernel.sh/pricing
+https://browser-use.com/pricing
+https://www.hyperbrowser.ai/pricing
+https://www.tinyfish.ai/pricing
