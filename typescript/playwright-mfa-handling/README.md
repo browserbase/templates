@@ -61,7 +61,7 @@ const hasFailure = await page.locator('text="Login Failure"').isVisible();
 1. cd playwright-mfa-handling
 2. pnpm install
 3. cp .env.example .env
-4. Add required API keys/IDs to .env (BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY)
+4. Add required API keys/IDs to .env (BROWSERBASE_API_KEY)
 5. pnpm start
 
 ## EXPECTED OUTPUT
@@ -79,7 +79,7 @@ const hasFailure = await page.locator('text="Login Failure"').isVisible();
 ## COMMON PITFALLS
 
 - Dependency install errors: ensure pnpm install completed
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - TOTP code expiration: codes are valid for 30 seconds - if authentication fails, the script automatically retries with a fresh code
 - CDP connection issues: ensure stable internet connection for reliable Browserbase connection
 - Selector changes: if the demo site structure changes, Playwright selectors may need updating

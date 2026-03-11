@@ -22,7 +22,6 @@ def main():
 
     # Create session with captcha solving enabled
     session = bb.sessions.create(
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         browser_settings={
             "solveCaptchas": solve_captchas,
         },

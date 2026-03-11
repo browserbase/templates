@@ -66,7 +66,6 @@ def get_weather_for_location(geolocation: GeolocationConfig) -> WeatherResult:
 
     # Create session with geolocation proxy
     session = bb.sessions.create(
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         proxies=[proxy_config],
     )
     session_id = session.id

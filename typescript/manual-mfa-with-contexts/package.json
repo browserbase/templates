@@ -9,7 +9,7 @@
     "dev": "tsx watch index.ts"
   },
   "dependencies": {
-    "@browserbasehq/sdk": "^1.0.0",
+    "@browserbasehq/sdk": "^2.7.0",
     "@browserbasehq/stagehand": "^3.0.0",
     "dotenv": "^16.4.5",
     "zod": "^3.23.8"

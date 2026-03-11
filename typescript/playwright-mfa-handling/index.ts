@@ -73,15 +73,9 @@ async function createBrowserbaseSession(): Promise<BrowserSession> {
   if (!process.env.BROWSERBASE_API_KEY) {
     throw new Error("BROWSERBASE_API_KEY environment variable is required");
   }
-  if (!process.env.BROWSERBASE_PROJECT_ID) {
-    throw new Error("BROWSERBASE_PROJECT_ID environment variable is required");
-  }
-
   const bb = new Browserbase({ apiKey: process.env.BROWSERBASE_API_KEY });
 
-  const session = await bb.sessions.create({
-    projectId: process.env.BROWSERBASE_PROJECT_ID,
-  });
+  const session = await bb.sessions.create();
 
   console.log(`Session created: https://browserbase.com/sessions/${session.id}`);
 
@@ -236,7 +230,7 @@ async function main() {
 main().catch((err) => {
   console.error("\nError in MFA handling:", err);
   console.error("\nCommon issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - TOTP code may have expired (try running again)");
   console.error("  - Page structure may have changed");
   process.exit(1);

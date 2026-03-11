@@ -16,9 +16,6 @@ async function generateOneLiner(domain: string): Promise<string> {
     env: "BROWSERBASE",
     model: "openai/gpt-4.1",
     verbose: 0, //  0 = errors only, 1 = info, 2 = debug
-    browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
-    },
   });
 
   try {

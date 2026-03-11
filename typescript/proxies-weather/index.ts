@@ -34,7 +34,6 @@ async function getWeatherForLocation(geolocation: GeolocationConfig): Promise<We
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
     // https://docs.stagehand.dev/configuration/logging
     browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
       proxies: [
         {
           type: "browserbase", // Use Browserbase's managed proxy infrastructure for reliable geolocation routing

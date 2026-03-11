@@ -41,7 +41,6 @@ async def main():
             "GOOGLE_API_KEY"
         ),  # this is the model stagehand uses in act, observe, extract (not agent)
         browserbase_session_create_params={
-            "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
             "proxies": True,  # Using proxies will give the agent a better chance of success - requires Developer Plan or higher, comment out if you don't have access
             "region": "us-west-2",
             "browser_settings": {"block_ads": True, "viewport": {"width": 1288, "height": 711}},

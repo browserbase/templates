@@ -21,9 +21,6 @@ async function main() {
     env: "BROWSERBASE",
     model: "openai/gpt-4.1",
     verbose: 1,
-    browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
-    },
   });
 
   try {

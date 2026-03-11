@@ -5,7 +5,7 @@ description = "Download expense receipts and parse with Extend AI using Stagehan
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "browserbase>=1.4.0",
+    "browserbase>=1.5.0",
     "extend-ai>=1.0.0",
     "python-dotenv>=1.2.1",
     "stagehand>=3.5.0",

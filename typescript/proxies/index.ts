@@ -13,7 +13,6 @@ const bb = new Browserbase({ apiKey: process.env.BROWSERBASE_API_KEY! });
 async function createSessionWithBuiltInProxies() {
   // Use Browserbase's default proxy rotation for enhanced privacy and IP diversity.
   const session = await bb.sessions.create({
-    projectId: process.env.BROWSERBASE_PROJECT_ID!,
     proxies: true, // Enables automatic proxy rotation across different IP addresses.
   });
   return session;
@@ -22,7 +21,6 @@ async function createSessionWithBuiltInProxies() {
 async function createSessionWithGeoLocation() {
   // Route traffic through specific geographic location to test location-based restrictions.
   const session = await bb.sessions.create({
-    projectId: process.env.BROWSERBASE_PROJECT_ID!,
     proxies: [
       {
         type: "browserbase", // Use Browserbase's managed proxy infrastructure.
@@ -40,7 +38,6 @@ async function createSessionWithGeoLocation() {
 async function createSessionWithCustomProxies() {
   // Use external proxy servers for custom routing or specific proxy requirements.
   const session = await bb.sessions.create({
-    projectId: process.env.BROWSERBASE_PROJECT_ID!,
     proxies: [
       {
         type: "external", // Connect to your own proxy server infrastructure.

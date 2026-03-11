@@ -8,7 +8,7 @@
     "start": "tsx index.ts"
   },
   "dependencies": {
-    "@browserbasehq/sdk": "^2.6.0",
+    "@browserbasehq/sdk": "^2.7.0",
     "@browserbasehq/stagehand": "^3.0.8",
     "adm-zip": "^0.5.16",
     "dotenv": "^17.2.4",

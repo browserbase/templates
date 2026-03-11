@@ -5,7 +5,7 @@ description = "Basic reCAPTCHA solving with Playwright and Browserbase"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "browserbase",
+    "browserbase>=1.5.0",
     "playwright",
     "python-dotenv",
 ]

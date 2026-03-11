@@ -27,9 +27,6 @@ async def main():
         project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         model_name="openai/gpt-4.1",
         model_api_key=os.environ.get("OPENAI_API_KEY"),
-        browserbase_session_create_params={
-            "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
-        },
         verbose=1,  # 0 = errors only, 1 = info, 2 = debug
         # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
         # https://docs.stagehand.dev/configuration/logging

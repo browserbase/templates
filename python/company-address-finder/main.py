@@ -80,7 +80,6 @@ async def process_company(company_name: str) -> CompanyData:
                 # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
                 # https://docs.stagehand.dev/configuration/logging
                 browserbase_session_create_params={
-                    "project_id": os.environ.get("BROWSERBASE_PROJECT_ID"),
                     "region": "us-east-1",
                     "timeout": 900,
                     "browser_settings": {

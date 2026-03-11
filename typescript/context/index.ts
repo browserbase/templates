@@ -10,16 +10,13 @@ async function createSessionContextID() {
   console.log("Creating new Browserbase context...");
   // First create a context using Browserbase SDK to get a context ID.
   const bb = new Browserbase({ apiKey: process.env.BROWSERBASE_API_KEY! });
-  const context = await bb.contexts.create({
-    projectId: process.env.BROWSERBASE_PROJECT_ID!,
-  });
+  const context = await bb.contexts.create();
 
   console.log("Created context ID:", context.id);
 
   // Create a single session using the context ID to perform initial login.
   console.log("Creating session for initial login...");
   const session = await bb.sessions.create({
-    projectId: process.env.BROWSERBASE_PROJECT_ID!,
     browserSettings: {
       context: {
         id: context.id,
@@ -96,7 +93,6 @@ async function main() {
     model: "openai/gpt-4.1",
     verbose: 1,
     browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
       browserSettings: {
         context: {
           id: contextId.id,

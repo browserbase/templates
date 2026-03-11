@@ -12,24 +12,20 @@ const SOLVE_CAPTCHAS = true; // Set to false to disable automatic captcha solvin
 
 // Validate required environment variables before starting.
 // Browserbase credentials are required to create browser sessions.
-function validateEnv(): { apiKey: string; projectId: string } {
+function validateEnv(): { apiKey: string } {
   const apiKey = process.env.BROWSERBASE_API_KEY;
-  const projectId = process.env.BROWSERBASE_PROJECT_ID;
 
   if (!apiKey) {
     throw new Error("BROWSERBASE_API_KEY environment variable is required");
   }
-  if (!projectId) {
-    throw new Error("BROWSERBASE_PROJECT_ID environment variable is required");
-  }
 
-  return { apiKey, projectId };
+  return { apiKey };
 }
 
 async function main() {
   console.log("Starting Playwright + Browserbase reCAPTCHA Example...");
 
-  const { apiKey, projectId } = validateEnv();
+  const { apiKey } = validateEnv();
 
   // Initialize the Browserbase SDK client.
   const bb = new Browserbase({ apiKey });
@@ -39,7 +35,6 @@ async function main() {
   // Docs: https://docs.browserbase.com/features/stealth-mode#captcha-solving
   console.log("Creating Browserbase session with captcha solving enabled...");
   const session = await bb.sessions.create({
-    projectId,
     browserSettings: {
       solveCaptchas: SOLVE_CAPTCHAS,
     },
@@ -143,7 +138,7 @@ async function main() {
 main().catch((err) => {
   console.error("Application error:", err);
   console.error("\nCommon issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Verify solveCaptchas is enabled (true by default)");
   console.error("  - Allow up to 60 seconds for CAPTCHA solving to complete");
   console.error("  - Enable proxies for higher success rates");

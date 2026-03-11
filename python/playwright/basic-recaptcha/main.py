@@ -16,32 +16,29 @@ DEMO_URL = "https://google.com/recaptcha/api2/demo"
 SOLVE_CAPTCHAS = True  # Set to False to disable automatic captcha solving
 
 
-def validate_env() -> tuple[str, str]:
+def validate_env() -> str:
     """Validate required environment variables before starting.
 
     Browserbase credentials are required to create browser sessions.
 
     Returns:
-        Tuple of (api_key, project_id)
+        The api_key string
 
     Raises:
         ValueError: If required environment variables are missing
     """
     api_key = os.environ.get("BROWSERBASE_API_KEY")
-    project_id = os.environ.get("BROWSERBASE_PROJECT_ID")
 
     if not api_key:
         raise ValueError("BROWSERBASE_API_KEY environment variable is required")
-    if not project_id:
-        raise ValueError("BROWSERBASE_PROJECT_ID environment variable is required")
 
-    return api_key, project_id
+    return api_key
 
 
 async def main():
     print("Starting Playwright + Browserbase reCAPTCHA Example...")
 
-    api_key, project_id = validate_env()
+    api_key = validate_env()
 
     # Initialize the Browserbase SDK client.
     bb = Browserbase(api_key=api_key)
@@ -52,7 +49,6 @@ async def main():
     # Docs: https://docs.browserbase.com/features/stealth-mode#captcha-solving
     print("Creating Browserbase session with captcha solving enabled...")
     session = bb.sessions.create(
-        project_id=project_id,
         browser_settings={"solveCaptchas": SOLVE_CAPTCHAS},
     )
 
@@ -145,7 +141,7 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"Application error: {err}")
         print("\nCommon issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print("  - Verify solveCaptchas is enabled (True by default)")
         print("  - Allow up to 60 seconds for CAPTCHA solving to complete")
         print("  - Enable proxies for higher success rates")

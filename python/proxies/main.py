@@ -32,7 +32,6 @@ class GeoInfo(BaseModel):
 def create_session_with_built_in_proxies():
     # Use Browserbase's default proxy rotation for enhanced privacy and IP diversity.
     session = bb.sessions.create(
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         proxies=True,
     )
     return session
@@ -41,7 +40,6 @@ def create_session_with_built_in_proxies():
 def create_session_with_geo_location():
     # Route traffic through specific geographic location to test location-based restrictions.
     session = bb.sessions.create(
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         proxies=[
             {
                 "type": "browserbase",
@@ -59,7 +57,6 @@ def create_session_with_geo_location():
 def create_session_with_custom_proxies():
     # Use external proxy servers for custom routing or specific proxy requirements.
     session = bb.sessions.create(
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         proxies=[
             {
                 "type": "external",

@@ -236,7 +236,6 @@ async function main(): Promise<void> {
       // https://docs.stagehand.dev/configuration/logging
       model: "openai/gpt-4.1",
       browserbaseSessionCreateParams: {
-        projectId: process.env.BROWSERBASE_PROJECT_ID!,
         // Proxies require Developer Plan or higher - comment in if you have a Developer Plan or higher
         //   proxies: [
         //     {

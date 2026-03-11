@@ -401,7 +401,6 @@ async function bookTennisPaddleCourt() {
     // https://docs.stagehand.dev/configuration/logging
     model: "openai/gpt-4.1",
     browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
       timeout: 900,
       region: "us-west-2",
     },

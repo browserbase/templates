@@ -6,7 +6,7 @@
     "start": "tsx index.ts"
   },
   "dependencies": {
-    "@browserbasehq/sdk": "latest",
+    "@browserbasehq/sdk": "^2.7.0",
     "playwright-core": "latest",
     "dotenv": "^16.4.7"
   },

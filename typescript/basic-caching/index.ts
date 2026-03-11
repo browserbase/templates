@@ -20,9 +20,6 @@ async function runWithoutCache() {
     // https://docs.stagehand.dev/configuration/logging
     model: "google/gemini-2.5-flash",
     enableCaching: false,
-    browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
-    },
   });
 
   await stagehand.init();
@@ -69,9 +66,6 @@ async function runWithCache() {
     model: "google/gemini-2.5-flash",
     enableCaching: true,
     cacheDir: CACHE_DIR,
-    browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
-    },
   });
 
   await stagehand.init();

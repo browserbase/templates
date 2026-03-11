@@ -70,7 +70,7 @@ browserSettings: {
 1. cd typescript/playwright/basic-recaptcha
 2. pnpm install
 3. cp .env.example .env
-4. Add your Browserbase API key and Project ID to .env
+4. Add your Browserbase API key to .env
 5. pnpm start
 
 ## EXPECTED OUTPUT
@@ -88,7 +88,7 @@ browserSettings: {
 
 ## COMMON PITFALLS
 
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Captcha solving timeout: the template uses a 60-second timeout; increase if needed for complex CAPTCHAs
 - No browser context: ensure the Browserbase session was created successfully before connecting
 - Proxies not enabled: enable proxies in browserSettings for higher CAPTCHA solving success rates

@@ -21,14 +21,13 @@ def create_session_with_context():
     """First session: Create context and login (with MFA)"""
     print("Creating new Browserbase context...")
 
-    context = bb.contexts.create(project_id=os.environ.get("BROWSERBASE_PROJECT_ID"))
+    context = bb.contexts.create()
 
     print(f"Context created: {context.id}")
     print("First session: Performing login with MFA...")
 
     # Create session with context
     session = bb.sessions.create(
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         browser_settings={
             "context": {
                 "id": context.id,
@@ -139,7 +138,6 @@ def reuse_context(context_id: str):
 
     # Create session with existing context
     session = bb.sessions.create(
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         browser_settings={
             "context": {
                 "id": context_id,

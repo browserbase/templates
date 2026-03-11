@@ -114,7 +114,6 @@ async def get_products_for_country(
     print(f"Creating Browserbase session with {country.name} proxy...")
     session = await asyncio.to_thread(
         bb.sessions.create,
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         proxies=[
             {
                 "type": "browserbase",  # Use Browserbase's managed proxy infrastructure

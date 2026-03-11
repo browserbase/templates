@@ -18,14 +18,13 @@ def create_session_context_id():
     print("Creating new Browserbase context...")
     # First create a context using Browserbase SDK to get a context ID.
     bb = Browserbase(api_key=os.environ.get("BROWSERBASE_API_KEY"))
-    context = bb.contexts.create(project_id=os.environ.get("BROWSERBASE_PROJECT_ID"))
+    context = bb.contexts.create()
 
     print(f"Created context ID: {context.id}")
 
     # Create a single session using the context ID to perform initial login.
     print("Creating session for initial login...")
     session = bb.sessions.create(
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         browser_settings={
             "context": {
                 "id": context.id,
@@ -124,7 +123,6 @@ def main():
     # persist: true ensures any new changes (cookies, cache) are saved back to context.
     bb = Browserbase(api_key=os.environ.get("BROWSERBASE_API_KEY"))
     session = bb.sessions.create(
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         browser_settings={
             "context": {
                 "id": context_id["id"],

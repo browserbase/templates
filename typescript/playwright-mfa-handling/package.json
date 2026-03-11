@@ -19,7 +19,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@browserbasehq/sdk": "^2.0.0",
+    "@browserbasehq/sdk": "^2.7.0",
     "dotenv": "^16.0.0",
     "playwright-core": "^1.40.0"
   },

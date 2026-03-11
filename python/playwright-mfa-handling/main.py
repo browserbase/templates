@@ -72,15 +72,12 @@ def generate_totp(secret: str, window: int = 0) -> str:
 async def create_browserbase_session() -> tuple[Browser, BrowserContext, Page, str]:
     """Create a Browserbase session and connect via CDP."""
     api_key = os.environ.get("BROWSERBASE_API_KEY")
-    project_id = os.environ.get("BROWSERBASE_PROJECT_ID")
 
     if not api_key:
         raise ValueError("BROWSERBASE_API_KEY environment variable is required")
-    if not project_id:
-        raise ValueError("BROWSERBASE_PROJECT_ID environment variable is required")
 
     bb = Browserbase(api_key=api_key)
-    session = bb.sessions.create(project_id=project_id)
+    session = bb.sessions.create()
 
     print(f"Session created: https://browserbase.com/sessions/{session.id}")
 
@@ -244,7 +241,7 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"\nError in MFA handling: {err}")
         print("\nCommon issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print("  - TOTP code may have expired (try running again)")
         print("  - Page structure may have changed")
         exit(1)

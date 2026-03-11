@@ -29,7 +29,6 @@ async function main() {
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
     // https://docs.stagehand.dev/configuration/logging
     browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
       proxies: true, // Using proxies will give the agent a better chance of success - requires Developer Plan or higher, comment out if you don't have access
       region: "us-west-2",
       browserSettings: {

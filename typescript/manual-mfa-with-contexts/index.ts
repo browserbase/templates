@@ -28,7 +28,6 @@ async function createSessionWithContext() {
     // https://docs.stagehand.dev/configuration/logging
     model: "openai/gpt-4.1-mini",
     browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
       browserSettings: {
         context: {
           id: context.id,
@@ -127,7 +126,6 @@ async function reuseContext(contextId: string) {
     // https://docs.stagehand.dev/configuration/logging
     model: "openai/gpt-4.1-mini",
     browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
       browserSettings: {
         context: {
           id: contextId,

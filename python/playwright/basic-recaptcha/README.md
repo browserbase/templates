@@ -43,7 +43,6 @@ For non-standard or custom captcha providers, you can specify CSS selectors to g
 
 ```python
 session = bb.sessions.create(
-    project_id=project_id,
     browser_settings={
         "solveCaptchas": True,
         "captchaImageSelector": "#custom-captcha-image-id",
@@ -64,7 +63,6 @@ If you want to disable automatic captcha solving, set `solveCaptchas: False` in 
 
 ```python
 session = bb.sessions.create(
-    project_id=project_id,
     browser_settings={"solveCaptchas": False},
 )
 ```
@@ -75,7 +73,6 @@ Enable proxies alongside CAPTCHA solving for better success rates:
 
 ```python
 session = bb.sessions.create(
-    project_id=project_id,
     browser_settings={"solveCaptchas": True},
     proxies=True,  # Enable Browserbase managed proxies
 )
@@ -88,7 +85,7 @@ session = bb.sessions.create(
 3. `source venv/bin/activate` # On Windows: `venv\Scripts\activate`
 4. `uv pip install .` # Install dependencies from pyproject.toml
 5. `playwright install chromium` # Install browser binaries
-6. `cp .env.example .env` # Add your Browserbase API key and Project ID to .env
+6. `cp .env.example .env` # Add your Browserbase API key to .env
 7. `python main.py`
 
 ## EXPECTED OUTPUT
@@ -106,7 +103,7 @@ session = bb.sessions.create(
 
 ## COMMON PITFALLS
 
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Browser not installed: run `playwright install chromium` to install browser binaries
 - Captcha solving timeout: the template uses a 60-second timeout; increase if needed for complex CAPTCHAs
 - No browser context: ensure the Browserbase session was created successfully before connecting
