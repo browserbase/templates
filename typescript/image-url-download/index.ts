@@ -97,7 +97,8 @@ async function main(): Promise<void> {
 
     // Deduplicate and filter out any empty/malformed URLs before applying the limit.
     const uniqueUrls = [...new Set(allUrls)].filter((u) => {
-      try { return Boolean(new URL(u).href); } catch { return false; }
+      try { const { protocol } = new URL(u); return protocol === "https:" || protocol === "http:"; }
+      catch { return false; }
     });
     console.log(`Found ${uniqueUrls.length} unique image URL(s)`);
 
