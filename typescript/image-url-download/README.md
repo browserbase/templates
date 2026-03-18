@@ -2,8 +2,8 @@
 
 ## AT A GLANCE
 
-- Goal: extract all image URLs from a page with Stagehand and download each image through the browser's proxied connection.
-- Proxy-aware downloads: `fetch()` runs inside the browser via `page.evaluate()`, so it inherits the Browserbase proxy and all active session cookies — you get the original image file, not a server-to-server request.
+- Goal: extract all image URLs from a page with Stagehand and download each image through the browser's direct connection.
+- Browser-context downloads: `fetch()` runs inside the browser via `page.evaluate()` — no special proxy configuration needed. It automatically inherits any active Browserbase proxy and session cookies, so you get the same image the browser sees, even for auth-gated or same-origin-only URLs.
 - AI-powered URL extraction: uses `extract()` with a typed Zod schema to reliably pull `<img>` src attributes and background image URLs from any page.
 - Format-agnostic: uses `FileReader.readAsDataURL()` inside the browser to encode image bytes and detect the real MIME type — files are saved with the correct extension (`.jpg`, `.png`, `.svg`, `.webp`, etc.).
 - Organized output: images are saved to `./images/<hostname>/` so runs against different sites never mix.
@@ -31,7 +31,7 @@
 - Navigates to the target URL
 - Extracts all image URLs from the page using `extract()`
 - Deduplicates URLs and caps at `MAX_IMAGES` (default: 10)
-- Downloads each image through the browser's proxied `fetch()` inside `page.evaluate()`, encoded via `FileReader.readAsDataURL()`
+- Downloads each image via `fetch()` inside `page.evaluate()` — runs in the browser context so it automatically picks up any proxy or cookies without extra configuration — encoded via `FileReader.readAsDataURL()`
 - Saves images to `./images/<hostname>/`, named `<url-segment>-<timestamp>.<ext>` with the extension derived from the real MIME type
 - Logs per-image status (saved / failed) and a final summary count
 - Closes session cleanly

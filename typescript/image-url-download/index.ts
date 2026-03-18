@@ -131,29 +131,39 @@ async function main(): Promise<void> {
       // proxy and all active session cookies — no CORS or auth issues.
       // FileReader.readAsDataURL() is the most reliable browser-native way to
       // encode binary data as base64, and it also gives us the real MIME type.
-      const result = await page.evaluate(async (imgUrl: string) => {
-        try {
-          const res = await fetch(imgUrl);
-          if (!res.ok) return null;
-          const blob = await res.blob();
-          return await new Promise<{ base64: string; mimeType: string } | null>((resolve) => {
-            const reader = new FileReader();
-            reader.onload = () => {
-              const dataUrl = reader.result as string;
-              const comma = dataUrl.indexOf(",");
-              if (comma === -1) { resolve(null); return; }
-              const prefix = dataUrl.slice(0, comma); // e.g. "data:image/png;base64"
-              const base64 = dataUrl.slice(comma + 1);
-              const mimeMatch = prefix.match(/data:([^;]+)/);
-              resolve({ base64, mimeType: mimeMatch?.[1] ?? "application/octet-stream" });
-            };
-            reader.onerror = () => resolve(null);
-            reader.readAsDataURL(blob);
-          });
-        } catch {
-          return null;
-        }
-      }, url);
+      // Wrap the entire page.evaluate() call — not just the code inside it — so that
+      // CDP-level errors (execution context destroyed, timeout, page navigation) are
+      // caught per-image and don't abort the rest of the download loop.
+      let result: { base64: string; mimeType: string } | null = null;
+      try {
+        result = await page.evaluate(async (imgUrl: string) => {
+          try {
+            const res = await fetch(imgUrl);
+            if (!res.ok) return null;
+            const blob = await res.blob();
+            return await new Promise<{ base64: string; mimeType: string } | null>((resolve) => {
+              const reader = new FileReader();
+              reader.onload = () => {
+                const dataUrl = reader.result as string;
+                const comma = dataUrl.indexOf(",");
+                if (comma === -1) { resolve(null); return; }
+                const prefix = dataUrl.slice(0, comma); // e.g. "data:image/png;base64"
+                const base64 = dataUrl.slice(comma + 1);
+                const mimeMatch = prefix.match(/data:([^;]+)/);
+                resolve({ base64, mimeType: mimeMatch?.[1] ?? "application/octet-stream" });
+              };
+              reader.onerror = () => resolve(null);
+              reader.readAsDataURL(blob);
+            });
+          } catch {
+            return null;
+          }
+        }, url);
+      } catch (err) {
+        console.log(`FAILED (${err instanceof Error ? err.message : err}, skipping)`);
+        failed++;
+        continue;
+      }
 
       if (!result) {
         console.log("FAILED (skipping)");

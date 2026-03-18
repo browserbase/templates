@@ -2,8 +2,8 @@
 
 ## AT A GLANCE
 
-- Goal: extract all image URLs from a page with Stagehand and download each image through the browser's proxied connection.
-- Proxy-aware downloads: `context.request.get()` sends requests through the Playwright browser context, inheriting the Browserbase proxy and active session cookies — images that require same-origin context (e.g. Next.js `/_next/image` URLs) download correctly.
+- Goal: extract all image URLs from a page with Stagehand and download each image through the browser's direct connection.
+- Browser-context downloads: `context.request.get()` sends requests through the Playwright browser context — no special proxy configuration needed. It automatically inherits any active Browserbase proxy and session cookies, so you get the same image the browser sees, even for auth-gated or same-origin-only URLs (e.g. Next.js `/_next/image`).
 - AI-powered URL extraction: uses `extract()` with a JSON schema to reliably pull `<img>` src attributes and background image URLs from any page.
 - Format-agnostic: uses the `Content-Type` response header to detect the real MIME type — files are saved with the correct extension (`.jpg`, `.png`, `.svg`, `.webp`, etc.).
 - Organized output: images are saved to `./images/<hostname>/` so runs against different sites never mix.
@@ -39,7 +39,7 @@ This template uses both Stagehand and Playwright directly, connected to the **sa
 - Navigates to the target URL and waits for the page to fully render
 - Extracts all image URLs from the page using `extract()`
 - Deduplicates URLs and caps at `MAX_IMAGES` (default: 10)
-- Downloads each image through `context.request.get()`, inheriting the browser's proxy and cookies
+- Downloads each image via `context.request.get()` — runs through the browser context so it automatically picks up any proxy or cookies without extra configuration
 - Saves images to `./images/<hostname>/`, named `<url-segment>-<timestamp>.<ext>` with the extension derived from the `Content-Type` header
 - Logs per-image status (saved / failed) and a final summary count
 - Closes session cleanly
