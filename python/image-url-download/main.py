@@ -201,10 +201,15 @@ async def main():
                     failed += 1
                     continue
 
-                filename = image_filename(url, mime_type, i)
-                filepath = os.path.join(output_dir, filename)
-                with open(filepath, "wb") as f:
-                    f.write(image_bytes)
+                try:
+                    filename = image_filename(url, mime_type, i)
+                    filepath = os.path.join(output_dir, filename)
+                    with open(filepath, "wb") as f:
+                        f.write(image_bytes)
+                except Exception as e:
+                    print(f"FAILED (write error: {e}, skipping)")
+                    failed += 1
+                    continue
                 print(f"saved as {filename} ({len(image_bytes)} bytes)")
                 saved += 1
 

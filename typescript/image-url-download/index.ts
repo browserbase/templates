@@ -174,7 +174,13 @@ async function main(): Promise<void> {
       const filename = imageFilename(url, result.mimeType, i);
       const filepath = path.join(outputDir, filename);
       const buffer = Buffer.from(result.base64, "base64");
-      fs.writeFileSync(filepath, buffer);
+      try {
+        fs.writeFileSync(filepath, buffer);
+      } catch (err) {
+        console.log(`FAILED (write error: ${err instanceof Error ? err.message : err}, skipping)`);
+        failed++;
+        continue;
+      }
       console.log(`saved as ${filename} (${buffer.length} bytes)`);
       saved++;
     }
