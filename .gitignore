@@ -33,10 +33,6 @@ build/
 *.swo
 *~
 
-# Template output
-images/
-uv.lock
-
 # Logs
 *.log
 npm-debug.log*
