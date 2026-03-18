@@ -14,7 +14,7 @@ import path from "path";
 
 // Maximum number of images to download per run.
 // Increase this if you need more images, or set MAX_IMAGES in your .env.
-const MAX_IMAGES = parseInt(process.env.MAX_IMAGES ?? "10", 10);
+const MAX_IMAGES = parseInt(process.env.MAX_IMAGES ?? "10", 10) || 10;
 
 // Directory (relative to where the script is run) where images are saved.
 const OUTPUT_DIR = "./images";
