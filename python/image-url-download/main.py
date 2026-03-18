@@ -98,11 +98,30 @@ async def main():
     print(f"Image URL Download — target: {target_url}")
     print(f"Max images: {MAX_IMAGES} | Output: {OUTPUT_DIR}/<hostname>/\n")
 
+    # Validate required environment variables before starting the session so missing
+    # credentials produce a clear error rather than a cryptic WebSocket failure.
+    api_key = os.environ.get("BROWSERBASE_API_KEY")
+    project_id = os.environ.get("BROWSERBASE_PROJECT_ID")
+    google_api_key = os.environ.get("GOOGLE_API_KEY")
+    missing = [
+        name
+        for name, val in [
+            ("BROWSERBASE_API_KEY", api_key),
+            ("BROWSERBASE_PROJECT_ID", project_id),
+            ("GOOGLE_API_KEY", google_api_key),
+        ]
+        if not val
+    ]
+    if missing:
+        print(f"Error: missing required environment variable(s): {', '.join(missing)}")
+        print("Copy .env.example to .env and fill in your credentials.")
+        sys.exit(1)
+
     # Initialize AsyncStagehand with Browserbase for cloud-based browser automation.
     client = AsyncStagehand(
-        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.environ.get("GOOGLE_API_KEY"),
+        browserbase_api_key=api_key,
+        browserbase_project_id=project_id,
+        model_api_key=google_api_key,
     )
 
     # Start a new browser session.
