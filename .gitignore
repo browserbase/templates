@@ -33,6 +33,9 @@ build/
 *.swo
 *~
 
+# Template output
+images/
+
 # Logs
 *.log
 npm-debug.log*
