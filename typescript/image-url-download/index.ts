@@ -81,10 +81,10 @@ async function main(): Promise<void> {
 
     const page = stagehand.context.pages()[0];
 
-    // Navigate to target page with extended timeout for slow-loading sites.
+    // Navigate and wait for network activity to settle so JS-injected images are in the DOM.
     console.log(`\nNavigating to ${targetUrl}...`);
     await page.goto(targetUrl, {
-      waitUntil: "domcontentloaded", // Wait for DOM to be ready before extracting.
+      waitUntil: "networkidle", // Wait for network to settle so JS-injected images are in the DOM.
       timeoutMs: 60000, // Extended timeout for reliable page loading.
     });
 
