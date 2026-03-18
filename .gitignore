@@ -35,6 +35,7 @@ build/
 
 # Template output
 images/
+uv.lock
 
 # Logs
 *.log
