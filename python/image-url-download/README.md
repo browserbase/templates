@@ -7,14 +7,8 @@
 - AI-powered URL extraction: uses `extract()` with a JSON schema to reliably pull `<img>` src attributes and background image URLs from any page.
 - Format-agnostic: uses the `Content-Type` response header to detect the real MIME type — files are saved with the correct extension (`.jpg`, `.png`, `.svg`, `.webp`, etc.).
 - Organized output: images are saved to `./images/<hostname>/` so runs against different sites never mix.
+- Why Playwright is used alongside Stagehand: this template connects both Stagehand and Playwright to the **same** Browserbase session via CDP. The TypeScript SDK exposes `stagehand.context.pages()[0]` for direct Playwright access, but the Python SDK does not. Playwright is added here for reliable navigation waits (`page.goto(wait_until="networkidle")` blocks until the page is fully rendered, unlike the Python SDK's non-blocking `sessions.navigate()`) and proxy-aware downloads (`context.request.get()` inherits the browser context's proxy and cookies, avoiding 403s that a plain `httpx` call would get on auth-gated URLs).
   Docs → https://docs.stagehand.dev/basics/extract
-
-## WHY PLAYWRIGHT IS USED ALONGSIDE STAGEHAND
-
-This template uses both Stagehand and Playwright directly, connected to the **same** Browserbase session via CDP. This is a Python-specific pattern — the TypeScript SDK exposes `stagehand.context.pages()[0]` for direct Playwright access, but the Python SDK does not. Playwright is added here for two specific things:
-
-1. **Reliable navigation wait** — `page.goto(wait_until="networkidle")` blocks until the page is fully rendered. The Python SDK's `sessions.navigate()` is non-blocking and returns before JavaScript finishes, so `extract()` would see an incomplete DOM.
-2. **Proxy-aware downloads** — `context.request.get()` makes HTTP requests through the browser context, inheriting its proxy and cookies. A plain `httpx` call lacks this context and gets 403s on auth-gated or same-origin-only image URLs.
 
 ## GLOSSARY
 
