@@ -39,8 +39,5 @@
       "uvx ruff check --fix",
       "uvx ruff format"
     ]
-  },
-  "dependencies": {
-    "playwright": "^1.58.2"
   }
 }

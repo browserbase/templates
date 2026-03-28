@@ -27,7 +27,7 @@ function parseSneakers(html: string, limit: number): Sneaker[] {
 
   // StockX renders product links with slugs, followed by price in the card
   const pattern =
-    /href="\/((?:air-|nike-|adidas-|jordan-|new-balance-|yeezy-|vans-|asics-|puma-|a-bathing-)[a-z0-9-]+)"[^>]*>[\s\S]*?(\$\d+)/g;
+    /href="\/((?:air-|nike-|adidas-|jordan-|new-balance-|yeezy-|vans-|asics-|puma-|a-bathing-)[a-z0-9-]+)"[^>]*>[\s\S]*?(\$[\d,]+(?:\.\d{2})?)/g;
 
   let match;
   while ((match = pattern.exec(html)) !== null && sneakers.length < limit) {
