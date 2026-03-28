@@ -45,34 +45,36 @@ async function main(): Promise<void> {
   console.log(`Session: ${stagehand.browserbaseSessionURL}`);
   console.log(`Debug URL: ${stagehand.browserbaseDebugURL}\n`);
 
-  const page = stagehand.context.pages()[0];
-  await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
+  try {
+    const page = stagehand.context.pages()[0];
+    await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
 
-  // Scoped extract: only the selector subtree is sent to the model, not the full page
-  console.log(`Scoped extract (selector: "${SELECTOR_SCOPE}")...`);
-  const data = await stagehand.extract(
-    "Extract the first 3 countries with their rank, name, and GDP value",
-    GDPSchema,
-    { selector: SELECTOR_SCOPE },
-  );
-  console.log("Result:", JSON.stringify(data.countries, null, 2));
+    // Scoped extract: only the selector subtree is sent to the model, not the full page
+    console.log(`Scoped extract (selector: "${SELECTOR_SCOPE}")...`);
+    const data = await stagehand.extract(
+      "Extract the first 3 countries with their rank, name, and GDP value",
+      GDPSchema,
+      { selector: SELECTOR_SCOPE },
+    );
+    console.log("Result:", JSON.stringify(data.countries, null, 2));
 
-  // Scoped act: uses the scopedAct wrapper to click within the table only
-  console.log(`\nScoped act (selector: "${SELECTOR_SCOPE}")...`);
-  await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
+    // Scoped act: uses the scopedAct wrapper to click within the table only
+    console.log(`\nScoped act (selector: "${SELECTOR_SCOPE}")...`);
+    await page.goto(TARGET_URL, { waitUntil: "domcontentloaded" });
 
-  const result = await scopedAct(
-    stagehand,
-    "Click on the link for the first country in the table",
-    SELECTOR_SCOPE,
-  );
+    const result = await scopedAct(
+      stagehand,
+      "Click on the link for the first country in the table",
+      SELECTOR_SCOPE,
+    );
 
-  if (result) {
-    console.log(`Clicked → navigated to: ${page.url()}`);
+    if (result) {
+      console.log(`Clicked → navigated to: ${page.url()}`);
+    }
+  } finally {
+    await stagehand.close();
+    console.log("\nDone.");
   }
-
-  await stagehand.close();
-  console.log("\nDone.");
 }
 
 main().catch((err) => {
