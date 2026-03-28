@@ -33,24 +33,11 @@
 - The agent navigates to a job application site and begins filling out the form
 - When the agent needs clarification, it pauses and displays a question in the UI
 - You type a response and the agent resumes with your input
-- On completion, a session recording link is displayed
-
-## COMMON PITFALLS
-- Missing credentials: verify .env contains BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID
-- "Cannot find module": ensure all dependencies are installed with npm install
-- Agent timeout: if the agent appears stuck, check that you've responded to any pending questions
-- Session store is in-memory: restarting the server clears all active sessions
 
 ## USE CASES
 • Assisted form filling: automate job applications, account signups, or onboarding flows where some fields require human judgment.
 • Approval workflows: let an agent prepare actions (purchases, submissions) but pause for human confirmation before committing.
 • Supervised data entry: automate repetitive browser data entry while letting a human handle edge cases or ambiguous inputs.
-
-## NEXT STEPS
-• Persist sessions: replace the in-memory session store with Redis, Postgres, or DynamoDB for production use.
-• Multi-step approval: extend askHuman to support multiple-choice responses or file uploads mid-task.
-• Add more tools: give the agent additional custom tools beyond askHuman and uploadResume.
-• Webhook notifications: notify users via Slack or email when the agent needs input instead of requiring them to watch the UI.
 
 ## HELPFUL RESOURCES
 📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
