@@ -4,14 +4,15 @@
 // but allow requests through Browserbase's Fetch API. No browser session
 // needed — just a lightweight HTTP request through Browserbase's infrastructure.
 //
-// This template scrapes StockX sneaker listings, which block standard HTTP
+// This template gets sneaker listings, which block standard HTTP
 // requests with a 403 but return full HTML through Browserbase's Fetch API.
 
 import "dotenv/config";
 import Browserbase from "@browserbasehq/sdk";
 
 // ============= CONFIGURATION =============
-const TARGET_URL = "https://stockx.com/sneakers";
+const BASE_URL = "https://stockx.com";
+const TARGET_URL = `${BASE_URL}/sneakers`;
 const NUM_PRODUCTS = 10;
 // =========================================
 
@@ -21,11 +22,10 @@ interface Sneaker {
   url: string;
 }
 
-// Parse sneaker listings from StockX's server-rendered HTML
+// Parse sneaker listings
 function parseSneakers(html: string, limit: number): Sneaker[] {
   const sneakers: Sneaker[] = [];
 
-  // StockX renders product links with slugs, followed by price in the card
   const pattern =
     /href="\/((?:air-|nike-|adidas-|jordan-|new-balance-|yeezy-|vans-|asics-|puma-|a-bathing-)[a-z0-9-]+)"[^>]*>[\s\S]*?(\$[\d,]+(?:\.\d{2})?)/g;
 
@@ -38,7 +38,7 @@ function parseSneakers(html: string, limit: number): Sneaker[] {
         .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
         .join(" "),
       price: match[2],
-      url: `https://stockx.com/${slug}`,
+      url: `${BASE_URL}/${slug}`,
     });
   }
 
@@ -46,13 +46,11 @@ function parseSneakers(html: string, limit: number): Sneaker[] {
 }
 
 async function main(): Promise<void> {
-  console.log("Fetch API Scraping — StockX Sneakers");
+  console.log(`Fetch API Scraping — ${TARGET_URL}`);
   console.log();
 
-  // Step 1: Show that standard HTTP requests get blocked
-  // StockX returns 403 even with full Chrome headers.
-  // Try: curl -s -o /dev/null -w "%{http_code}" https://stockx.com/sneakers → 403
-  console.log("--- Step 1: Standard HTTP request (with Chrome headers) ---");
+  // Returns 403 even with full Chrome headers.
+  console.log("--- Standard HTTP request (with Chrome headers) ---");
   try {
     const response = await fetch(TARGET_URL, {
       headers: {
@@ -65,13 +63,17 @@ async function main(): Promise<void> {
       redirect: "follow",
     });
     console.log(`Status: ${response.status}`);
-    console.log("→ Blocked — even with real Chrome headers.\n");
+
+    if (response.status === 403) {
+      console.log("→ Blocked — even with real Chrome headers.\n");
+    } else {
+      console.log(`Status: ${response.status}\n`);
+    }
   } catch (err) {
     console.log(`Failed: ${err}\n`);
   }
 
-  // Step 2: Browserbase Fetch API — bypasses bot detection, no session needed
-  console.log("--- Step 2: Browserbase Fetch API ---");
+  console.log("--- With Browserbase Fetch API ---");
   const bb = new Browserbase({ apiKey: process.env.BROWSERBASE_API_KEY! });
 
   const result = await bb.fetchAPI.create({
