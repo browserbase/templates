@@ -10,15 +10,15 @@
 ## GLOSSARY
 
 - navigate: Load a web page in the browser session
-  Docs → https://docs.stagehand.dev/basics/navigate
+  Docs → https://docs.stagehand.dev/v3/references/page
 - observe: Analyze page elements and generate actionable steps based on natural language instructions
-  Docs → https://docs.stagehand.dev/basics/observe
+  Docs → https://docs.stagehand.dev/v3/basics/observe
 - act: Execute actions on web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v3/basics/act
 - extract: Extract structured data from pages using JSON schema definitions
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v3/basics/extract
 - execute: Run an autonomous agent to complete multi-step tasks automatically
-  Docs → https://docs.stagehand.dev/basics/execute
+  Docs → https://docs.stagehand.dev/v3/basics/act
 
 ## QUICKSTART
 

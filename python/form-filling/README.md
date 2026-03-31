@@ -6,7 +6,7 @@
 - Smart Form Automation: dynamically fill contact forms with variable-driven data.
 - Field Detection: analyze page structure with `observe` before interacting with fields.
 - AI-Powered Interaction: leverage Stagehand to map inputs to the right fields reliably.
-  Docs → https://docs.browserbase.com/features/sessions
+  Docs → https://docs.browserbase.com/fundamentals/create-browser-session
 
 ## GLOSSARY
 

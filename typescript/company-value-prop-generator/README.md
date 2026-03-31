@@ -6,12 +6,12 @@
 - Demonstrates Stagehand's `extract` method with Zod schemas to pull structured data from landing pages
 - Shows direct LLM API usage via `stagehand.llmClient` to transform extracted content with custom prompts
 - Includes placeholder page detection and validation logic to filter out non-functional sites
-- Docs → https://docs.browserbase.com/stagehand/extract
+- Docs → https://docs.stagehand.dev/v3/basics/extract
 
 ## GLOSSARY
 
 - Extract: Stagehand method that uses AI to pull structured data from pages using natural language instructions
-  Docs → https://docs.browserbase.com/stagehand/extract
+  Docs → https://docs.stagehand.dev/v3/basics/extract
 - Value Proposition: The core benefit or unique selling point a company communicates to customers
 
 ## QUICKSTART

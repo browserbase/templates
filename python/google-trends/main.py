@@ -165,5 +165,5 @@ if __name__ == "__main__":
         print("Common issues:")
         print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
         print("  - Verify GOOGLE_API_KEY is set in environment")
-        print("Docs: https://docs.stagehand.dev/reference/python/overview")
+        print("Docs: https://docs.stagehand.dev/v3/sdk/python")
         exit(1)

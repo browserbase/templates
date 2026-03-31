@@ -982,5 +982,5 @@ if __name__ == "__main__":
         print("\nCommon issues:")
         print("  - Check .env file has CEREBRAS_API_KEY, BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID")
         print("  - Ensure playwright is installed: playwright install chromium")
-        print("Docs: https://docs.stagehand.dev/reference/python/overview")
+        print("Docs: https://docs.stagehand.dev/v3/sdk/python")
         exit(1)

@@ -58,6 +58,6 @@
 📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
-🔧 Templates: https://github.com/browserbase/stagehand/tree/main/examples
+🔧 Templates: https://www.browserbase.com/templates
 📧 Need help? support@browserbase.com
 💬 Discord: http://stagehand.dev/discord

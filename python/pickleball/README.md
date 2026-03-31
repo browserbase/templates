@@ -6,7 +6,7 @@
 - AI Integration: Stagehand for UI interaction and data extraction.
 - Browser Automation: automates login, filtering, court selection, and booking confirmation.
 - User Interaction: prompts for activity type, date, and time preferences with validation.
-  Docs → https://docs.browserbase.com/features/sessions
+  Docs → https://docs.browserbase.com/fundamentals/create-browser-session
 
 ## GLOSSARY
 
@@ -17,7 +17,7 @@
 - observe: plan actions and get selectors before executing
   Docs → https://docs.stagehand.dev/basics/observe
 - browser automation: automated interaction with web applications for booking systems
-  Docs → https://docs.browserbase.com/features/sessions
+  Docs → https://docs.browserbase.com/fundamentals/create-browser-session
 - form validation: ensure user input meets booking system requirements
 
 ## QUICKSTART

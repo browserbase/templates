@@ -58,7 +58,7 @@
 ## HELPFUL RESOURCES
 
 📚 Stagehand Docs: https://docs.stagehand.dev
-📚 Python SDK: https://docs.stagehand.dev/reference/python/overview
+📚 Python SDK: https://docs.stagehand.dev/v3/sdk/python
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

@@ -203,5 +203,5 @@ if __name__ == "__main__":
         print("  - Verify MODEL_API_KEY is set (e.g. Google API key for Gemini)")
         print("  - Verify internet connection and SEC website accessibility")
         print("  - Ensure the search query is valid (company name, ticker, or CIK)")
-        print("Docs: https://docs.stagehand.dev/reference/python/overview")
+        print("Docs: https://docs.stagehand.dev/v3/sdk/python")
         exit(1)

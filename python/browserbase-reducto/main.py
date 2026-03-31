@@ -331,5 +331,5 @@ if __name__ == "__main__":
         )
         print("  - Verify internet connection and Apple website accessibility")
         print("  - Ensure sufficient timeout for slow-loading pages")
-        print("Docs: https://docs.stagehand.dev/reference/python/overview")
+        print("Docs: https://docs.stagehand.dev/v3/sdk/python")
         exit(1)

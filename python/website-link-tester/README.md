@@ -11,7 +11,7 @@
 ## GLOSSARY
 
 - **Stagehand (Python v2)**: Python client that wraps AI-powered browser automation on top of Browserbase.  
-  Docs → `https://docs.stagehand.dev/python`
+  Docs → `https://docs.stagehand.dev/v3/sdk/python`
 - **extract**: Extract structured data from web pages using natural language instructions and Pydantic models.  
   Docs → `https://docs.stagehand.dev/basics/extract`
 - **concurrent sessions**: Run multiple browser sessions at the same time for faster batch processing.  

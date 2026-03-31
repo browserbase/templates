@@ -117,7 +117,7 @@ session = bb.sessions.create(
 ## HELPFUL RESOURCES
 
 - Browserbase Docs: https://docs.browserbase.com
-- Browserbase Python Integration: https://docs.browserbase.com/integrations/playwright/python
+- Browserbase Python Integration: https://docs.browserbase.com/introduction/playwright
 - Playwright Python Docs: https://playwright.dev/python/docs/intro
 - Browserbase Dashboard: https://www.browserbase.com
 - Playground: https://www.browserbase.com/playground
