@@ -1,3 +1,8 @@
+// Stagehand + Browserbase: Human-in-the-Loop Agent — core agent logic
+// This module runs a Stagehand agent that fills out a job application,
+// pausing to ask the human whenever it encounters fields it can't fill alone.
+// Communication with the frontend happens via Server-Sent Events (SSE).
+
 import { Browserbase } from "@browserbasehq/sdk";
 import { Stagehand, tool } from "@browserbasehq/stagehand";
 import { z } from "zod";

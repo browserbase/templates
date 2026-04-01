@@ -1,3 +1,7 @@
+// POST /api/agent/respond — delivers the human's answer back to the agent.
+// This unblocks the Promise that the askHuman tool is awaiting in the session
+// store, allowing the agent to continue filling out the form.
+
 import { resolveQuestion } from "../../../../lib/session-store";
 
 export async function POST(req: Request) {

@@ -1,3 +1,8 @@
+// Stagehand + Browserbase: Human-in-the-Loop Agent — frontend UI
+// Three-phase UI: form → agent running (with live browser view) → complete.
+// When the agent calls askHuman, the UI switches to "waiting" phase and
+// shows an input field. The human's response is POSTed to /api/agent/respond.
+
 "use client";
 
 import { useState, useRef, useCallback } from "react";
@@ -150,9 +155,12 @@ export default function Home() {
               Human-in-the-Loop Agent
             </h1>
             <p className="text-sm text-neutral-400">
-              An AI agent will apply to a job on your behalf. When it needs
-              more information from you, it will pause to ask you directly, and
-              resume when you have replied.
+              Fill out your first and last name, upload a resume (you can use
+              the <code className="text-neutral-300">template_resume.pdf</code>{" "}
+              file in the project root as an example), and click{" "}
+              <strong className="text-neutral-300">Start Agent</strong>. An AI
+              agent will apply to a job on your behalf — when it needs more
+              information, it will pause to ask you directly.
             </p>
           </div>
 

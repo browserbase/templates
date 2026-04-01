@@ -1,9 +1,19 @@
-// In-memory session store for coordinating between the SSE stream (where the
+// Stagehand + Browserbase: Human-in-the-Loop Agent — session store
+//
+// In-memory session store that coordinates between the SSE stream (where the
 // agent runs) and the /api/agent/respond endpoint (where human input arrives).
 //
-// In production (like BoomPop's setup), you'd replace this with Postgres, Redis,
-// or DynamoDB — the agent polls a row in the table for a response, and the
-// frontend writes to that row when the human answers.
+// How it works:
+//   1. When the agent calls askHuman, it creates a Promise and stashes its
+//      `resolve` function here via setQuestion().
+//   2. The agent's execute() blocks on that Promise — the SSE stream stays open.
+//   3. When the human submits an answer, the /api/agent/respond route calls
+//      resolveQuestion(), which invokes the stashed `resolve` — unblocking the
+//      agent so it can continue.
+//
+// In production you'd replace this with Postgres, Redis, or DynamoDB — the
+// agent polls a row in the table for a response, and the frontend writes to
+// that row when the human answers.
 
 export interface SessionState {
   status: "running" | "waiting_for_human" | "complete" | "error";

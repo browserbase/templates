@@ -1,3 +1,7 @@
+// POST /api/agent — kicks off the agent and returns an SSE stream.
+// The frontend reads this stream for real-time status updates, questions
+// from the agent, and the final completion/error event.
+
 import { runAgent } from "../../../lib/agent";
 
 // Increase the max duration for Vercel Pro (agent can take a few minutes)
