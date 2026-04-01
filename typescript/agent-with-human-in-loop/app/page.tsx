@@ -138,11 +138,24 @@ export default function Home() {
     setPhase("running");
     addLog("human", response);
 
-    await fetch("/api/agent/respond", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: sessionId, response }),
-    });
+    try {
+      const res = await fetch("/api/agent/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: sessionId, response }),
+      });
+
+      if (!res.ok) {
+        // Restore the input so the user can retry
+        setHumanInput(response);
+        setPhase("waiting");
+        addLog("error", "Failed to send response to agent. Please try again.");
+      }
+    } catch {
+      setHumanInput(response);
+      setPhase("waiting");
+      addLog("error", "Network error sending response. Please try again.");
+    }
   };
 
   // --- Form view ---

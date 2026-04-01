@@ -31,6 +31,7 @@ export async function runAgent(params: {
   writer: WritableStreamDefaultWriter<Uint8Array>;
 }) {
   const { firstName, lastName, resumeBase64, resumeFileName, id, writer } = params;
+  let resumePath: string | undefined;
 
   try {
     // --- Browserbase session setup ---
@@ -74,7 +75,7 @@ export async function runAgent(params: {
 
     // Save resume to a temp file so Playwright can upload it
     const tmpDir = mkdtempSync(join(tmpdir(), "hitl-"));
-    const resumePath = join(tmpDir, basename(resumeFileName));
+    resumePath = join(tmpDir, basename(resumeFileName));
     writeFileSync(resumePath, Buffer.from(resumeBase64, "base64"));
 
     await sendEvent(writer, "status", { message: "Navigating to job listing..." });
@@ -194,15 +195,14 @@ of trying to click or interact with the file input directly.`,
     await new Promise((resolve) => setTimeout(resolve, 10000));
 
     await stagehand.close();
-
-    // Clean up temp resume file
-    try { unlinkSync(resumePath); } catch { /* ignore */ }
   } catch (err) {
     errorSession(id);
     await sendEvent(writer, "error", {
       message: err instanceof Error ? err.message : "Unknown error",
     });
   } finally {
+    // Clean up temp resume file (in finally so it's removed even on error)
+    if (resumePath) try { unlinkSync(resumePath); } catch { /* ignore */ }
     await writer.close();
   }
 }
