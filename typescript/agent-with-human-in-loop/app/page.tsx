@@ -209,7 +209,16 @@ export default function Home() {
               <input
                 type="file"
                 accept=".pdf,.doc,.docx"
-                onChange={(e) => setResumeFile(e.target.files?.[0] || null)}
+                onChange={(e) => {
+                  const file = e.target.files?.[0] || null;
+                  if (file && file.size > 10 * 1024 * 1024) {
+                    alert("File must be under 10MB");
+                    e.target.value = "";
+                    setResumeFile(null);
+                    return;
+                  }
+                  setResumeFile(file);
+                }}
                 className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-neutral-700 file:px-3 file:py-1 file:text-sm file:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-neutral-500 mt-1">

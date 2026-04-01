@@ -40,6 +40,10 @@
 • Supervised data entry: automate repetitive browser data entry while letting a human handle edge cases or ambiguous inputs.
 
 ## HELPFUL RESOURCES
-📚 Stagehand Docs:     https://docs.browserbase.com/stagehand
-🎮 Browserbase:        https://www.browserbase.com
-📧 Need help?          support@browserbase.com
+📚 Stagehand Docs: https://docs.stagehand.dev
+📚 Stagehand Agent: https://docs.stagehand.dev/basics/agent
+🎮 Browserbase: https://www.browserbase.com
+💡 Try it out: https://www.browserbase.com/playground
+🔧 Templates: https://www.browserbase.com/templates
+📧 Need help? support@browserbase.com
+💬 Discord: http://stagehand.dev/discord
