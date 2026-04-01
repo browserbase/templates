@@ -143,6 +143,9 @@ of trying to click or interact with the file input directly.`,
             // File inputs are hidden in the DOM, so observe() can't find them
             // (it works from the accessibility tree). Use page.locator() directly
             // which works on hidden elements via CDP.
+            if (!resumePath) {
+              return { message: "No resume file available to upload." };
+            }
             const fileInput = page.locator('input[type="file"]').first();
             await fileInput.setInputFiles(resumePath);
 
