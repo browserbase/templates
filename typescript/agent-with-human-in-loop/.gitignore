@@ -23,6 +23,10 @@
 # misc
 .DS_Store
 *.pem
+package-lock.json
+
+# boilerplate SVGs
+public/*.svg
 
 # debug
 npm-debug.log*
