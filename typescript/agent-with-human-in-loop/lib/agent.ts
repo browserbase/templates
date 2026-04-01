@@ -3,7 +3,7 @@ import { Stagehand, tool } from "@browserbasehq/stagehand";
 import { z } from "zod";
 import { createSession, setQuestion, completeSession, errorSession } from "./session-store";
 import { writeFileSync, mkdtempSync, unlinkSync } from "fs";
-import { join } from "path";
+import { join, basename } from "path";
 import { tmpdir } from "os";
 
 // SSE event helper — writes a Server-Sent Event to the stream
@@ -69,7 +69,7 @@ export async function runAgent(params: {
 
     // Save resume to a temp file so Playwright can upload it
     const tmpDir = mkdtempSync(join(tmpdir(), "hitl-"));
-    const resumePath = join(tmpDir, resumeFileName);
+    const resumePath = join(tmpDir, basename(resumeFileName));
     writeFileSync(resumePath, Buffer.from(resumeBase64, "base64"));
 
     await sendEvent(writer, "status", { message: "Navigating to job listing..." });

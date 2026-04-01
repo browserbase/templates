@@ -65,6 +65,9 @@ export default function Home() {
     const decoder = new TextDecoder();
     let buffer = "";
 
+    let eventType = "";
+    let eventData = "";
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
@@ -74,9 +77,6 @@ export default function Home() {
       // Parse SSE events from the buffer
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
-
-      let eventType = "";
-      let eventData = "";
 
       for (const line of lines) {
         if (line.startsWith("event: ")) {
