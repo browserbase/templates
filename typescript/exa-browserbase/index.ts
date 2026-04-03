@@ -4,7 +4,6 @@ import "dotenv/config";
 import { Stagehand } from "@browserbasehq/stagehand";
 import Exa from "exa-js";
 import { z } from "zod";
-import { chromium } from "playwright-core";
 
 // Candidate application details - customize these for your job search
 const applicationDetails = {
@@ -108,19 +107,17 @@ YOUR TASK:
 Remember: Even without a job description, present the candidate professionally and enthusiastically.`;
 }
 
-// Uploads resume file using Playwright, checking main page and iframes
+// Uploads resume file using Stagehand's native locator, checking main page and iframes
 async function uploadResume(stagehand: Stagehand, logPrefix: string = ""): Promise<void> {
   console.log(`${logPrefix}Attempting to upload resume...`);
 
-  const browser = await chromium.connectOverCDP(stagehand.connectURL());
-  const pwContext = browser.contexts()[0];
-  const pwPage = pwContext.pages()[0];
+  const page = stagehand.context.pages()[0];
 
   // Check main page for file input
-  const mainPageInputs = await pwPage.locator('input[type="file"]').count();
+  const mainPageInputs = await page.locator('input[type="file"]').count();
 
   if (mainPageInputs > 0) {
-    await pwPage
+    await page
       .locator('input[type="file"]')
       .first()
       .setInputFiles(applicationDetails.resumePath);
@@ -128,22 +125,19 @@ async function uploadResume(stagehand: Stagehand, logPrefix: string = ""): Promi
     return;
   }
 
-  // Check inside iframes for file input
-  const frames = pwPage.frames();
-  for (const frame of frames) {
-    try {
-      const frameInputCount = await frame.locator('input[type="file"]').count();
-      if (frameInputCount > 0) {
-        await frame
-          .locator('input[type="file"]')
-          .first()
-          .setInputFiles(applicationDetails.resumePath);
-        console.log(`${logPrefix}Resume uploaded successfully from iframe!`);
-        return;
-      }
-    } catch {
-      // Frame not accessible, continue to next
+  // Check inside iframes for file input using deepLocator
+  try {
+    const iframeInputs = await page.deepLocator('iframe >> input[type="file"]').count();
+    if (iframeInputs > 0) {
+      await page
+        .deepLocator('iframe >> input[type="file"]')
+        .first()
+        .setInputFiles(applicationDetails.resumePath);
+      console.log(`${logPrefix}Resume uploaded successfully from iframe!`);
+      return;
     }
+  } catch {
+    // Frame not accessible, continue
   }
 
   console.log(`${logPrefix}No file upload field found on page`);

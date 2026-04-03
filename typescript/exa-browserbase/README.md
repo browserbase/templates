@@ -14,7 +14,7 @@
 2. **Find careers pages** — For each company, Exa searches for their careers/jobs page
 3. **Extract job details** — Stagehand reads the job posting and extracts structured data (title, requirements, responsibilities)
 4. **Smart form filling** — AI agent fills out application fields with tailored responses based on the job description
-5. **Resume upload** — Playwright handles file uploads for resume/CV attachments
+5. **Resume upload** — Stagehand handles file uploads for resume/CV attachments
 
 ## GLOSSARY
 
