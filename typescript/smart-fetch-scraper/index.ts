@@ -68,7 +68,10 @@ function needsBrowserFallback(content: string, statusCode: number): string | nul
   }
 
   // Low text density: strip all HTML tags and measure how much real text remains
-  const textOnly = content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  const textOnly = content
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
   const density = textOnly.length / content.length;
   if (density < MIN_TEXT_DENSITY) {
     return `text density too low (${(density * 100).toFixed(1)}% < ${MIN_TEXT_DENSITY * 100}%)`;
@@ -90,7 +93,9 @@ async function tryFetchApi(url: string): Promise<{ content: string; statusCode: 
   try {
     const data = await bb.fetchAPI.create({ url, allowRedirects: true });
 
-    console.log(`[Fetch API] Got response: status=${data.statusCode}, length=${data.content.length} chars`);
+    console.log(
+      `[Fetch API] Got response: status=${data.statusCode}, length=${data.content.length} chars`,
+    );
 
     const fallbackReason = needsBrowserFallback(data.content, data.statusCode);
     if (fallbackReason) {
@@ -141,7 +146,9 @@ async function extractWithBrowser(url: string) {
 
   try {
     await stagehand.init();
-    console.log(`[Browser] Live View: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`);
+    console.log(
+      `[Browser] Live View: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`,
+    );
 
     const page = stagehand.context.pages()[0];
     await page.goto(url);

@@ -29,11 +29,13 @@
 ## EXAMPLE URLS
 
 Fetch API fast-path (server-rendered, returns usable HTML directly):
+
 - `npm start https://news.ycombinator.com` — server-rendered, lightweight HTML
 - `npm start https://en.wikipedia.org/wiki/Web_scraping` — static content, no JS required
 - `npm start https://www.bbc.com/news` — server-rendered news page
 
 Browser fallback (JS-rendered, blocked, or low text density):
+
 - `npm start https://www.reddit.com` — returns a 403, triggers fallback
 - `npm start https://x.com` — returns an "Enable JavaScript" shell page
 - `npm start https://github.com/trending` — HTML is mostly inline scripts (3.6% text density), triggers fallback

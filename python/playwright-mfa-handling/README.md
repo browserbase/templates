@@ -21,12 +21,12 @@
 
 This template uses **pure Playwright** for browser automation. The Stagehand v3 Python SDK uses a session-based API with **observe** (find actions) and **act** (execute an action) instead. Here's how they compare:
 
-| Task          | Stagehand v3 — natural language (you describe intent) | Playwright — specific selectors (you target exact elements)   |
-| ------------- | ------------------------------------------------------- | ------------------------------------------------------------- |
-| Fill email    | *"Find the email field and type the user's email"*       | `page.locator('input[type="email"]').fill(email)`              |
-| Fill password | *"Find the password field and enter the password"*      | `page.locator('input[type="password"]').fill(password)`       |
-| Click submit  | *"Click the submit or sign-in button"*                   | `page.locator('input[type="submit"]').click()`                |
-| Check result  | *"Did login succeed or fail? Return success and message"* | `page.locator('text="Login Success"').is_visible()`          |
+| Task          | Stagehand v3 — natural language (you describe intent)     | Playwright — specific selectors (you target exact elements) |
+| ------------- | --------------------------------------------------------- | ----------------------------------------------------------- |
+| Fill email    | _"Find the email field and type the user's email"_        | `page.locator('input[type="email"]').fill(email)`           |
+| Fill password | _"Find the password field and enter the password"_        | `page.locator('input[type="password"]').fill(password)`     |
+| Click submit  | _"Click the submit or sign-in button"_                    | `page.locator('input[type="submit"]').click()`              |
+| Check result  | _"Did login succeed or fail? Return success and message"_ | `page.locator('text="Login Success"').is_visible()`         |
 
 **Example - Filling the login form:**
 

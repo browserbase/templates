@@ -1,0 +1,24 @@
+{
+  "name": "browser-agent-demo",
+  "version": "1.0.0",
+  "description": "Browser Agent Demo - Build a full fledged browser agent using the Browserbase Platform",
+  "main": "index.js",
+  "scripts": {
+    "start": "npx tsx index.ts"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@9.15.0",
+  "type": "module",
+  "dependencies": {
+    "@browserbasehq/sdk": "^2.9.0",
+    "@browserbasehq/stagehand": "^3.2.0",
+    "dotenv": "^17.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.2"
+  }
+}

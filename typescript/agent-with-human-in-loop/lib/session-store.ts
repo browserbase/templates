@@ -39,11 +39,7 @@ export function getSession(id: string): SessionState | undefined {
   return sessions.get(id);
 }
 
-export function setQuestion(
-  id: string,
-  question: string,
-  resolver: (response: string) => void
-) {
+export function setQuestion(id: string, question: string, resolver: (response: string) => void) {
   const session = sessions.get(id);
   if (session) {
     session.status = "waiting_for_human";

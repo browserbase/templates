@@ -15,7 +15,7 @@ const bb = new Browserbase({
 async function createSessionWithContext() {
   console.log("Creating new Browserbase context...");
 
-  const context = await bb.createContext()
+  const context = await bb.createContext();
 
   console.log(`Context created: ${context.id}`);
   console.log("First session: Performing login with MFA...");

@@ -32,6 +32,7 @@ Voice Call (Cartesia) → Form Filling Node → Records Answer
 ## Getting Started
 
 First things first, here is what you will need:
+
 - A [Cartesia](https://play.cartesia.ai/agents) account and API key
 - A [Gemini API Key](https://aistudio.google.com/apikey)
 - A [Browserbase API Key and Project ID](https://www.browserbase.com/overview)
@@ -53,11 +54,13 @@ Make sure to add the API keys in your `.env` file or to the API keys section in 
 ## Setup
 
 1. Install dependencies:
+
 ```bash
 pip install .
 ```
 
 2. Set up environment variables - create a `.env` file:
+
 ```bash
 GEMINI_API_KEY=your_gemini_api_key_here
 BROWSERBASE_API_KEY=your_browserbase_api_key_here
@@ -65,6 +68,7 @@ BROWSERBASE_PROJECT_ID=your_browserbase_project_id_here
 ```
 
 3. Run the agent:
+
 ```bash
 python main.py
 ```
@@ -72,18 +76,23 @@ python main.py
 ## Project Structure
 
 ### `main.py`
+
 Entry point for the voice agent. Handles call initialization with `VoiceAgentApp` class and orchestrates the conversation flow with form filling integration.
 
 ### `form_filling_node.py`
+
 ReasoningNode subclass customized for voice-optimized form filling. Integrates Stagehand browser automation and manages async form filling during conversation without blocking the voice flow. Provides status updates and error handling.
 
 ### `stagehand_form_filler.py`
+
 Browser automation manager that handles all web interactions. Opens and controls web forms, maps conversation data to form fields using AI, transforms voice answers to form-compatible formats, and handles form submission. Supports different field types (text, select, checkbox, etc.).
 
 ### `config.py`
+
 System configuration file including system prompts, model IDs, and temperature
 
 ### `config.toml`
+
 Your Cartesia Line agent id.
 
 ## Configuration
@@ -129,6 +138,7 @@ For detailed deployment instructions, see [how to deploy an agent from the Carte
 ## Testing
 
 Test with different scenarios:
+
 - Complete questionnaire flow
 - Interruptions and corrections
 - Various answer formats

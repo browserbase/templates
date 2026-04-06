@@ -69,9 +69,7 @@ Your responsibilities:
 Think critically about each field and present the candidate in the best professional light.`;
 
 // Builds the instruction prompt for the agent based on available job description
-function buildAgentInstruction(
-  jobDescription: z.infer<typeof jobDescriptionSchema>,
-): string {
+function buildAgentInstruction(jobDescription: z.infer<typeof jobDescriptionSchema>): string {
   const hasJobDescription = jobDescription.jobTitle || jobDescription.fullDescription;
 
   if (hasJobDescription) {
@@ -120,10 +118,7 @@ async function uploadResume(stagehand: Stagehand, logPrefix: string = ""): Promi
   const mainPageInputs = await pwPage.locator('input[type="file"]').count();
 
   if (mainPageInputs > 0) {
-    await pwPage
-      .locator('input[type="file"]')
-      .first()
-      .setInputFiles(applicationDetails.resumePath);
+    await pwPage.locator('input[type="file"]').first().setInputFiles(applicationDetails.resumePath);
     console.log(`${logPrefix}Resume uploaded successfully from main page!`);
     return;
   }
@@ -159,10 +154,7 @@ interface ApplicationResult {
 }
 
 // Applies to a single job posting
-async function applyToJob(
-  careersPage: CareersPage,
-  index: number,
-): Promise<ApplicationResult> {
+async function applyToJob(careersPage: CareersPage, index: number): Promise<ApplicationResult> {
   const logPrefix = `[${index + 1}/${searchConfig.numCompanies}] ${careersPage.company}: `;
   console.log(`\n${logPrefix}Starting application...`);
 
@@ -342,7 +334,9 @@ async function main() {
   const successful = results.filter((r) => r.success);
   const failed = results.filter((r) => !r.success);
 
-  console.log(`\nTotal: ${results.length} | Success: ${successful.length} | Failed: ${failed.length}\n`);
+  console.log(
+    `\nTotal: ${results.length} | Success: ${successful.length} | Failed: ${failed.length}\n`,
+  );
 
   results.forEach((r, i) => {
     const status = r.success ? "[SUCCESS]" : "[FAILED]";

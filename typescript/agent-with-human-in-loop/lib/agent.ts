@@ -15,7 +15,7 @@ import { tmpdir } from "os";
 function sendEvent(
   writer: WritableStreamDefaultWriter<Uint8Array>,
   event: string,
-  data: Record<string, unknown>
+  data: Record<string, unknown>,
 ) {
   const encoder = new TextEncoder();
   const msg = `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
@@ -110,9 +110,9 @@ of trying to click or interact with the file input directly.`,
             "Use this when you encounter form fields requiring personal info you don't have. " +
             "Be specific about what information you need.",
           inputSchema: z.object({
-            question: z.string().describe(
-              "The question to ask the human. Be specific about what info is needed."
-            ),
+            question: z
+              .string()
+              .describe("The question to ask the human. Be specific about what info is needed."),
           }),
           execute: async ({ question }) => {
             // Send question to the frontend via SSE
@@ -205,7 +205,12 @@ of trying to click or interact with the file input directly.`,
     });
   } finally {
     // Clean up temp resume file (in finally so it's removed even on error)
-    if (resumePath) try { unlinkSync(resumePath); } catch { /* ignore */ }
+    if (resumePath)
+      try {
+        unlinkSync(resumePath);
+      } catch {
+        /* ignore */
+      }
     await writer.close();
   }
 }

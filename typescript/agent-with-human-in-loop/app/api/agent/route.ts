@@ -13,7 +13,7 @@ export async function POST(req: Request) {
   if (!firstName || !lastName || !resumeBase64 || !resumeFileName) {
     return Response.json(
       { error: "firstName, lastName, resumeBase64, and resumeFileName are required" },
-      { status: 400 }
+      { status: 400 },
     );
   }
 

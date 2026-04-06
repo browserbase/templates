@@ -17,9 +17,7 @@ export default function Home() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [phase, setPhase] = useState<
-    "form" | "running" | "waiting" | "complete" | "error"
-  >("form");
+  const [phase, setPhase] = useState<"form" | "running" | "waiting" | "complete" | "error">("form");
   const [debuggerUrl, setDebuggerUrl] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState("");
@@ -164,24 +162,19 @@ export default function Home() {
       <main className="flex-1 flex items-center justify-center p-8">
         <div className="w-full max-w-md space-y-6">
           <div className="space-y-2 text-center">
-            <h1 className="text-2xl font-bold tracking-tight">
-              Human-in-the-Loop Agent
-            </h1>
+            <h1 className="text-2xl font-bold tracking-tight">Human-in-the-Loop Agent</h1>
             <p className="text-sm text-neutral-400">
-              Fill out your first and last name, upload a resume (you can use
-              the <code className="text-neutral-300">template_resume.pdf</code>{" "}
-              file in the project root as an example), and click{" "}
-              <strong className="text-neutral-300">Start Agent</strong>. An AI
-              agent will apply to a job on your behalf — when it needs more
-              information, it will pause to ask you directly.
+              Fill out your first and last name, upload a resume (you can use the{" "}
+              <code className="text-neutral-300">template_resume.pdf</code> file in the project root
+              as an example), and click <strong className="text-neutral-300">Start Agent</strong>.
+              An AI agent will apply to a job on your behalf — when it needs more information, it
+              will pause to ask you directly.
             </p>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-1">
-                First Name
-              </label>
+              <label className="block text-sm font-medium mb-1">First Name</label>
               <input
                 type="text"
                 value={firstName}
@@ -191,9 +184,7 @@ export default function Home() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Last Name
-              </label>
+              <label className="block text-sm font-medium mb-1">Last Name</label>
               <input
                 type="text"
                 value={lastName}
@@ -203,9 +194,7 @@ export default function Home() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">
-                Resume
-              </label>
+              <label className="block text-sm font-medium mb-1">Resume</label>
               <input
                 type="file"
                 accept=".pdf,.doc,.docx"
@@ -221,9 +210,7 @@ export default function Home() {
                 }}
                 className="w-full rounded-md border border-neutral-700 bg-neutral-900 px-3 py-2 text-sm file:mr-3 file:rounded file:border-0 file:bg-neutral-700 file:px-3 file:py-1 file:text-sm file:text-neutral-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
-              <p className="text-xs text-neutral-500 mt-1">
-                PDF, DOC, or DOCX up to 10MB
-              </p>
+              <p className="text-xs text-neutral-500 mt-1">PDF, DOC, or DOCX up to 10MB</p>
             </div>
             <button
               onClick={handleStart}
@@ -316,9 +303,7 @@ export default function Home() {
           {phase === "waiting" && (
             <div className="space-y-3">
               <div className="rounded-md bg-yellow-500/10 border border-yellow-500/30 p-3">
-                <p className="text-xs text-yellow-400 font-medium mb-1">
-                  Agent needs your help:
-                </p>
+                <p className="text-xs text-yellow-400 font-medium mb-1">Agent needs your help:</p>
                 <p className="text-sm text-yellow-200">{currentQuestion}</p>
               </div>
               <div className="flex gap-2">
