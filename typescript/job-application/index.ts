@@ -72,10 +72,7 @@ async function applyToJob(jobInfo: JobInfo, semaphore: () => Promise<void>, rele
   // Initialize Stagehand with Browserbase for cloud-based browser automation
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    model: {
-      modelName: "google/gemini-2.5-flash",
-      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    },
+    model: "google/gemini-2.5-flash", // Routed through Model Gateway
   });
 
   try {
@@ -168,10 +165,7 @@ async function main() {
   // Initialize Stagehand with Browserbase for cloud-based browser automation
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
-    model: {
-      modelName: "google/gemini-2.5-flash",
-      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    },
+    model: "google/gemini-2.5-flash", // Routed through Model Gateway
   });
 
   // Initialize browser session to start automation
@@ -223,7 +217,6 @@ main().catch((err) => {
   console.error("Error in job application automation:", err);
   console.error("Common issues:");
   console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
-  console.error("  - Verify GOOGLE_GENERATIVE_AI_API_KEY is set");
   console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
   process.exit(1);
 });

@@ -22,7 +22,7 @@
 1. cd image-url-download
 2. npm install
 3. cp .env.example .env
-4. Add your Browserbase API key, Project ID, and Google API key to .env
+4. Add your Browserbase API key to .env
 5. npm start \<url\> — e.g. `npm start https://www.browserbase.com`
 
 ## EXPECTED OUTPUT
@@ -39,7 +39,7 @@
 ## COMMON PITFALLS
 
 - "Cannot find module": ensure all dependencies are installed with `npm install`
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Empty images folder: some pages load images lazily — try scrolling the page before extraction, or increase the page load wait
 - Zero images found: the page may use CSS background images not captured by `<img>` tags — adjust the extract instruction to target specific selectors
 - CORS / auth-gated images: images behind login walls or strict CORS policies may fail in `page.evaluate()` — ensure you are authenticated before running the script

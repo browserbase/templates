@@ -143,7 +143,7 @@ main().catch((err) => {
   console.error("Error in context authentication example:", err);
   console.error("Common issues:");
   console.error("  - Check .env file has SF_REC_PARK_EMAIL and SF_REC_PARK_PASSWORD");
-  console.error("  - Verify BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY are set");
+  console.error("  - Verify BROWSERBASE_API_KEY is set");
   console.error("  - Ensure credentials are valid for SF Rec & Park");
   console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
   process.exit(1);

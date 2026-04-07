@@ -15,7 +15,7 @@
 
 1.  npm install
 2.  cp .env.example .env
-3.  Add your Browserbase API key, Project ID, and Google API key to .env
+3.  Add your Browserbase API key and Google API key to .env
 4.  npm start
 
 ## EXPECTED OUTPUT
@@ -30,7 +30,7 @@
 ## COMMON PITFALLS
 
 - "Cannot find module": ensure all dependencies are installed
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY and GOOGLE_API_KEY
 - Google API access: ensure you have access to Google's computer-use-preview model
 
 ## USE CASES

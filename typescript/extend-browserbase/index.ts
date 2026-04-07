@@ -337,8 +337,8 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
 async function main(): Promise<void> {
   console.log("Starting Expense Receipt Downloader...\n");
 
-  if (!process.env.BROWSERBASE_API_KEY || !process.env.BROWSERBASE_PROJECT_ID) {
-    throw new Error("BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID are required");
+  if (!process.env.BROWSERBASE_API_KEY) {
+    throw new Error("BROWSERBASE_API_KEY is required");
   }
 
   // Initialize Browserbase SDK for session management and download retrieval
@@ -353,10 +353,7 @@ async function main(): Promise<void> {
     // 0 = errors only, 1 = info, 2 = debug
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
     // https://docs.stagehand.dev/configuration/logging
-    model: {
-      modelName: "google/gemini-2.5-flash",
-      apiKey: process.env.GOOGLE_API_KEY,
-    },
+    model: "google/gemini-2.5-flash", // Routed through Model Gateway
   });
 
   let sessionId: string | undefined;
@@ -465,9 +462,7 @@ async function main(): Promise<void> {
 main().catch((err) => {
   console.error("Application error:", err);
   console.error("Common issues:");
-  console.error(
-    "  - Check .env file has BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY",
-  );
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Add EXTEND_API_KEY to .env to enable receipt parsing with Extend AI");
   console.error("  - Verify internet connection and expense portal accessibility");
   console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");

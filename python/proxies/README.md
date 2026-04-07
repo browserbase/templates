@@ -17,7 +17,7 @@
 4.  pip install -r requirements.txt
 5.  pip install browserbase playwright
 6.  playwright install chromium
-7.  cp .env.example .env # Add your Browserbase API key and Project ID to .env
+7.  cp .env.example .env # Add your Browserbase API key to .env
 8.  python main.py
 
 ## EXPECTED OUTPUT
@@ -32,7 +32,7 @@
 
 - Browserbase Developer plan or higher is required to use proxies
 - "ModuleNotFoundError": ensure all dependencies are installed via pip
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Custom proxy errors: verify external proxy server credentials and availability
 - Playwright not installed: run `playwright install chromium` after pip install
 - Import errors: activate your virtual environment if you created one

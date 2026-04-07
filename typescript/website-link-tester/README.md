@@ -23,9 +23,8 @@
    - `npm install`
 3. **Configure environment**
    - Copy your root `.env.example` to `.env` if needed
-   - Add your Browserbase API key and Project ID:
+   - Add your Browserbase API key:
      - `BROWSERBASE_API_KEY`
-     - `BROWSERBASE_PROJECT_ID`
 4. **Run the script**
    - `npm start`
 
@@ -57,7 +56,7 @@
 ### COMMON PITFALLS
 
 - **Missing credentials**
-  - Ensure `.env` contains `BROWSERBASE_PROJECT_ID` and `BROWSERBASE_API_KEY`
+  - Ensure `.env` contains `BROWSERBASE_API_KEY`
 - **Concurrency limits**
   - `MAX_CONCURRENT_LINKS > 1` will open multiple browsers in parallel and requires a Browserbase plan that supports concurrency (Startup or Developer or higher)
 - **Slow or failing pages**

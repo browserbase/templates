@@ -28,7 +28,7 @@
 4. source venv/bin/activate # On Windows: venv\Scripts\activate
 5. pip install -r requirements.txt
 6. pip install InquirerPy pydantic
-7. cp .env.example .env # Add your Browserbase API key, Project ID, and SF Rec Park credentials to .env
+7. cp .env.example .env # Add your Browserbase API key and SF Rec Park credentials to .env
 8. python main.py
 
 ## EXPECTED OUTPUT

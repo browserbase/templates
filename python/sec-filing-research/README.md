@@ -36,7 +36,7 @@
    ```
 
 3. cp .env.example .env
-4. Add BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and MODEL_API_KEY to .env
+4. Add BROWSERBASE_API_KEY to .env
 5. (Optional) Edit SEARCH_QUERY and NUM_FILINGS in main.py
 6. Run the script:
 
@@ -64,7 +64,7 @@
 ## COMMON PITFALLS
 
 - "ModuleNotFoundError": run `uv sync` or `pip install -e .` in sec-filing-research
-- Missing credentials: ensure .env has BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and MODEL_API_KEY
+- Missing credentials: ensure .env has BROWSERBASE_API_KEY
 - No company match: use a valid company name, ticker, or CIK; SEC search is case-sensitive for some queries
 - Extraction errors: SEC page layout changes can break selectors; check live view and adjust act/extract prompts if needed
 - Rate limiting: avoid excessive runs; SEC may throttle heavy or automated traffic

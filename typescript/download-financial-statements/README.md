@@ -21,7 +21,7 @@
 1.  cd download-financial-statements
 2.  npm install
 3.  cp .env.example .env
-4.  Add your Browserbase API key and Project ID to .env
+4.  Add your Browserbase API key to .env
 5.  npm start
 
 ## EXPECTED OUTPUT
@@ -37,7 +37,7 @@
 ## COMMON PITFALLS
 
 - "Cannot find module": ensure all dependencies are installed
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Download timeout: increase `retryForSeconds` parameter if downloads take longer than 45 seconds
 - Empty ZIP file: ensure PDFs were actually triggered (check live view link to debug)
 - Network issues: check internet connection and Apple website accessibility

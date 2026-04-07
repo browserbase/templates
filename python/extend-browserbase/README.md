@@ -26,9 +26,7 @@
 1. cd python/extend-browserbase
 2. cp .env.example .env
 3. Add required API keys to .env:
-   - `BROWSERBASE_PROJECT_ID`
    - `BROWSERBASE_API_KEY`
-   - `GOOGLE_API_KEY`
    - `EXTEND_API_KEY` (optional — enables receipt parsing)
 4. Run the script:
 
@@ -48,7 +46,7 @@
 ## COMMON PITFALLS
 
 - "ModuleNotFoundError": ensure you're running with `uv run python main.py` so dependencies are installed automatically from pyproject.toml
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Download timeout: increase `retry_for_seconds` parameter in `save_downloads_with_retry` if downloads take longer than 60 seconds
 - Empty ZIP file: ensure downloads were actually triggered (check live view link to debug)
 - Rate limiting on Extend: the script retries with exponential backoff on 429 errors, but very large batches may need the batch size reduced from 9

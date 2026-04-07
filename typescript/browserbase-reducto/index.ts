@@ -317,7 +317,7 @@ main().catch((err) => {
   console.error("Application error:", err);
   console.error("Common issues:");
   console.error(
-    "  - Check .env file has BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and REDUCTOAI_API_KEY",
+    "  - Check .env file has BROWSERBASE_API_KEY and REDUCTOAI_API_KEY",
   );
   console.error("  - Verify internet connection and Apple website accessibility");
   console.error("  - Ensure sufficient timeout for slow-loading pages");

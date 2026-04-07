@@ -26,7 +26,7 @@
 1. uv venv venv
 2. source venv/bin/activate # On Windows: venv\Scripts\activate
 3. uvx install stagehand python-dotenv pydantic
-4. cp .env.example .env # Add your Browserbase API key, Project ID, and Google Generative AI API key to .env
+4. cp .env.example .env # Add your Browserbase API key and Google Generative AI API key to .env
 5. Edit COMPANY_NAMES array in main.py to specify which companies to process
 6. python main.py
 
@@ -42,7 +42,7 @@
 
 ## COMMON PITFALLS
 
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_GENERATIVE_AI_API_KEY (or GOOGLE_API_KEY)
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY and GOOGLE_GENERATIVE_AI_API_KEY (or GOOGLE_API_KEY)
 - Google API access: ensure you have access to gemini-2.5-computer-use-preview-10-2025 model
 - Concurrent processing: MAX_CONCURRENT > 1 requires Browserbase Startup or Developer plan or higher (default is 1 for sequential)
 - Company not found: agent may fail if company name is ambiguous or doesn't have a clear web presence

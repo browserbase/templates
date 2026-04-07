@@ -40,8 +40,6 @@ def create_session_with_context():
     # Initialize Stagehand with Browserbase for cloud-based browser automation
     client = Stagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY"),
     )
 
     print(f"Watch live: https://browserbase.com/sessions/{session_id}")
@@ -150,8 +148,6 @@ def reuse_context(context_id: str):
     # Initialize Stagehand with Browserbase for cloud-based browser automation
     client = Stagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY"),
     )
 
     print(f"Watch live: https://browserbase.com/sessions/{session_id}")
@@ -215,9 +211,9 @@ def delete_context(context_id: str):
 def main():
     print("Starting Browserbase Context MFA Persistence Demo...")
 
-    if not os.environ.get("BROWSERBASE_API_KEY") or not os.environ.get("BROWSERBASE_PROJECT_ID"):
+    if not os.environ.get("BROWSERBASE_API_KEY"):
         print("\nError: Missing Browserbase credentials")
-        print("   Set BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID in .env")
+        print("   Set BROWSERBASE_API_KEY in .env")
         exit(1)
 
     if not os.environ.get("GITHUB_USERNAME") or not os.environ.get("GITHUB_PASSWORD"):
@@ -265,7 +261,6 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"Application error: {err}")
         print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
-        print("  - Verify GOOGLE_GENERATIVE_AI_API_KEY is set in environment")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
         exit(1)

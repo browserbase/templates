@@ -147,8 +147,6 @@ class StagehandFormFiller:
 
             self.client = AsyncStagehand(
                 browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-                browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-                model_api_key=os.environ.get("GEMINI_API_KEY"),
             )
 
             self.session = await self.client.sessions.create(

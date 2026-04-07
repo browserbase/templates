@@ -21,7 +21,7 @@
 1.  cd form-fill-template
 2.  npm install
 3.  cp .env.example .env
-4.  Add your Browserbase API key, Project ID, and OpenAI API key to .env
+4.  Add your Browserbase API key and Project ID to .env
 5.  npm start
 
 ## EXPECTED OUTPUT

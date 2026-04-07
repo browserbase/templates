@@ -168,7 +168,7 @@ async function main() {
 main().catch((err) => {
   console.error("Application error:", err);
   console.error("Common issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error(
     "  - Verify geolocation proxy locations are valid (see https://docs.browserbase.com/features/proxies)",
   );

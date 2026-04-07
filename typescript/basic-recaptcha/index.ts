@@ -82,7 +82,7 @@ async function main() {
 main().catch((err) => {
   console.error("Error in reCAPTCHA solving example:", err);
   console.error("Common issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Verify solveCaptchas is enabled in browserSettings");
   console.error("  - Ensure the demo page is accessible");
   console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");

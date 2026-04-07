@@ -15,7 +15,7 @@
 2.  npm install
 3.  npm install @browserbasehq/sdk playwright-core
 4.  cp .env.example .env
-5.  Add your Browserbase API key and Project ID to .env
+5.  Add your Browserbase API key to .env
 6.  npm start
 
 ## EXPECTED OUTPUT
@@ -30,7 +30,7 @@
 
 - Browserbase Developer plan or higher is required to use proxies
 - "Cannot find module": ensure all dependencies are installed
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Custom proxy errors: verify external proxy server credentials and availability
 
 ## USE CASES

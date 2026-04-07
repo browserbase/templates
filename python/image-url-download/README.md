@@ -23,7 +23,7 @@
 
 1. cd image-url-download
 2. cp .env.example .env
-3. Add BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY to .env
+3. Add BROWSERBASE_API_KEY to .env
 4. uv run main.py \<url\> — e.g. `uv run main.py https://www.browserbase.com`
 
 ## EXPECTED OUTPUT
@@ -41,7 +41,7 @@
 ## COMMON PITFALLS
 
 - `ModuleNotFoundError`: ensure all dependencies are installed — `uv run` handles this automatically via `pyproject.toml`
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Zero images found: the page may load images lazily or use CSS background images — try scrolling before extraction with `sessions.act()`, or refine the extract instruction
 - Download failures (403): some images require the full browser session context — ensure the Playwright CDP connection is established before downloading
 - MAX_IMAGES cap: if you need more than 10 images, set `MAX_IMAGES=50` in your .env or edit the constant at the top of `main.py`

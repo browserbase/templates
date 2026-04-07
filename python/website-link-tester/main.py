@@ -99,8 +99,6 @@ def collect_links_from_homepage() -> list[dict]:
     # Initialize Stagehand with Browserbase for cloud-based browser automation
     client = Stagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.environ.get("GOOGLE_API_KEY"),
     )
 
     # Start a new session
@@ -191,8 +189,6 @@ def verify_single_link(link: dict) -> LinkVerificationResult:
     # Initialize Stagehand with Browserbase for cloud-based browser automation
     client = Stagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.environ.get("GOOGLE_API_KEY"),
     )
 
     # Start a new session
@@ -381,8 +377,7 @@ if __name__ == "__main__":
     except Exception as err:
         print("Application error:", err)
         print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
-        print("  - Verify GOOGLE_API_KEY is set")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print("  - Ensure URL is reachable from Browserbase regions")
         print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
         raise SystemExit(1)

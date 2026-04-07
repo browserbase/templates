@@ -33,8 +33,6 @@ def main():
     # Initialize Stagehand with Browserbase for cloud-based browser automation
     client = Stagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.environ.get("OPENAI_API_KEY"),
     )
 
     # Start a new session
@@ -92,10 +90,9 @@ def main():
 
         # Provide helpful troubleshooting information
         print("\nCommon issues:")
-        print("1. Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
-        print("2. Verify OPENAI_API_KEY is set in environment")
-        print("3. Ensure internet access and https://polymarket.com is accessible")
-        print("4. Verify Browserbase account has sufficient credits")
+        print("1. Check .env file has BROWSERBASE_API_KEY")
+        print("2. Ensure internet access and https://polymarket.com is accessible")
+        print("3. Verify Browserbase account has sufficient credits")
         raise
 
     finally:
@@ -109,8 +106,7 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"Error in polymarket research: {err}")
         print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
-        print("  - Verify OPENAI_API_KEY is set in environment")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print("  - Ensure internet access and https://polymarket.com is accessible")
         print("  - Verify Browserbase account has sufficient credits")
         print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")

@@ -134,7 +134,6 @@ async function extractWithBrowser(url: string) {
     verbose: 1,
     model: "google/gemini-2.5-flash",
     browserbaseSessionCreateParams: {
-      projectId: process.env.BROWSERBASE_PROJECT_ID!,
       proxies: true,
       browserSettings: {
         advancedStealth: true,
@@ -215,8 +214,7 @@ async function main(): Promise<void> {
 main().catch((err) => {
   console.error("Error:", err);
   console.error("Common issues:");
-  console.error("  - Check .env has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
-  console.error("  - Verify GOOGLE_API_KEY is set for the model (browser fallback)");
+  console.error("  - Check .env has BROWSERBASE_API_KEY");
   console.error("  - Verify network connectivity");
   console.error("Docs: https://docs.stagehand.dev");
   process.exit(1);

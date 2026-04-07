@@ -129,7 +129,7 @@ async function main(): Promise<void> {
 main().catch((err) => {
   console.error("Application error:", err);
   console.error("Common issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Verify internet connection and Apple website accessibility");
   console.error("  - Ensure sufficient timeout for slow-loading pages");
   console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");

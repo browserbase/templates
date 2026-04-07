@@ -24,7 +24,7 @@
 1. cd sec-filing-research
 2. npm install
 3. cp .env.example .env
-4. Add BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY to .env
+4. Add BROWSERBASE_API_KEY to .env
 5. (Optional) Edit SEARCH_QUERY and NUM_FILINGS in index.ts
 6. npm start
 
@@ -42,7 +42,7 @@
 ## COMMON PITFALLS
 
 - "Cannot find module": run npm install in sec-filing-research
-- Missing credentials: ensure .env has BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY (for Gemini)
+- Missing credentials: ensure .env has BROWSERBASE_API_KEY
 - No company match: use a valid company name, ticker, or CIK; SEC search is case-sensitive for some queries
 - Extraction errors: SEC page layout changes can break selectors; check live view and adjust act/extract prompts if needed
 - Rate limiting: avoid excessive runs; SEC may throttle heavy or automated traffic

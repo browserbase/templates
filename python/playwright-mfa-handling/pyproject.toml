@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
     "playwright",
-    "browserbase>=1.5.0",
+    "browserbase>=1.7.0",
     "python-dotenv",
 ]
 

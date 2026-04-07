@@ -27,9 +27,7 @@
 2. pnpm install
 3. cp .env.example .env
 4. Add required API keys to .env:
-   - `BROWSERBASE_PROJECT_ID`
    - `BROWSERBASE_API_KEY`
-   - `GOOGLE_API_KEY`
    - `EXTEND_API_KEY` (optional — enables receipt parsing)
 5. pnpm start
 
@@ -45,7 +43,7 @@
 ## COMMON PITFALLS
 
 - "Cannot find module": ensure pnpm install completed in the extend-browserbase directory
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Download timeout: increase `retryForSeconds` parameter in `saveDownloadsWithRetry` if downloads take longer than 60 seconds
 - Empty ZIP file: ensure downloads were actually triggered (check live view link to debug)
 - Rate limiting on Extend: the script retries with exponential backoff on 429 errors, but very large batches may need the batch size reduced from 9

@@ -76,7 +76,7 @@ browserSettings: {
 1. cd basic-recaptcha
 2. pnpm install
 3. cp .env.example .env
-4. Add your Browserbase API key and Project ID to .env
+4. Add your Browserbase API key to .env
 5. pnpm start
 
 ## EXPECTED OUTPUT
@@ -94,7 +94,7 @@ browserSettings: {
 
 ## COMMON PITFALLS
 
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Captcha solving not enabled: ensure `solveCaptchas: true` is set in browserSettings (enabled by default)
 - Solving timeout: allow up to 30 seconds for CAPTCHA solving to complete before timing out
 - Proxies not enabled: enable proxies in browserSettings for higher CAPTCHA solving success rates

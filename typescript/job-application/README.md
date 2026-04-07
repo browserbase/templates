@@ -24,7 +24,7 @@
 
 1. npm install
 2. cp .env.example .env
-3. Add required API keys/IDs to .env (BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, GOOGLE_GENERATIVE_AI_API_KEY)
+3. Add your Browserbase API key and Project ID to .env (BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID)
 4. npm start
 
 ## EXPECTED OUTPUT
@@ -53,8 +53,7 @@
 ## COMMON PITFALLS
 
 - Dependency install errors: ensure npm install completed
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_GENERATIVE_AI_API_KEY
-- Google API access: ensure you have access to Google's gemini-2.5-flash model
+- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
 - Concurrency limits: script automatically respects Browserbase project concurrency (capped at 5)
 - Resume URL: ensure the resume URL (https://agent-job-board.vercel.app/Agent%20Resume.pdf) is accessible
 - Job detection: verify that job listings are visible on the page and match expected structure

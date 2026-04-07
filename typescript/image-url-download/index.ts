@@ -207,8 +207,7 @@ async function main(): Promise<void> {
 main().catch((err) => {
   console.error("Error:", err);
   console.error("Common issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
-  console.error("  - Ensure GOOGLE_API_KEY is set for the gemini-2.5-flash model");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Verify the target URL is accessible");
   console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
   process.exit(1);

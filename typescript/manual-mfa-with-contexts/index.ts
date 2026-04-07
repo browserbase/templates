@@ -193,9 +193,9 @@ async function main() {
   console.log("Starting Browserbase Context MFA Persistence Demo...");
 
   // Check environment variables
-  if (!process.env.BROWSERBASE_API_KEY || !process.env.BROWSERBASE_PROJECT_ID) {
+  if (!process.env.BROWSERBASE_API_KEY) {
     console.error("\n❌ Missing Browserbase credentials");
-    console.error("   Set BROWSERBASE_API_KEY and BROWSERBASE_PROJECT_ID in .env");
+    console.error("   Set BROWSERBASE_API_KEY in .env");
     process.exit(1);
   }
 

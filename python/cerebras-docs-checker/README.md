@@ -20,7 +20,7 @@
 ## QUICKSTART
 
 1. uv sync && playwright install chromium
-2. cp .env.example .env # Add your CEREBRAS_API_KEY, BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID
+2. cp .env.example .env # Add your CEREBRAS_API_KEY and BROWSERBASE_API_KEY
 3. uv run python main.py https://your-docs-site.com
 
 ## EXPECTED OUTPUT
@@ -34,7 +34,7 @@
 
 ## COMMON PITFALLS
 
-- "Missing required API keys": verify .env contains CEREBRAS_API_KEY, BROWSERBASE_API_KEY, and BROWSERBASE_PROJECT_ID
+- "Missing required API keys": verify .env contains CEREBRAS_API_KEY and BROWSERBASE_API_KEY
 - Playwright not installed: run `playwright install chromium` after `uv sync`
 - Cerebras 422 errors: the model may rate-limit under heavy load — reduce MAX_PAGES or MAX_CRAWL_WORKERS in main.py
 - Clone failures: ensure the target docs site links to a public GitHub repo

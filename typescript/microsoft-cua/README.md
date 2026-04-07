@@ -15,7 +15,7 @@
 
 1.  npm install
 2.  cp .env.example .env
-3.  Add your Browserbase API key, Project ID, Azure API key, and Azure endpoint to .env
+3.  Add your Browserbase API key, Azure API key, and Azure endpoint to .env
 4.  npm start
 
 ## EXPECTED OUTPUT
@@ -30,7 +30,7 @@
 ## COMMON PITFALLS
 
 - "Cannot find module": ensure all dependencies are installed
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, AZURE_API_KEY, and AZURE_ENDPOINT
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY, AZURE_API_KEY, and AZURE_ENDPOINT
 - Microsoft API access: ensure you have access to Microsoft's fara-7b model via Azure or Fireworks
 
 ## USE CASES

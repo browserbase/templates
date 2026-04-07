@@ -17,7 +17,7 @@
 ## QUICKSTART
 
 1. uv sync
-2. cp .env.example .env # Add your API keys to .env
+2. cp .env.example .env # Add your Browserbase API key to .env
 3. uv run python main.py
 
 ## EXPECTED OUTPUT
@@ -33,7 +33,7 @@
 ## COMMON PITFALLS
 
 - "ModuleNotFoundError": ensure all dependencies are installed via `uv sync`
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Invalid country code: ensure country code is a valid 2-letter ISO code (US, GB, IN, DE, FR, BR, etc.)
 - Empty results: Google Trends may not have trending data for all country/language combinations
 - Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in

@@ -9,7 +9,7 @@
     "dev": "tsx watch index.ts"
   },
   "dependencies": {
-    "@browserbasehq/sdk": "^2.8.0",
+    "@browserbasehq/sdk": "^2.9.0",
     "dotenv": "^16.4.5",
     "playwright-core": "^1.50.0"
   },

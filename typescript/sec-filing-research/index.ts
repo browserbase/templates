@@ -58,7 +58,6 @@ async function main(): Promise<void> {
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
     apiKey: process.env.BROWSERBASE_API_KEY,
-    projectId: process.env.BROWSERBASE_PROJECT_ID,
     verbose: 1,
     // 0 = errors only, 1 = info, 2 = debug
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
@@ -172,7 +171,7 @@ main().catch((err) => {
   console.error("Application error:", err);
   // Provide helpful troubleshooting information
   console.error("\nCommon issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Verify internet connection and SEC website accessibility");
   console.error("  - Ensure the search query is valid (company name, ticker, or CIK)");
   console.error("\nDocs: https://docs.stagehand.dev/v3/first-steps/introduction");

@@ -18,7 +18,7 @@
 
 1. cd python/company-value-prop-generator
 2. pip install python-dotenv stagehand openai pydantic
-3. cp .env.example .env # Add required API keys/IDs to .env
+3. cp .env.example .env # Add your Browserbase API key to .env
 4. python main.py
 
 ## EXPECTED OUTPUT
@@ -37,10 +37,7 @@
 
 - Dependency install errors: ensure pip install completed
 - Missing credentials:
-  - BROWSERBASE_PROJECT_ID (required for browser automation)
   - BROWSERBASE_API_KEY (required for browser automation)
-  - OPENAI_API_KEY (required for LLM generation)
-- Access limitations: Requires OpenAI API access for gpt-4.1 model
 - Placeholder pages: Template includes detection logic, but some custom placeholder pages may still pass validation
 - Slow-loading sites: 5-minute timeout configured, but extremely slow sites may still timeout
 

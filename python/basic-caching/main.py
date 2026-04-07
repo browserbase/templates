@@ -115,8 +115,6 @@ def run_without_cache():
     # Initialize Stagehand with Browserbase for cloud-based browser automation
     client = Stagehand(
         browserbase_api_key=os.getenv("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.getenv("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.getenv("GOOGLE_API_KEY"),
     )
 
     start_response = client.sessions.start(model_name="google/gemini-2.5-flash")
@@ -169,8 +167,6 @@ def run_with_cache():
     # Initialize Stagehand with Browserbase for cloud-based browser automation
     client = Stagehand(
         browserbase_api_key=os.getenv("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.getenv("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.getenv("GOOGLE_API_KEY"),
     )
 
     start_response = client.sessions.start(model_name="google/gemini-2.5-flash")
@@ -306,7 +302,6 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"Error in caching demo: {err}")
         print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
-        print("  - Verify GOOGLE_API_KEY is set for the model")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
         exit(1)

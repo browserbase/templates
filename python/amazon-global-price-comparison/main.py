@@ -8,11 +8,10 @@ from dataclasses import dataclass
 from browserbase import Browserbase
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-
 from stagehand import AsyncStagehand
 
 # Load environment variables from .env file
-# Required: BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, MODEL_API_KEY
+# Required: BROWSERBASE_API_KEY
 load_dotenv()
 
 
@@ -34,7 +33,9 @@ class Product(BaseModel):
     )
     product_url: str = Field(
         default="N/A",
-        description="The full href URL link to the product detail page (starting with https:// or /dp/)",
+        description=(
+            "The full href URL link to the product detail page (starting with https:// or /dp/)"
+        ),
     )
 
 
@@ -58,7 +59,8 @@ class CountryConfig:
 
 
 # Supported countries for price comparison
-# Add or remove countries as needed - see https://docs.browserbase.com/features/proxies for available geolocations
+# Add or remove countries as needed - see
+# https://docs.browserbase.com/features/proxies for available geolocations
 COUNTRIES: list[CountryConfig] = [
     CountryConfig(name="United States", code="US", city=None, currency="USD"),
     CountryConfig(name="United Kingdom", code="GB", city="LONDON", currency="GBP"),
@@ -127,8 +129,6 @@ async def get_products_for_country(
     # Initialize AsyncStagehand client (v3 API)
     client = AsyncStagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.environ.get("MODEL_API_KEY"),
     )
 
     try:
@@ -170,7 +170,11 @@ async def get_products_for_country(
                             },
                             "price": {
                                 "type": "string",
-                                "description": "The product price including currency symbol (e.g., '$29.99'). If no price is visible, return 'N/A'",
+                                "description": (
+                                    "The product price including currency"
+                                    " symbol (e.g., '$29.99'). If no"
+                                    " price is visible, return 'N/A'"
+                                ),
                             },
                             "rating": {
                                 "type": "string",
@@ -193,14 +197,19 @@ async def get_products_for_country(
         }
 
         extract_response = await stagehand_session.extract(
-            instruction=f"""Extract the first {results_count} product search results from this Amazon page. For each product, extract:
-            1. name: the full product title
-            2. price: the displayed price WITH currency symbol (like $599.99 or 599,99 EUR). If no price shown, use "N/A"
-            3. rating: the star rating text (like "4.5 out of 5 stars")
-            4. reviews_count: the number of reviews (like "2,508")
-            5. product_url: the href link to the product page (starts with /dp/ or https://)
-
-            Only extract actual product listings, skip sponsored ads or recommendations.""",
+            instruction=(
+                f"Extract the first {results_count} product search results"
+                " from this Amazon page. For each product, extract:"
+                " 1. name: the full product title"
+                " 2. price: the displayed price WITH currency symbol"
+                ' (like $599.99 or 599,99 EUR). If no price shown, use "N/A"'
+                ' 3. rating: the star rating text (like "4.5 out of 5 stars")'
+                ' 4. reviews_count: the number of reviews (like "2,508")'
+                " 5. product_url: the href link to the product page"
+                " (starts with /dp/ or https://)"
+                " Only extract actual product listings, skip sponsored"
+                " ads or recommendations."
+            ),
             schema=products_schema,
         )
 
@@ -368,9 +377,7 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"Application error: {err}")
         print("\nCommon issues:")
-        print(
-            "  - Check .env file has BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and MODEL_API_KEY"
-        )
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print(
             "  - Verify geolocation proxy locations are valid "
             "(see https://docs.browserbase.com/features/proxies)"

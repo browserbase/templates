@@ -7,7 +7,7 @@ requires-python = ">=3.9"
 dependencies = [
     "pydantic",
     "python-dotenv",
-    "stagehand",
+    "stagehand>=3.19.0",
 ]
 
 [project.optional-dependencies]

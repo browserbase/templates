@@ -22,7 +22,7 @@
 1. cd nurse-verification
 2. npm install
 3. cp .env.example .env
-4. Add your Browserbase API key, Project ID, and OpenAI API key to .env
+4. Add your Browserbase API key to .env
 5. npm start
 
 ## EXPECTED OUTPUT
@@ -38,7 +38,7 @@
 ## COMMON PITFALLS
 
 - "Cannot find module 'dotenv'": ensure npm install ran successfully
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and OPENAI_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - No results found: check if license numbers are valid or if verification site structure has changed
 - Network issues: ensure internet access and verification sites are accessible
 - Schema validation errors: ensure extracted data matches Zod schema structure

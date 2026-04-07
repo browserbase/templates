@@ -24,7 +24,7 @@
 2.  npm install
 3.  npm install inquirer openai
 4.  cp .env.example .env
-5.  Add your Browserbase API key, Project ID, and OpenAI API key to .env
+5.  Add your Browserbase API key and Project ID to .env
 6.  npm start
 
 ## EXPECTED OUTPUT

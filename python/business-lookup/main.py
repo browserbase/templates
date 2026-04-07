@@ -24,7 +24,6 @@ async def main():
     config = StagehandConfig(
         env="BROWSERBASE",
         api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
         model_name="openai/gpt-4.1",
         model_api_key=os.environ.get("OPENAI_API_KEY"),
         verbose=1,  # 0 = errors only, 1 = info, 2 = debug
@@ -120,7 +119,7 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"Error in business lookup: {err}")
         print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print("  - Verify GOOGLE_API_KEY is set for the agent")
         print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
         exit(1)

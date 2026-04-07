@@ -33,7 +33,6 @@
 2. pnpm install
 3. cp .env.example .env
 4. Add required API keys to .env:
-   - `BROWSERBASE_PROJECT_ID` — from Browserbase
    - `BROWSERBASE_API_KEY` — from Browserbase
    - `EXA_API_KEY` — from https://dashboard.exa.ai/api-keys
    - Configure your Browserbase API key with OpenRouter/Anthropic

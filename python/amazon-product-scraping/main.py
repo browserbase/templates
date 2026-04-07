@@ -7,7 +7,6 @@ import os
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-
 from stagehand import AsyncStagehand
 
 
@@ -45,7 +44,7 @@ def dereference_schema(schema: dict) -> dict:
 
 
 # Load environment variables from .env file
-# Required: BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, MODEL_API_KEY (or GOOGLE_API_KEY)
+# Required: BROWSERBASE_API_KEY
 load_dotenv()
 
 # ============= CONFIGURATION =============
@@ -67,11 +66,9 @@ async def main():
     print("Starting Amazon Product Scraping...")
 
     # Initialize AsyncStagehand client (v3 BYOB architecture)
-    # Uses environment variables: BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, MODEL_API_KEY
+    # Uses environment variable: BROWSERBASE_API_KEY
     client = AsyncStagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.environ.get("MODEL_API_KEY") or os.environ.get("GOOGLE_API_KEY"),
     )
 
     # Start a Stagehand session with the specified model
@@ -131,8 +128,7 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"Error in Amazon product scraping: {err}")
         print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
-        print("  - Verify MODEL_API_KEY or GOOGLE_API_KEY is set for the model")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print("  - Verify network connectivity")
         print("Docs: https://docs.stagehand.dev")
         exit(1)

@@ -20,7 +20,7 @@
 1.  cd polymarket-research
 2.  uv venv && source .venv/bin/activate # On Windows: .venv\Scripts\activate
 3.  pip install stagehand python-dotenv pydantic
-4.  cp .env.example .env # Add your Browserbase API key, Project ID, and OpenAI API key to .env
+4.  cp .env.example .env # Add your Browserbase API key to .env
 5.  python main.py
 
 ## EXPECTED OUTPUT
@@ -37,7 +37,7 @@
 ## COMMON PITFALLS
 
 - "ModuleNotFoundError": ensure all dependencies are installed via pip
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and OPENAI_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - No search results: check if the search query returns valid markets or try different search terms
 - Network issues: ensure internet access and polymarket.com is accessible
 - Import errors: activate your virtual environment if you created one

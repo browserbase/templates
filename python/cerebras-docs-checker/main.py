@@ -25,9 +25,8 @@ load_dotenv(override=True)
 # API keys (loaded from .env file)
 CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY")
 BROWSERBASE_API_KEY = os.getenv("BROWSERBASE_API_KEY")
-BROWSERBASE_PROJECT_ID = os.getenv("BROWSERBASE_PROJECT_ID")
 
-if not all([CEREBRAS_API_KEY, BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID]):
+if not all([CEREBRAS_API_KEY, BROWSERBASE_API_KEY]):
     raise ValueError("Missing required API keys. Check .env file.")
 
 # Cerebras model to use for verification and analysis (override via CEREBRAS_MODEL env var)
@@ -254,7 +253,6 @@ async def crawl(
     # Initialize the Stagehand REST client (used to create and manage browser sessions)
     stagehand = Stagehand(
         browserbase_api_key=BROWSERBASE_API_KEY,
-        browserbase_project_id=BROWSERBASE_PROJECT_ID,
         model_api_key=CEREBRAS_API_KEY,
     )
 
@@ -946,7 +944,6 @@ async def main():
         # Regex didn't find a repo — try using a Stagehand agent to click around and find it
         stagehand = Stagehand(
             browserbase_api_key=BROWSERBASE_API_KEY,
-            browserbase_project_id=BROWSERBASE_PROJECT_ID,
             model_api_key=CEREBRAS_API_KEY,
         )
         repo_url = await discover_repo_with_agent(docs_url, stagehand)
@@ -980,7 +977,7 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"Application error: {err}")
         print("\nCommon issues:")
-        print("  - Check .env file has CEREBRAS_API_KEY, BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID")
+        print("  - Check .env file has CEREBRAS_API_KEY and BROWSERBASE_API_KEY")
         print("  - Ensure playwright is installed: playwright install chromium")
         print("Docs: https://docs.stagehand.dev/v3/sdk/python")
         exit(1)

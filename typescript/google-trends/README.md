@@ -18,7 +18,7 @@
 
 1. pnpm install
 2. cp .env.example .env
-3. Add required API keys/IDs to .env
+3. Add your Browserbase API key to .env
 4. pnpm start
 
 ## EXPECTED OUTPUT
@@ -33,7 +33,7 @@
 
 ## COMMON PITFALLS
 
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Invalid country code: ensure country code is a valid 2-letter ISO code (US, GB, IN, DE, FR, BR, etc.)
 - Empty results: Google Trends may not have trending data for all country/language combinations
 - Consent dialogs: script handles "Got it" dialogs automatically, but regional variations may require adjustment

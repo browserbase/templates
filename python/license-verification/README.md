@@ -23,7 +23,7 @@
 1.  cd license-verification
 2.  uv venv && source .venv/bin/activate # On Windows: .venv\Scripts\activate
 3.  pip install stagehand python-dotenv pydantic
-4.  cp .env.example .env # Add your Browserbase API key, Project ID, and OpenAI API key to .env
+4.  cp .env.example .env # Add your Browserbase API key to .env
 5.  python main.py
 
 ## EXPECTED OUTPUT

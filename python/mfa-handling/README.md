@@ -23,7 +23,7 @@
 2. source venv/bin/activate # On Windows: venv\Scripts\activate
 3. pip install stagehand python-dotenv pydantic
 4. cp .env.example .env
-5. Add required API keys/IDs to .env (BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, GOOGLE_GENERATIVE_AI_API_KEY)
+5. Add your Browserbase API key to .env (BROWSERBASE_API_KEY)
 6. python main.py
 
 ## EXPECTED OUTPUT
@@ -43,8 +43,7 @@
 ## COMMON PITFALLS
 
 - "ModuleNotFoundError": ensure all dependencies are installed via pip
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_GENERATIVE_AI_API_KEY
-- Google API access: ensure you have access to Google's gemini-2.5-flash model
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - TOTP code expiration: codes are valid for 30 seconds - if authentication fails, the script automatically retries with a fresh code
 - Page structure changes: if the demo site structure changes, extraction may fail
 - Network timeouts: ensure stable internet connection for reliable page loading

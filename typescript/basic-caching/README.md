@@ -18,7 +18,7 @@
 
 1. pnpm install
 2. cp .env.example .env
-3. Add required API keys/IDs to .env
+3. Add your Browserbase API key to .env
 4. pnpm start (run twice to see cache benefits!)
 
 ## EXPECTED OUTPUT
@@ -73,7 +73,7 @@ Payment portals rarely change → Cache actions once → Reuse for thousands of 
 
 ## COMMON PITFALLS
 
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Cache not working: ensure cacheDir path is writable and check that instruction text matches exactly
 - First run slower: expected behavior - cache is populated on first run, subsequent runs will be instant
 - Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in

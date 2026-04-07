@@ -33,9 +33,7 @@
 3. playwright install chromium
 4. cp .env.example .env
 5. Add required API keys to .env:
-   - `BROWSERBASE_PROJECT_ID` — from Browserbase
    - `BROWSERBASE_API_KEY` — from Browserbase
-   - `MODEL_API_KEY` — from your LLM provider (e.g., Google AI Studio)
    - `EXA_API_KEY` — from https://dashboard.exa.ai/api-keys
 6. Update `APPLICATION_DETAILS` dict in main.py with candidate information
 7. Update `resume_path` to point to your PDF resume

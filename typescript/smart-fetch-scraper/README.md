@@ -23,7 +23,7 @@
 1. cd smart-fetch-scraper
 2. npm install
 3. cp .env.example .env
-4. Add BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY to .env
+4. Add BROWSERBASE_API_KEY to .env
 5. npm start \<url\> — e.g. `npm start https://news.ycombinator.com`
 
 ## EXAMPLE URLS
@@ -48,9 +48,8 @@ Browser fallback (JS-rendered, blocked, or low text density):
 
 ## COMMON PITFALLS
 
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Fetch API access: the Fetch API may require enablement on your account — contact support if you get a 404
-- Google API access: GOOGLE_API_KEY is only needed for the browser fallback path
 - Content threshold: adjust MIN_CONTENT_LENGTH if server-rendered pages are incorrectly triggering the browser fallback
 - Text density: adjust MIN_TEXT_DENSITY if pages with lots of inline scripts/styles are incorrectly triggering the browser fallback
 - JS-challenge detection: JS_REQUIRED_PATTERNS covers common bot-detection pages (Cloudflare, etc.) — extend the array for other patterns you encounter

@@ -35,7 +35,7 @@
 ## COMMON PITFALLS
 
 - Dependency install errors: ensure npm install completed
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY and GOOGLE_API_KEY
 - Google API access: ensure you have access to Google's gemini-2.5-computer-use-preview-10-2025 model
 - Agent failures: check that the business name exists in the registry and that maxSteps is sufficient for complex searches
 - Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in

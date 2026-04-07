@@ -296,7 +296,7 @@ async function main(): Promise<void> {
 main().catch((err) => {
   console.error("Application error:", err);
   console.error("Common issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Verify GOOGLE_GENERATIVE_AI_API_KEY is set");
   console.error("  - Ensure COMPANY_NAMES is configured in the config section");
   console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");

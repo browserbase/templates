@@ -5,10 +5,10 @@ description = "Stagehand + Browserbase: Smart Fetch Scraper with Fetch API fast-
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "browserbase",
+    "browserbase>=1.7.0",
     "pydantic",
     "python-dotenv",
-    "stagehand",
+    "stagehand>=3.19.0",
 ]
 
 [project.optional-dependencies]

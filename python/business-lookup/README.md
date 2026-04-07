@@ -36,7 +36,7 @@
 ## COMMON PITFALLS
 
 - "ModuleNotFoundError": ensure all dependencies are installed via pip
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY and GOOGLE_API_KEY
 - Google API access: ensure you have access to Google's gemini-2.5-computer-use-preview-10-2025 model
 - Agent failures: check that the business name exists in the registry and that max_steps is sufficient for complex searches
 - Import errors: activate your virtual environment if you created one

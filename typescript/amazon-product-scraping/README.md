@@ -20,7 +20,7 @@
 1. cd typescript/amazon-product-scraping
 2. npm install
 3. cp .env.example .env (or create .env with required keys)
-4. Add BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY to .env
+4. Add BROWSERBASE_API_KEY to .env
 5. Optionally edit SEARCH_QUERY in index.ts
 6. npm start
 
@@ -36,8 +36,7 @@
 ## COMMON PITFALLS
 
 - "Cannot find module": ensure npm install completed
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
-- Google API access: ensure you have access to the gemini-2.5-flash model
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Amazon layout changes: extraction may need prompt/schema updates if Amazon changes their search results UI
 - Find more information on your Browserbase dashboard → https://www.browserbase.com/sign-in
 

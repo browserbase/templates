@@ -15,7 +15,6 @@ func main() {
 	// Create client using environment variables
 	client := stagehand.NewClient(
 		option.WithBrowserbaseAPIKey(os.Getenv("BROWSERBASE_API_KEY")),
-		option.WithBrowserbaseProjectID(os.Getenv("BROWSERBASE_PROJECT_ID")),
 		option.WithModelAPIKey(os.Getenv("MODEL_API_KEY")),
 	)
 

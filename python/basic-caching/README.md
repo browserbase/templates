@@ -22,7 +22,7 @@
 2. source venv/bin/activate # On Windows: venv\Scripts\activate
 3. uvx install stagehand python-dotenv aiofiles
 4. cp .env.example .env
-5. Add required API keys/IDs to .env
+5. Add your Browserbase API key to .env
 6. python main.py (run twice to see cache benefits!)
 
 ## EXPECTED OUTPUT
@@ -76,7 +76,7 @@ Payment portals rarely change → Cache actions once → Reuse for thousands of 
 
 ## COMMON PITFALLS
 
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Cache not working: ensure cache.json is writable and check that instruction text matches exactly
 - First run slower: expected behavior - cache is populated on first run, subsequent runs will be instant
 - ModuleNotFoundError: ensure virtual environment is activated and dependencies are installed via `uvx install`

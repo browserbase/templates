@@ -25,7 +25,7 @@
 1. uv venv venv
 2. source venv/bin/activate # On Windows: venv\Scripts\activate
 3. uvx install stagehand browserbase pydantic python-dotenv httpx
-4. cp .env.example .env # Add required API keys/IDs to .env (BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, GOOGLE_GENERATIVE_AI_API_KEY)
+4. cp .env.example .env # Add your Browserbase API key and Project ID to .env (BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID)
 5. python main.py
 
 ## EXPECTED OUTPUT
@@ -54,8 +54,7 @@
 ## COMMON PITFALLS
 
 - "ModuleNotFoundError": ensure all dependencies are installed via uvx install
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_GENERATIVE_AI_API_KEY
-- Google API access: ensure you have access to Google's gemini-2.5-flash model
+- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
 - Concurrency limits: script automatically respects Browserbase project concurrency (capped at 5)
 - Resume URL: ensure the resume URL (https://agent-job-board.vercel.app/Agent%20Resume.pdf) is accessible
 - Job detection: verify that job listings are visible on the page and match expected structure

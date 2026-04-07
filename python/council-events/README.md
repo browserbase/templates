@@ -20,7 +20,7 @@
 1.  cd council-events
 2.  uv venv && source .venv/bin/activate # On Windows: .venv\Scripts\activate
 3.  pip install stagehand python-dotenv pydantic
-4.  cp .env.example .env # Add your Browserbase API key, Project ID, and OpenAI API key to .env
+4.  cp .env.example .env # Add your Browserbase API key to .env
 5.  python main.py
 
 ## EXPECTED OUTPUT
@@ -36,7 +36,7 @@
 ## COMMON PITFALLS
 
 - "ModuleNotFoundError": ensure all dependencies are installed via pip
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and OPENAI_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - No events found: check if the website structure has changed or if 2025 calendar is available
 - Network issues: ensure internet access and phila.legistar.com is accessible
 - Import errors: activate your virtual environment if you created one

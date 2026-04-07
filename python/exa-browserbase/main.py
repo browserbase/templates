@@ -9,11 +9,10 @@ from urllib.parse import urlparse
 from dotenv import load_dotenv
 from exa_py import Exa
 from playwright.async_api import async_playwright
-
 from stagehand import AsyncStagehand
 
 # Load environment variables from .env file
-# Required: BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, MODEL_API_KEY, EXA_API_KEY
+# Required: BROWSERBASE_API_KEY, EXA_API_KEY
 load_dotenv()
 
 # Candidate application details - customize these for your job search
@@ -35,10 +34,12 @@ APPLICATION_DETAILS = {
 SEARCH_CONFIG = {
     "company_query": "AI startups in SF",
     "num_companies": 5,
-    # Concurrency: set to False for sequential (works on all plans); True = concurrent (requires Startup or Developer plan or higher)
+    # Concurrency: set to False for sequential (works on all plans);
+    # True = concurrent (requires Startup or Developer plan or higher)
     "concurrent": True,
     "max_concurrent_browsers": 5,  # Max browsers when concurrent
-    # Proxies: requires Developer plan or higher; residential proxies help avoid bot detection (https://docs.browserbase.com/features/proxies)
+    # Proxies: requires Developer plan or higher; residential proxies help
+    # avoid bot detection (https://docs.browserbase.com/features/proxies)
     "use_proxy": True,
 }
 
@@ -70,14 +71,17 @@ JOB_DESCRIPTION_SCHEMA = {
 }
 
 # System prompt for the job application agent
-AGENT_SYSTEM_PROMPT = """You are an intelligent job application assistant with decision-making power.
+AGENT_SYSTEM_PROMPT = """You are an intelligent job application assistant \
+with decision-making power.
 
 Your responsibilities:
-- First, navigate to find a job posting and click through to its application page before filling out the form
+- First, navigate to find a job posting and click through to its application page \
+before filling out the form
 - Analyze the job description to understand what the company is looking for
 - Tailor responses to align with job requirements when available
 - Craft thoughtful responses that highlight relevant experience/skills
 - For cover letter or "why interested" fields, reference specific aspects of the job/company
+
 - For location/relocation questions, use the willing_to_relocate flag to guide your answer
 - For visa/sponsorship questions, answer honestly based on requires_sponsorship
 - Skip resume/file upload fields - the resume will be uploaded automatically
@@ -100,7 +104,8 @@ def build_agent_instruction(job_description: dict) -> str:
     has_job_description = job_description.get("jobTitle") or job_description.get("fullDescription")
 
     if has_job_description:
-        return f"""You are filling out a job application. Here is the job description that was found:
+        return f"""You are filling out a job application. \
+Here is the job description that was found:
 
 JOB DESCRIPTION:
 {json.dumps(job_description, indent=2)}
@@ -115,9 +120,11 @@ YOUR TASK:
 - Show alignment between candidate and role
 - Skip file upload fields (resume will be handled separately)
 
-Remember: Your goal is to fill out this application in a way that maximizes the candidate's chances by showing strong alignment with this specific role."""
+Remember: Your goal is to fill out this application in a way that maximizes \
+the candidate's chances by showing strong alignment with this specific role."""
 
-    return f"""You are filling out a job application. No detailed job description was found on this page.
+    return f"""You are filling out a job application. \
+No detailed job description was found on this page.
 
 CANDIDATE INFORMATION:
 {json.dumps(APPLICATION_DETAILS, indent=2)}
@@ -129,7 +136,8 @@ YOUR TASK:
 - Express genuine interest and enthusiasm
 - Skip file upload fields (resume will be handled separately)
 
-Remember: Even without a job description, present the candidate professionally and enthusiastically."""
+Remember: Even without a job description, present the candidate \
+professionally and enthusiastically."""
 
 
 async def upload_resume(session_id: str, cdp_url: str, log_prefix: str = "") -> None:
@@ -281,15 +289,8 @@ async def apply_to_job(careers_page: dict, index: int) -> dict:
     log_prefix = f"[{index + 1}/{num_companies}] {company_name}: "
     print(f"\n{log_prefix}Starting application...")
 
-    model_api_key = (
-        os.environ.get("MODEL_API_KEY")
-        or os.environ.get("GOOGLE_API_KEY")
-        or os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY")
-    )
     client = AsyncStagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=model_api_key,
     )
 
     # Start session (proxies require Developer plan or higher)
@@ -303,7 +304,11 @@ async def apply_to_job(careers_page: dict, index: int) -> dict:
 
         extract_response = await client.sessions.extract(
             id=session_id,
-            instruction="extract the full job description including title, requirements, responsibilities, and any important details about the role",
+            instruction=(
+                "extract the full job description including title,"
+                " requirements, responsibilities, and any important"
+                " details about the role"
+            ),
             schema=JOB_DESCRIPTION_SCHEMA,
         )
         job_description = extract_response.data.result or {}
@@ -324,7 +329,8 @@ async def apply_to_job(careers_page: dict, index: int) -> dict:
         result = execute_response.data.result
 
         try:
-            cdp_url = f"wss://connect.browserbase.com?apiKey={os.environ.get('BROWSERBASE_API_KEY')}&sessionId={session_id}"
+            api_key = os.environ.get("BROWSERBASE_API_KEY")
+            cdp_url = f"wss://connect.browserbase.com?apiKey={api_key}&sessionId={session_id}"
             await upload_resume(session_id, cdp_url, log_prefix)
         except Exception as upload_error:
             print(f"{log_prefix}Could not upload resume: {upload_error}")
@@ -433,10 +439,7 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"Error in Exa + Browserbase job application: {err}")
         print("Common issues:")
-        print(
-            "  - Check .env file has BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, "
-            "MODEL_API_KEY, and EXA_API_KEY"
-        )
+        print("  - Check .env file has BROWSERBASE_API_KEY and EXA_API_KEY")
         print("  - Verify companies exist for the search query")
         print("  - Ensure careers pages are accessible")
         print("Docs: https://docs.stagehand.dev/v3/sdk/python")

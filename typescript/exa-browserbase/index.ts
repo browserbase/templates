@@ -352,7 +352,7 @@ main().catch((err) => {
   console.error("Error in Exa + Browserbase job application:", err);
   console.error("Common issues:");
   console.error(
-    "  - Check .env file has BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, MODEL_API_KEY, and EXA_API_KEY",
+    "  - Check .env file has BROWSERBASE_API_KEY and EXA_API_KEY",
   );
   console.error("  - Verify companies exist for the search query");
   console.error("  - Ensure careers pages are accessible");

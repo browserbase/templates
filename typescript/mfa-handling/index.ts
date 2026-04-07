@@ -63,10 +63,7 @@ async function main() {
     // 0 = errors only, 1 = info, 2 = debug
     // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
     // https://docs.stagehand.dev/configuration/logging
-    model: {
-      modelName: "google/gemini-2.5-flash",
-      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    },
+    model: "google/gemini-2.5-flash", // Routed through Model Gateway
   });
 
   try {
@@ -184,7 +181,7 @@ async function main() {
 main().catch((err) => {
   console.error("Error in MFA handling:", err);
   console.error("Common issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - TOTP code may have expired (try running again)");
   console.error("  - Page structure may have changed");
   console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");

@@ -23,7 +23,7 @@
 2. pnpm install
 3. pnpm install @browserbasehq/sdk @browserbasehq/stagehand zod
 4. cp .env.example .env
-5. Add your Browserbase API key and Project ID to .env
+5. Add your Browserbase API key to .env
 6. pnpm start
 
 ## EXPECTED OUTPUT
@@ -39,7 +39,7 @@
 
 - Browserbase Developer plan or higher is required to use proxies
 - "Cannot find module": ensure all dependencies are installed (@browserbasehq/sdk, @browserbasehq/stagehand, zod)
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Geolocation fields are case-insensitive (city, country, state can be any case)
 - State is required for US locations to ensure accurate geolocation
 - ERR_TUNNEL_CONNECTION_FAILED: indicates either a temporary proxy hiccup or a site unsupported by our built-in proxies

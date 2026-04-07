@@ -58,10 +58,7 @@ async function main() {
 
     // Create agent with Gemini 3 Flash for autonomous web browsing.
     const agent = stagehand.agent({
-      model: {
-        modelName: "google/gemini-3-flash-preview",
-        apiKey: process.env.GOOGLE_API_KEY,
-      },
+      model: "google/gemini-3-flash-preview", // Routed through Model Gateway
       systemPrompt: `You are a helpful assistant that can use a web browser.
       You are currently on the following page: ${page.url()}.
       Do not ask follow up questions, the user will trust your judgement. If you are getting blocked on google, try another search engine.`,
@@ -91,8 +88,7 @@ async function main() {
 main().catch((err) => {
   console.error("Error in Gemini 3 Flash agent example:", err);
   console.error("Common issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
-  console.error("  - Verify GOOGLE_API_KEY is set for the agent");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
   process.exit(1);
 });

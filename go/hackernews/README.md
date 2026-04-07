@@ -26,7 +26,6 @@
 2. Set required environment variables:
    ```bash
    export BROWSERBASE_API_KEY="your-api-key"
-   export BROWSERBASE_PROJECT_ID="your-project-id"
    export MODEL_API_KEY="your-model-api-key"
    ```
 3. Run the example:
@@ -48,10 +47,10 @@
 ## COMMON PITFALLS
 
 - Missing Go installation: Ensure Go 1.22+ is installed (`go version`)
-- Missing environment variables: Verify BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, and MODEL_API_KEY are set
+- Missing environment variables: Verify BROWSERBASE_API_KEY and MODEL_API_KEY are set
 - Module not found: Run `go mod download` if dependencies aren't resolved
 - Network issues: Check internet connection and website accessibility
-- Session errors: Verify API keys are valid and project ID exists in Browserbase dashboard
+- Session errors: Verify API keys are valid in Browserbase dashboard
 - Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in
 
 ## USE CASES

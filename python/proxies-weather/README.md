@@ -24,7 +24,7 @@
 3. source venv/bin/activate # On Windows: venv\Scripts\activate
 4. uvx install stagehand browserbase python-dotenv pydantic
 5. cp .env.example .env
-6. Add your Browserbase API key and Project ID to .env
+6. Add your Browserbase API key to .env
 7. python main.py
 
 ## EXPECTED OUTPUT
@@ -40,7 +40,7 @@
 
 - Browserbase Developer plan or higher is required to use proxies
 - "ModuleNotFoundError": ensure all dependencies are installed via uvx install
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Geolocation fields are case-insensitive (city, country, state can be any case)
 - State is required for US locations to ensure accurate geolocation
 - ERR_TUNNEL_CONNECTION_FAILED: indicates either a temporary proxy hiccup or a site unsupported by our built-in proxies

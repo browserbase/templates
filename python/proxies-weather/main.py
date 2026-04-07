@@ -43,13 +43,6 @@ def get_weather_for_location(geolocation: GeolocationConfig) -> WeatherResult:
     city_name = geolocation.city.replace("_", " ")
     print(f"\n=== Getting weather for {city_name}, {geolocation.country} ===")
 
-    model_api_key = os.environ.get("MODEL_API_KEY") or os.environ.get("GOOGLE_API_KEY")
-    if not model_api_key:
-        raise ValueError(
-            "MODEL_API_KEY or GOOGLE_API_KEY environment variable is required. "
-            "Please set one in your .env file."
-        )
-
     # Build proxy configuration for geolocation routing
     proxy_config = {
         "type": "browserbase",
@@ -73,8 +66,6 @@ def get_weather_for_location(geolocation: GeolocationConfig) -> WeatherResult:
     # Initialize Stagehand with Browserbase for cloud-based browser automation
     client = Stagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=model_api_key,
     )
 
     try:
@@ -174,8 +165,8 @@ if __name__ == "__main__":
     except Exception as err:
         print(f"Application error: {err}")
         print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY")
-        print("  - Set MODEL_API_KEY or GOOGLE_API_KEY (required for AI model)")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
+        print("  - Verify internet connection and API accessibility")
         print(
             "  - Verify geolocation proxy locations are valid (see https://docs.browserbase.com/features/proxies)"
         )

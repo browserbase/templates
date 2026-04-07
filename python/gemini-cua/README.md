@@ -16,7 +16,7 @@
 1.  uv venv venv
 2.  source venv/bin/activate # On Windows: venv\Scripts\activate
 3.  pip install -r requirements.txt
-4.  cp .env.example .env # Add your Browserbase API key, Project ID, and Google API key to .env
+4.  cp .env.example .env # Add your Browserbase API key and Google API key to .env
 5.  python main.py
 
 ## EXPECTED OUTPUT
@@ -31,7 +31,7 @@
 ## COMMON PITFALLS
 
 - "ModuleNotFoundError": ensure all dependencies are installed via pip
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY and GOOGLE_API_KEY
 - Google API access: ensure you have access to Google's gemini-2.5-computer-use-preview model
 - Import errors: activate your virtual environment if you created one
 

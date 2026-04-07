@@ -5,7 +5,7 @@ description = "Browserbase + Playwright: Getting Started — connect to a cloud 
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
-    "browserbase",
+    "browserbase>=1.7.0",
     "playwright",
     "python-dotenv",
 ]

@@ -29,10 +29,7 @@ async function main() {
     // The agent will use semantic matching to select appropriate form options.
     const agent = stagehand.agent({
       cua: false,
-      model: {
-        modelName: "google/gemini-2.5-pro",
-        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-      },
+      model: "google/gemini-2.5-pro", // Routed through Model Gateway
       systemPrompt: `You are filling out a trip planning form. 
     - When filling out fields, extract relevant information from the trip details provided
     - For fields with options (radio buttons, dropdowns, checkboxes), always choose the closest matching option from the available choices
@@ -78,8 +75,7 @@ Make sure to:
 main().catch((err) => {
   console.error("Error in dynamic form filling:", err);
   console.error("Common issues:");
-  console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
-  console.error("  - Verify GOOGLE_GENERATIVE_AI_API_KEY is set for the agent");
+  console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Ensure the form URL is accessible and form fields are available");
   console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
   process.exit(1);

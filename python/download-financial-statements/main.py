@@ -10,7 +10,7 @@ from playwright.sync_api import sync_playwright
 from stagehand import Stagehand
 
 # Load environment variables from .env file
-# Required: BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, GOOGLE_API_KEY
+# Required: BROWSERBASE_API_KEY
 load_dotenv()
 
 
@@ -91,8 +91,6 @@ def main():
     # Stagehand provides natural language browser control (act, extract, observe)
     client = Stagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.environ.get("GOOGLE_API_KEY"),
     )
 
     # Start a new session
@@ -185,7 +183,7 @@ if __name__ == "__main__":
         # Handle any uncaught exceptions and provide helpful debugging information
         print(f"Application error: {err}")
         print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print("  - Verify internet connection and Apple website accessibility")
         print("  - Ensure sufficient timeout for slow-loading pages")
         print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")

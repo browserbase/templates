@@ -73,7 +73,7 @@ browserbase_session_create_params={
 1. uv venv venv
 2. source venv/bin/activate # On Windows: venv\Scripts\activate
 3. uvx install stagehand python-dotenv
-4. cp .env.example .env # Add your Browserbase API key, Project ID, and Google API key to .env
+4. cp .env.example .env # Add your Browserbase API key to .env
 5. python main.py
 
 ## EXPECTED OUTPUT
@@ -90,7 +90,7 @@ browserbase_session_create_params={
 
 ## COMMON PITFALLS
 
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID, BROWSERBASE_API_KEY, and GOOGLE_API_KEY
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Captcha solving not enabled: ensure `solveCaptchas: True` is set in browserSettings (enabled by default)
 - Solving timeout: allow up to 30 seconds for CAPTCHA solving to complete before timing out
 - Proxies not enabled: enable proxies in browserSettings for higher CAPTCHA solving success rates

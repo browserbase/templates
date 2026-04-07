@@ -6,14 +6,13 @@ import os
 
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-
 from stagehand import AsyncStagehand
 
 
 class CompanyInfo(BaseModel):
     """Schema for company information extraction."""
 
-    companyName: str = Field(description="Official company name")
+    companyName: str = Field(description="Official company name")  # noqa: N815
     cik: str = Field(description="Central Index Key (CIK) number")
 
 
@@ -23,8 +22,8 @@ class Filing(BaseModel):
     type: str = Field(description="Filing type (e.g., 10-K, 10-Q, 8-K)")
     date: str = Field(description="Filing date in YYYY-MM-DD format")
     description: str = Field(description="Full description of the filing")
-    accessionNumber: str = Field(description="SEC accession number")
-    fileNumber: str | None = Field(default=None, description="File/Film number")
+    accessionNumber: str = Field(description="SEC accession number")  # noqa: N815
+    fileNumber: str | None = Field(default=None, description="File/Film number")  # noqa: N815
 
 
 class FilingsList(BaseModel):
@@ -51,7 +50,7 @@ def dereference_schema(schema: dict) -> dict:
 
 
 # Load environment variables from .env file
-# Required: BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, MODEL_API_KEY
+# Required: BROWSERBASE_API_KEY
 load_dotenv()
 
 # Search query - can be company name, ticker symbol, or CIK number
@@ -73,12 +72,9 @@ async def main():
     print(f"Retrieving {NUM_FILINGS} most recent filings\n")
 
     # Initialize AsyncStagehand client (v3 architecture)
-    # Uses environment variables: BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID, MODEL_API_KEY
+    # Uses environment variable: BROWSERBASE_API_KEY
     client = AsyncStagehand(
         browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        browserbase_project_id=os.environ.get("BROWSERBASE_PROJECT_ID"),
-        model_api_key=os.environ.get("MODEL_API_KEY")
-        or os.environ.get("GOOGLE_GENERATIVE_AI_API_KEY"),
     )
 
     # Start a new browser session
@@ -124,7 +120,11 @@ async def main():
         try:
             extract_response = await client.sessions.extract(
                 id=session_id,
-                instruction="Extract the company name and CIK number from the page header or company information section. The CIK should be a numeric identifier.",
+                instruction=(
+                    "Extract the company name and CIK number from the page"
+                    " header or company information section."
+                    " The CIK should be a numeric identifier."
+                ),
                 schema=dereference_schema(CompanyInfo.model_json_schema()),
             )
             extracted = extract_response.data.result
@@ -137,7 +137,14 @@ async def main():
         print(f"Extracting the {NUM_FILINGS} most recent filings...")
         filings_response = await client.sessions.extract(
             id=session_id,
-            instruction=f"Extract the {NUM_FILINGS} most recent SEC filings from the filings table. For each filing, get: the filing type (column: Filings, like 10-K, 10-Q, 8-K), the filing date (column: Filing Date), description, accession number (from the link or description), and file/film number if shown.",
+            instruction=(
+                f"Extract the {NUM_FILINGS} most recent SEC filings from"
+                " the filings table. For each filing, get: the filing"
+                " type (column: Filings, like 10-K, 10-Q, 8-K), the"
+                " filing date (column: Filing Date), description,"
+                " accession number (from the link or description),"
+                " and file/film number if shown."
+            ),
             schema=dereference_schema(FilingsList.model_json_schema()),
         )
         filings_data = filings_response.data.result
@@ -199,8 +206,7 @@ if __name__ == "__main__":
         print(f"Application error: {err}")
         # Provide helpful troubleshooting information
         print("\nCommon issues:")
-        print("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY")
-        print("  - Verify MODEL_API_KEY is set (e.g. Google API key for Gemini)")
+        print("  - Check .env file has BROWSERBASE_API_KEY")
         print("  - Verify internet connection and SEC website accessibility")
         print("  - Ensure the search query is valid (company name, ticker, or CIK)")
         print("Docs: https://docs.stagehand.dev/v3/sdk/python")
