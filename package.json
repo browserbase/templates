@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check:readme-template-index": "node scripts/check-readme-template-index.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "lint": "eslint \"**/*.{ts,tsx,js,jsx}\"",
@@ -13,7 +14,7 @@
     "lint:python:fix": "uvx ruff check --fix python/",
     "format:python": "uvx ruff format python/",
     "format:python:check": "uvx ruff format --check python/",
-    "check": "npm run format:check && npm run lint && npm run lint:python && npm run format:python:check",
+    "check": "npm run check:readme-template-index && npm run format:check && npm run lint && npm run lint:python && npm run format:python:check",
     "prepare": "husky"
   },
   "devDependencies": {

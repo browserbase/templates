@@ -1,0 +1,45 @@
+name: README Template Index
+
+on:
+  pull_request:
+    paths:
+      - "README.md"
+      - "go/**"
+      - "python/**"
+      - "typescript/**"
+      - "scripts/check-readme-template-index.mjs"
+      - ".github/workflows/readme-template-index.yml"
+  push:
+    branches:
+      - dev
+    paths:
+      - "README.md"
+      - "go/**"
+      - "python/**"
+      - "typescript/**"
+      - "scripts/check-readme-template-index.mjs"
+      - ".github/workflows/readme-template-index.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  validate-readme-template-index:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20.x
+
+      - name: Validate README template index
+        run: node scripts/check-readme-template-index.mjs
