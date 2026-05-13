@@ -1,0 +1,20 @@
+# Triggers the shared playground workflow for the `production` branch.
+# All CI steps live in playground.yml — edit there to change behavior.
+
+name: Playground templates (production)
+
+on:
+  pull_request:
+    branches:
+      - production
+  push:
+    branches:
+      - production
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  playground-templates:
+    uses: ./.github/workflows/playground.yml

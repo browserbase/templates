@@ -1,0 +1,53 @@
+# Reusable workflow: validates TypeScript → JavaScript builds for playground-
+# runnable templates and optionally commits the generated javascript/ tree.
+#
+# Called by playground-production.yml and playground-test-production.yml so that
+# CI steps are defined in exactly one place.
+
+name: Playground templates
+
+on:
+  workflow_call:
+
+permissions:
+  contents: write
+
+jobs:
+  playground-templates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clean javascript output directory
+        run: rm -rf javascript && mkdir -p javascript
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build and validate playground TypeScript templates
+        env:
+          TEMPLATES_API_URL: ${{ vars.TEMPLATES_API_URL }}
+        run: pnpm run ci:playground
+
+      - name: Commit and push playground javascript (push only)
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A javascript/
+          if git diff --staged --quiet; then
+            echo "No javascript changes to commit."
+          else
+            git commit --no-verify -m "chore: regenerate playground javascript templates"
+            git push
+          fi

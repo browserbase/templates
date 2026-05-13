@@ -1,0 +1,20 @@
+# Triggers the shared playground workflow for the `test-production` branch.
+# All CI steps live in playground.yml — edit there to change behavior.
+
+name: Playground templates (test production)
+
+on:
+  pull_request:
+    branches:
+      - test-production
+  push:
+    branches:
+      - test-production
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  playground-templates:
+    uses: ./.github/workflows/playground.yml

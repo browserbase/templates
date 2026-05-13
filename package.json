@@ -5,6 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:javascript": "node scripts/build-javascript.mjs",
+    "ci:playground": "node scripts/playground-ci.mjs",
+    "validate:playground": "node scripts/validate-playground-templates.mjs",
     "check:readme-template-index": "node scripts/check-readme-template-index.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
@@ -25,6 +28,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.2.7",
     "prettier": "^3.2.5",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.50.1"
   },
   "packageManager": "pnpm@9.0.0",

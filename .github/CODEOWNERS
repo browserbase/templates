@@ -1,0 +1,10 @@
+# When merging changes under these paths to `production`, require review from the
+# Dashboard team.
+/javascript/ @browserbase/dashboard
+/scripts/fetch-playground-typescript-dirs.mjs @browserbase/dashboard
+/scripts/validate-playground-templates.mjs @browserbase/dashboard
+/scripts/playground-ci.mjs @browserbase/dashboard
+/scripts/lib/playground-checks.mjs @browserbase/dashboard
+/.github/workflows/playground.yml @browserbase/dashboard
+/.github/workflows/playground-production.yml @browserbase/dashboard
+/.github/workflows/playground-test-production.yml @browserbase/dashboard

@@ -67,6 +67,12 @@ Templates use the Model Gateway to route LLM requests -- you only need your `BRO
 
 Each template's README contains detailed installation steps, environment variable requirements, and troubleshooting guides.
 
+### TypeScript and generated JavaScript
+
+- **Source of truth:** edit templates under `typescript/`. The `javascript/` tree is generated output, not authored by hand for day-to-day changes.
+- **Local only:** run `pnpm run build:javascript` when you want a full mirror of `typescript/` into `javascript/` on your machine (for example to smoke-test the transpiler or compare JS output). There is **no** GitHub Actions workflow that builds the full tree into the repo anymore.
+- **Playground releases:** the `production` branch is updated by CI (`.github/workflows/playground-production.yml`), which builds and commits **only** templates that are playground-runnable per the public templates API, then validates them.
+
 ## Resources
 
 ### Documentation
