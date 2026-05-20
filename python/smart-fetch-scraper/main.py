@@ -3,6 +3,11 @@
 # Tries the Browserbase Fetch API first (fast, no browser session needed).
 # If the page is JS-rendered or the content is insufficient, falls back to
 # a full Stagehand browser session with AI-powered extraction.
+#
+# Note: the Fetch API can return content as `raw` HTML, clean `markdown`,
+# or schema-extracted `json` — pass `format="markdown"` or `format="json"`
+# (with a JSON schema) to `bb.fetch_api.create` to skip writing your own
+# HTML parser. Docs: https://docs.browserbase.com/platform/fetch/overview
 
 import asyncio
 import json
@@ -116,6 +121,9 @@ async def try_fetch_api(url: str) -> dict | None:
     print("[Fetch API] Attempting lightweight fetch...")
 
     try:
+        # Tip: pass `format="markdown"` or `format="json"` (with a `schema`)
+        # here to have Browserbase return cleaner content or structured data
+        # directly — see https://docs.browserbase.com/platform/fetch/overview
         # Use asyncio.to_thread for synchronous SDK calls
         data = await asyncio.to_thread(bb.fetch_api.create, url=url, allow_redirects=True)
 

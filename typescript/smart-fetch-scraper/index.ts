@@ -3,6 +3,11 @@
 // Tries the Browserbase Fetch API first (fast, no browser session needed).
 // If the page is JS-rendered or the content is insufficient, falls back to
 // a full Stagehand browser session with AI-powered extraction.
+//
+// Note: the Fetch API can return content as `raw` HTML, clean `markdown`,
+// or schema-extracted `json` — pass `format: "markdown"` or `format: "json"`
+// (with a JSON schema) to `bb.fetchAPI.create` to skip writing your own
+// HTML parser. Docs: https://docs.browserbase.com/platform/fetch/overview
 
 import "dotenv/config";
 import Browserbase from "@browserbasehq/sdk";
@@ -91,6 +96,9 @@ async function tryFetchApi(url: string): Promise<{ content: string; statusCode: 
   console.log("[Fetch API] Attempting lightweight fetch...");
 
   try {
+    // Tip: pass `format: "markdown"` or `format: "json"` (with a `schema`)
+    // here to have Browserbase return cleaner content or structured data
+    // directly — see https://docs.browserbase.com/platform/fetch/overview
     const data = await bb.fetchAPI.create({ url, allowRedirects: true });
 
     console.log(
