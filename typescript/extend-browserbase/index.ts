@@ -6,6 +6,7 @@ import { Stagehand } from "@browserbasehq/stagehand";
 import fs from "fs";
 import path from "path";
 import AdmZip from "adm-zip";
+import type { Extend } from "extend-ai";
 import { ExtendClient } from "extend-ai";
 import open from "open";
 
@@ -92,7 +93,8 @@ function extractFilesFromZip(zipPath: string, outputDir: string = "output/docume
 
 // Receipt extraction config for Extend AI
 // Uses extraction_light base extractor with parse_performance engine for low latency
-const receiptExtractionConfig = {
+// Typed as ExtractConfigJson for type safety and autocomplete (no type casting)
+const receiptExtractionConfig: Extend.ExtractConfigJson = {
   baseProcessor: "extraction_light",
   baseVersion: "3.4.0",
   parseConfig: {
@@ -115,15 +117,16 @@ const receiptExtractionConfig = {
       },
     },
     engineVersion: "1.0.1",
+    // API accepts more options than SDK types; assert for known-valid extras (engine, agenticOcrEnabled, pageBreaksEnabled)
     advancedOptions: {
       engine: "parse_performance",
       agenticOcrEnabled: false,
       pageBreaksEnabled: true,
       pageRotationEnabled: false,
       verticalGroupingThreshold: 1,
-    },
+    } as Extend.ParseConfigAdvancedOptions,
     chunkingStrategy: { type: "document" },
-  },
+  } as Extend.ParseConfig, // engineVersion and other API-accepted fields not in SDK type
   schema: {
     type: "object",
     required: [
@@ -217,6 +220,7 @@ const receiptExtractionConfig = {
     },
     additionalProperties: false,
   },
+  // API accepts advancedFigureParsingEnabled; SDK type is narrower
   advancedOptions: {
     advancedMultimodalEnabled: false,
     citationsEnabled: true,
@@ -224,7 +228,7 @@ const receiptExtractionConfig = {
     pageRanges: [],
     chunkingOptions: {},
     advancedFigureParsingEnabled: true,
-  },
+  } as Extend.ExtractAdvancedOptions,
 };
 
 // Uploads receipt files to Extend AI, runs extraction, and saves results as JSON and CSV
@@ -254,11 +258,9 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
       batch.map(async (filePath) => {
         const fileName = path.basename(filePath);
         try {
-          // Upload the file to Extend
-          const fileBuffer = fs.readFileSync(filePath);
-          const blob = new Blob([fileBuffer]);
+          // Upload the file to Extend (ReadStream is accepted by SDK, no cast needed)
           const uploadResponse = await client.files.upload(
-            blob as Parameters<typeof client.files.upload>[0],
+            fs.createReadStream(filePath),
             { maxRetries: 4 },
           );
           const fileId = uploadResponse.id;
@@ -266,7 +268,7 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
           // Run extraction using inline config — no need to pre-create an extractor resource
           const result = await client.extract(
             {
-              config: receiptExtractionConfig as Parameters<typeof client.extract>[0]["config"],
+              config: receiptExtractionConfig,
               file: { id: fileId },
             },
             { maxRetries: 4 },
