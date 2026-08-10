@@ -1,0 +1,26 @@
+{
+  "name": "agentskit-browser-agent",
+  "version": "1.0.0",
+  "description": "Provider-portable AgentsKit agent using a Browserbase cloud browser",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "start": "tsx index.ts",
+    "dev": "tsx watch index.ts",
+    "test": "tsx --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agentskit/adapters": "^0.14.2",
+    "@agentskit/runtime": "^0.10.14",
+    "@agentskit/tools": "^0.13.3",
+    "@browserbasehq/sdk": "^2.16.0",
+    "dotenv": "^16.4.5",
+    "playwright-core": "^1.62.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3"
+  }
+}
