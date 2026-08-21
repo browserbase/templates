@@ -9,12 +9,14 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/mcp": "^2.0.29",
     "@browserbasehq/sdk": "^2.9.0",
-    "@browserbasehq/stagehand": "^3.2.0",
+    "@browserbasehq/stagehand-codemode": "github:browserbase/stagehand#54302fc5f13be5ad8e717d8e1388502de22be2ed&path:packages/integrations",
+    "ai": "^7.0.58",
     "next": "16.2.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -25,5 +27,17 @@
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
     "typescript": "^5"
-  }
+  },
+  "pnpm": {
+    "overrides": {
+      "@browserbasehq/stagehand": "4.0.0",
+      "@modelcontextprotocol/sdk": "1.29.0",
+      "zod": "4.4.3"
+    }
+  },
+  "//": "TODO: Replace this commit pin and its pnpm overrides with @browserbasehq/stagehand-codemode@4.0.0 after it is published.",
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "packageManager": "pnpm@10.24.0"
 }

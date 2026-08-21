@@ -7,7 +7,7 @@
 - Solving Time: CAPTCHA solving typically takes between 5-30 seconds depending on CAPTCHA type and complexity.
 - Progress Monitoring: Listen for console messages (`browserbase-solving-started`, `browserbase-solving-finished`) to track captcha solving progress in real-time.
 - Proxies Recommended: Enable proxies for higher CAPTCHA solving success rates.
-- Verification: Extracts page content to verify successful captcha solving and form submission.
+- Result inspection: Extracts and prints the page content after form submission.
 - Docs → https://docs.browserbase.com/features/stealth-mode#captcha-solving
 
 ## GLOSSARY
@@ -20,9 +20,9 @@
   - `browserbase-solving-finished`: emitted when CAPTCHA solving completes
 - custom CAPTCHA solving: For non-standard or custom captcha providers, you can specify CSS selectors for the captcha image and input field using `captchaImageSelector` and `captchaInputSelector` in browserSettings.
 - act: perform UI actions from a prompt (type, click, fill forms)
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: pull data from web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 
 ## STAGEHAND VS PLAYWRIGHT
 
@@ -82,14 +82,14 @@ browserSettings: {
 ## EXPECTED OUTPUT
 
 - Initializes Stagehand session with Browserbase
-- Displays live session link for monitoring
+- Listens for Browserbase captcha progress through Stagehand V4 console events
 - Navigates to Google reCAPTCHA demo page
 - Clicks submit button to trigger reCAPTCHA challenge
 - Waits for Browserbase to automatically solve the captcha
 - Logs captcha solving progress messages
 - Clicks submit again after captcha is solved
 - Extracts and displays page content
-- Verifies successful captcha solving by checking for success message
+- Prints the resulting page content for inspection
 - Closes session cleanly
 
 ## COMMON PITFALLS
@@ -100,12 +100,11 @@ browserSettings: {
 - Proxies not enabled: enable proxies in browserSettings for higher CAPTCHA solving success rates
 - Demo page inaccessible: verify the reCAPTCHA demo page URL is accessible and hasn't changed
 - Console message timing: ensure console event listeners are set up before triggering the captcha
-- Verification failure: success message check may fail if page structure changes; check extracted text manually
 - Custom captcha selectors: for non-standard CAPTCHAs, verify that `captchaImageSelector` and `captchaInputSelector` are correctly defined
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

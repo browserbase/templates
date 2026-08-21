@@ -1,110 +1,74 @@
-# Stagehand + Browserbase: Computer Use Agent (CUA) Example - See README.md for full documentation
+"""Run a Gemini browser-research agent with Deep Agents and Stagehand V4 code mode."""
+
+from __future__ import annotations
 
 import asyncio
-import os
+from datetime import date
 
+from agent_runtime import (
+    BROWSER_INSTRUCTIONS,
+    SERVER_NAME,
+    create_gateway_model,
+    create_stagehand_client,
+)
+from deepagents import create_deep_agent
 from dotenv import load_dotenv
+from langchain_mcp_adapters.tools import load_mcp_tools
 
-from stagehand import Stagehand, StagehandConfig
-
-# Load environment variables
 load_dotenv()
 
-# ============================================================================
-# EXAMPLE INSTRUCTIONS - Choose one to test different scenarios
-# ============================================================================
 
-# Example 1: Learning Plan Creation
-# instruction = """I want to learn more about Sourdough Bread Making. It's my first time learning about it, and want to get a good grasp by investing 1 hour a day for the next 2 months. Go find online courses/resources, create a plan cross-referencing the time I want to invest with the modules/timelines of the courses and return the plan"""
-
-# Example 2: Flight Search
-# instruction = """Use flights.google.com to find the lowest fare from all eligible one-way flights for 1 adult from JFK to Heathrow in the next 30 days."""
-
-# Example 3: Solar Eclipse Research
-instruction = """Search for the next visible solar eclipse in North America and its expected date, and what about the one after that."""
-
-# Example 4: GitHub PR Verification
-# instruction = """Find the most recently opened non-draft PR on Github for Browserbase's Stagehand project and make sure the combination-evals in the PR validation passed."""
-
-# ============================================================================
+def message_text(message: object) -> str:
+    content = getattr(message, "content", "")
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return "\n".join(
+            block.get("text", "")
+            for block in content
+            if isinstance(block, dict) and isinstance(block.get("text"), str)
+        )
+    return str(content)
 
 
-async def main():
-    print("Starting Computer Use Agent Example...")
-
-    # Initialize Stagehand with Browserbase for cloud-based browser automation.
-    config = StagehandConfig(
-        env="BROWSERBASE",
-        api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        model_api_key=os.environ.get(
-            "GOOGLE_API_KEY"
-        ),  # this is the model stagehand uses in act, observe, extract (not agent)
-        browserbase_session_create_params={
-            "proxies": True,  # Using proxies will give the agent a better chance of success - requires Developer Plan or higher, comment out if you don't have access
-            "region": "us-west-2",
-            "browser_settings": {"block_ads": True, "viewport": {"width": 1288, "height": 711}},
-        },
-        verbose=1,  # 0 = errors only, 1 = info, 2 = debug
-        # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-        # https://docs.stagehand.dev/configuration/logging
+async def main() -> None:
+    today = date.today().isoformat()
+    instruction = (
+        f"As of {today}, use these two live sources to find the next visible solar eclipse in "
+        "North America and its expected date, then the one after that: "
+        "https://eclipse.gsfc.nasa.gov/solar.html and "
+        "https://www.timeanddate.com/eclipse/list-solar.html?region=north-america. "
+        "Open and cross-check both sources, then cite each URL."
     )
+    print("Executing instruction:", instruction)
 
-    try:
-        async with Stagehand(config) as stagehand:
-            print("Stagehand initialized successfully!")
-            print(f"Live View Link: https://browserbase.com/sessions/{stagehand.session_id}")
+    client = create_stagehand_client()
+    async with client.session(SERVER_NAME) as session:
+        tools = await load_mcp_tools(session)
+        agent = create_deep_agent(
+            model=create_gateway_model("google/gemini-3-flash-preview"),
+            tools=tools,
+            system_prompt=(
+                BROWSER_INSTRUCTIONS
+                + "\nUse no more than six browser-tool calls. Prefer deterministic browser APIs, "
+                "cross-check at least two reliable sources, and return an evidence-backed answer "
+                "after finding two future eclipse dates."
+            ),
+        )
+        result = await agent.ainvoke(
+            {"messages": [{"role": "user", "content": instruction}]},
+            config={"recursion_limit": 25},
+        )
+        answer = message_text(result["messages"][-1]).strip()
 
-            page = stagehand.page
-
-            # Navigate to search engine with extended timeout for slow-loading sites.
-            print("Navigating to Google search...")
-            await page.goto(
-                "https://www.google.com/",
-                wait_until="domcontentloaded",
-                timeout=60000,  # Extended timeout for reliable page loading
-            )
-
-            # Create agent with computer use capabilities for autonomous web browsing.
-            print("Creating Computer Use Agent...")
-            agent = stagehand.agent(
-                provider="google",
-                model="gemini-2.5-computer-use-preview-10-2025",
-                instructions=f"""You are a helpful assistant that can use a web browser.
-                You are currently on the following page: {page.url}.
-                Do not ask follow up questions, the user will trust your judgement. If you are getting blocked on google, try another search engine.""",
-                options={
-                    "api_key": os.getenv("GOOGLE_API_KEY"),
-                },
-            )
-
-            # Execute the autonomous task with the Computer Use Agent
-            print("Executing instruction:", instruction)
-            result = await agent.execute(
-                instruction=instruction,
-                max_steps=30,  # The maximum number of steps the agent can take to complete the task
-                auto_screenshot=True,
-            )
-
-            if result.success == True:
-                print("Task completed successfully!")
-                print("Result:", result)
-            else:
-                print("Task failed or was incomplete")
-
-        print("Session closed successfully")
-
-    except Exception as error:
-        print(f"Error executing computer use agent: {error}")
-        raise
+    print(answer)
+    print("Stagehand code-mode session closed successfully")
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-    except Exception as err:
-        print(f"Error in computer use agent example: {err}")
-        print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_API_KEY")
-        print("  - Verify GOOGLE_API_KEY is set for the agent")
-        print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
-        exit(1)
+    except Exception as error:
+        print(f"Error in Gemini browser agent example: {error}")
+        print("Check BROWSERBASE_API_KEY and AI_GATEWAY_API_KEY in .env")
+        raise SystemExit(1) from error

@@ -1,18 +1,20 @@
 # Stagehand + Browserbase: Polymarket Prediction Market Research
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: automate research of prediction markets on Polymarket to extract current odds, pricing, and volume data.
 - Flow: navigate to polymarket.com → search for market → select result → extract market data (odds, prices, volume, changes).
 - Benefits: quickly gather market intelligence on prediction markets without manual browsing, structured data ready for analysis or trading decisions.
-  Docs → https://docs.stagehand.dev/v3/first-steps/introduction
+  Docs → https://docs.stagehand.dev/v4/first-steps/introduction
 
 ## GLOSSARY
 
 - act: perform UI actions from a prompt (click, type, search).
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: pull structured data from a page using AI and Pydantic schemas.
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - prediction market: a market where participants trade contracts based on the outcome of future events.
 
 ## QUICKSTART
@@ -56,7 +58,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

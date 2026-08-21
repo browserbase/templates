@@ -1,18 +1,20 @@
 # Stagehand + Browserbase: Nurse License Verification
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: automate verification of nurse licenses by filling forms and extracting structured results from verification sites.
 - Flow: loop through license records → navigate to verification site → fill form → search → extract verification results.
 - Benefits: quickly verify multiple licenses without manual form filling, structured data ready for compliance tracking or HR systems.
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 
 ## GLOSSARY
 
 - act: perform UI actions from a prompt (type, click, fill forms).
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: pull structured data from a page using AI and Pydantic schemas.
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - schema: a Pydantic model that enforces data types, optional fields, and validation rules.
   Docs → https://docs.pydantic.dev/
 - license verification: process of confirming the validity and status of professional licenses.
@@ -59,7 +61,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

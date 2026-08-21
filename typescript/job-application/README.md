@@ -1,4 +1,4 @@
-# Stagehand + Browserbase: Automated Job Application Agent
+# Stagehand V4 + Browserbase: Automated Job Application Workflow
 
 ## AT A GLANCE
 
@@ -6,32 +6,29 @@
 - Concurrent Processing: applies to multiple jobs in parallel with configurable concurrency limits based on Browserbase project settings.
 - Dynamic Data Generation: generates unique agent IDs and email addresses for each application.
 - File Upload Support: automatically uploads resume PDF from a remote URL during the application process.
-- Docs → https://docs.stagehand.dev/basics/agent
+- Docs → https://docs.stagehand.dev/v4/basics/act
 
 ## GLOSSARY
 
-- agent: create an autonomous AI agent that can execute complex multi-step tasks
-  Docs → https://docs.stagehand.dev/basics/agent#what-is-agent
 - act: perform UI actions from a prompt (click, type, fill forms)
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: extract structured data from web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - observe: analyze a page and return selectors or action plans before executing
-  Docs → https://docs.stagehand.dev/basics/observe
+  Docs → https://docs.stagehand.dev/v4/basics/observe
 - semaphore: concurrency control mechanism to limit parallel job applications based on project limits
 
 ## QUICKSTART
 
-1. npm install
+1. pnpm install
 2. cp .env.example .env
 3. Add your Browserbase API key and Project ID to .env (BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID)
-4. npm start
+4. pnpm start
 
 ## EXPECTED OUTPUT
 
 - Fetches project concurrency limit from Browserbase (maxed at 5)
 - Initializes main Stagehand session with Browserbase
-- Displays live session link for monitoring
 - Navigates to agent job board
 - Clicks "View Jobs" button
 - Extracts all job listings with titles and URLs using structured schema
@@ -78,7 +75,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

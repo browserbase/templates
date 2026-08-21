@@ -1,13 +1,14 @@
 [project]
 name = "image-url-download"
 version = "1.0.0"
-description = "Stagehand + Browserbase: extract image URLs from a page and download each through the browser's proxied connection"
+description = "Stagehand + Browserbase: extract image URLs from a page and download them with the Browserbase Fetch API"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11,<3.14"
 dependencies = [
+    "browserbase>=1.17.0",
     "playwright",
     "python-dotenv",
-    "stagehand>=3.19.0",
+    "stagehand==4.0.0",
 ]
 
 [project.optional-dependencies]

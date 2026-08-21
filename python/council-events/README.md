@@ -1,18 +1,20 @@
 # Stagehand + Browserbase: Philadelphia Council Events Scraper
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: automate extraction of Philadelphia Council events for 2025 from the official calendar.
 - Flow: navigate to phila.legistar.com → click calendar → select 2025 → extract event data (name, date, time).
 - Benefits: quickly gather upcoming council events without manual browsing, structured data ready for analysis or notifications.
-  Docs → https://docs.stagehand.dev/v3/first-steps/introduction
+  Docs → https://docs.stagehand.dev/v4/first-steps/introduction
 
 ## GLOSSARY
 
 - act: perform UI actions from a prompt (click, select, navigate).
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: pull structured data from a page using AI and Pydantic schemas.
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - Pydantic schema: type-safe data models that validate extracted content.
 
 ## QUICKSTART
@@ -55,7 +57,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

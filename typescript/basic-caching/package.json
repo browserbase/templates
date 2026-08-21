@@ -8,7 +8,7 @@
     "start": "tsx index.ts"
   },
   "dependencies": {
-    "@browserbasehq/stagehand": "latest",
+    "@browserbasehq/stagehand": "4.0.0",
     "dotenv": "latest"
   },
   "devDependencies": {
@@ -16,5 +16,8 @@
     "tsx": "latest",
     "typescript": "latest"
   },
-  "packageManager": "pnpm@9.0.0"
+  "packageManager": "pnpm@10.24.0",
+  "engines": {
+    "node": ">=22.18.0"
+  }
 }

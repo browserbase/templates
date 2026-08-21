@@ -3,12 +3,12 @@ name = "smart-fetch-scraper"
 version = "1.0.0"
 description = "Stagehand + Browserbase: Smart Fetch Scraper with Fetch API fast-path and browser fallback"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "browserbase>=1.7.0",
     "pydantic",
     "python-dotenv",
-    "stagehand>=3.19.0",
+    "stagehand==4.0.0",
 ]
 
 [project.optional-dependencies]

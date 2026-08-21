@@ -1,9 +1,9 @@
 // Manual MFA with Browserbase Contexts - See README.md for full documentation
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
 import { Browserbase } from "@browserbasehq/sdk";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 const bb = new Browserbase({
   apiKey: process.env.BROWSERBASE_API_KEY,
@@ -15,32 +15,29 @@ const bb = new Browserbase({
 async function createSessionWithContext() {
   console.log("Creating new Browserbase context...");
 
-  const context = await bb.createContext();
+  const context = await bb.contexts.create();
 
-  console.log(`Context created: ${context.id}`);
+  console.log("Browserbase context created");
   console.log("First session: Performing login with MFA...");
 
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 0,
-    // 0 = errors only, 1 = info, 2 = debug
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-    // https://docs.stagehand.dev/configuration/logging
-    model: "openai/gpt-4.1-mini",
-    browserbaseSessionCreateParams: {
-      browserSettings: {
-        context: {
-          id: context.id,
-          persist: true, // Save authentication state including MFA
-        },
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+    browserSettings: {
+      context: {
+        id: context.id,
+        persist: true, // Save authentication state including MFA
       },
     },
   });
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    model: { modelName: "openai/gpt-4.1-mini" },
+    logging: { level: "error" },
+  });
 
-  await stagehand.init();
-  console.log(`Watch live: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`);
+  console.log("Live View is available in the Browserbase Sessions dashboard");
 
-  const page = stagehand.context.pages()[0];
+  const page = (await browser.context.pages())[0];
 
   // Navigate to GitHub login
   console.log("Navigating to GitHub login...");
@@ -60,7 +57,7 @@ async function createSessionWithContext() {
   await page.waitForLoadState("networkidle");
 
   // Check if MFA is required
-  const mfaRequired = await stagehand.extract(
+  const { data: mfaRequired } = await stagehand.extract(
     "Is there a two-factor authentication or verification code prompt on the page?",
     z.boolean(),
   );
@@ -70,9 +67,7 @@ async function createSessionWithContext() {
     console.log("═══════════════════════════════════════════════════════════");
     console.log("PAUSED: Please complete MFA in the browser");
     console.log("═══════════════════════════════════════════════════════════");
-    console.log(
-      `1. Open the Browserbase session in your browser: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`,
-    );
+    console.log("1. Open the newest running session in the Browserbase Sessions dashboard");
     console.log("2. Enter your 2FA code from authenticator app");
     console.log("3. Click 'Verify' or submit");
     console.log("4. Wait for login to complete");
@@ -86,7 +81,7 @@ async function createSessionWithContext() {
     while (!loginComplete && Date.now() - startTime < timeout) {
       await new Promise((resolve) => setTimeout(resolve, 3000)); // Check every 3 seconds
 
-      const currentUrl = page.url();
+      const currentUrl = await page.url();
       if (!currentUrl.includes("/login") && !currentUrl.includes("/sessions/two-factor")) {
         loginComplete = true;
       }
@@ -101,12 +96,13 @@ async function createSessionWithContext() {
     console.log("Login successful (no MFA required)\n");
   }
 
-  console.log(`Context ${context.id} now contains:`);
+  console.log("The Browserbase context now contains:");
   console.log("   - Session cookies");
   console.log("   - MFA trust/remember device state");
   console.log("   - All authentication data\n");
 
-  await stagehand.close();
+  await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+  await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
 
   return context.id;
 }
@@ -115,72 +111,59 @@ async function createSessionWithContext() {
  * Second session: Reuse context - NO MFA needed!
  */
 async function reuseContext(contextId: string) {
-  console.log(`Second session: Reusing context ${contextId}`);
+  console.log("Second session: Reusing the saved context");
   console.log("   (No login, no MFA required - auth state persisted)\n");
 
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 0,
-    // 0 = errors only, 1 = info, 2 = debug
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-    // https://docs.stagehand.dev/configuration/logging
-    model: "openai/gpt-4.1-mini",
-    browserbaseSessionCreateParams: {
-      browserSettings: {
-        context: {
-          id: contextId,
-          persist: true,
-        },
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+    browserSettings: {
+      context: {
+        id: contextId,
+        persist: true,
       },
     },
   });
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    model: { modelName: "openai/gpt-4.1-mini" },
+    logging: { level: "error" },
+  });
 
-  await stagehand.init();
-  console.log(`Watch live: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`);
+  console.log("Live View is available in the Browserbase Sessions dashboard");
 
-  const page = stagehand.context.pages()[0];
+  const page = (await browser.context.pages())[0];
 
   // Navigate directly to GitHub (should already be logged in)
   console.log("Navigating to GitHub...");
   await page.goto("https://github.com");
   await page.waitForLoadState("networkidle");
 
-  // Check if we're logged in
-  const username = await stagehand.extract(
-    "Extract the logged-in username or check if we're authenticated",
+  const { data: username } = await stagehand.extract(
+    "Extract the logged-in GitHub username. Return an empty string if the page is not authenticated.",
     z.string(),
   );
 
-  console.log("\nSUCCESS! Already logged in without MFA!");
+  console.log("\nReused context opened GitHub without another login step.");
   console.log(`   Username: ${username}`);
   console.log("\nThis is the power of Browserbase Contexts:");
   console.log("   - First session: User completes MFA once");
   console.log("   - Context saves trusted device state");
   console.log("   - All future sessions: No MFA required\n");
 
-  await stagehand.close();
+  await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+  await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
 }
 
 /**
  * Clean up context
  */
 async function deleteContext(contextId: string) {
-  console.log(`Deleting context: ${contextId}`);
+  console.log("Deleting Browserbase context");
   try {
-    // Delete via API (SDK doesn't have delete method)
-    const response = await fetch(`https://api.browserbase.com/v1/contexts/${contextId}`, {
-      method: "DELETE",
-      headers: {
-        "X-BB-API-Key": process.env.BROWSERBASE_API_KEY!,
-      },
-    });
-
-    if (response.ok) {
-      console.log("Context deleted\n");
-    } else {
-      console.log(`Could not delete context: ${response.status} ${response.statusText}`);
-      console.log("   Context will auto-expire after 30 days\n");
-    }
+    // The generated SDK currently sets a JSON content type on DELETE, so send an
+    // explicit empty object instead of an empty body.
+    await bb.contexts.delete(contextId, { body: {} });
+    console.log("Context deleted\n");
   } catch (error) {
     console.log(
       `Could not delete context: ${error instanceof Error ? error.message : String(error)}`,

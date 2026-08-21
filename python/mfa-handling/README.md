@@ -1,19 +1,21 @@
 # Stagehand + Browserbase: MFA Handling - TOTP Automation
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: Automate MFA (Multi-Factor Authentication) completion using TOTP (Time-based One-Time Password) code generation.
 - TOTP Generation: Implements RFC 6238 compliant algorithm to generate time-based authentication codes programmatically.
 - Automatic Form Filling: Extracts TOTP secrets from pages and automatically fills MFA forms without user interaction.
 - Retry Logic: Handles time window edge cases by regenerating codes and retrying authentication when needed.
-- Docs → https://docs.stagehand.dev/basics/act
+- Docs → https://docs.stagehand.dev/v4/basics/act
 
 ## GLOSSARY
 
 - act: perform UI actions from a prompt (type, click, fill forms)
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: extract structured data from web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - TOTP: Time-based One-Time Password - a 6-digit code that changes every 30 seconds, generated using HMAC-SHA1 algorithm
 - RFC 6238: Standard specification for TOTP authentication codes used by Google Authenticator, Authy, and other authenticator apps
 
@@ -68,7 +70,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v2/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

@@ -5,14 +5,13 @@ import asyncio
 import csv
 import json
 import os
-import webbrowser
 import zipfile
 from pathlib import Path
 
 from browserbase import APIStatusError, Browserbase
 from dotenv import load_dotenv
 from extend_ai import Extend
-from stagehand import AsyncStagehand
+from stagehand import Stagehand, browserbase
 
 # Load environment variables from .env file
 # Required: BROWSERBASE_API_KEY
@@ -158,14 +157,6 @@ RECEIPT_EXTRACTION_CONFIG = {
 }
 
 
-def open_in_browser(url: str) -> None:
-    """Opens a URL in the default browser for live view and dashboard links."""
-    try:
-        webbrowser.open(url)
-    except Exception:
-        print(f"Could not auto-open: {url}")
-
-
 # Polls Browserbase API for completed downloads with retry logic
 async def save_downloads_with_retry(
     bb: Browserbase, session_id: str, retry_for_seconds: int = 60
@@ -273,9 +264,14 @@ def extract_files_from_zip(zip_path: str, output_dir: str = "output/documents") 
             raise ValueError("No files found in the downloaded zip")
 
         # Extract all non-directory entries and collect file paths
+        resolved_output = output_path.resolve()
         for entry in entries:
-            zip_ref.extract(entry, output_dir)
-            extracted_path = output_path / entry
+            extracted_path = (resolved_output / entry).resolve()
+            if resolved_output not in extracted_path.parents:
+                raise ValueError(f"Unsafe ZIP entry: {entry}")
+            extracted_path.parent.mkdir(parents=True, exist_ok=True)
+            with zip_ref.open(entry) as source, extracted_path.open("wb") as target:
+                target.write(source.read())
             print(f"Extracted: {extracted_path}")
             extracted_files.append(str(extracted_path))
 
@@ -284,7 +280,7 @@ def extract_files_from_zip(zip_path: str, output_dir: str = "output/documents") 
 
 
 # Uploads receipt files to Extend AI, runs extraction, and saves results as JSON and CSV
-async def parse_receipts_with_extend(file_paths: list[str]) -> None:
+async def parse_receipts_with_extend(file_paths: list[str]) -> list[dict]:
     """
     Upload receipt files to Extend AI, run extraction, and save results.
 
@@ -300,7 +296,7 @@ async def parse_receipts_with_extend(file_paths: list[str]) -> None:
     if not extend_api_key or extend_api_key == "YOUR_EXTEND_API_KEY_HERE":
         print("\nWARNING: EXTEND_API_KEY not configured. Skipping receipt parsing.")
         print("   Add your Extend API key to .env to enable automatic receipt parsing.")
-        return
+        return []
 
     print("\n=== Parsing Receipts with Extend AI ===\n")
 
@@ -425,6 +421,7 @@ async def parse_receipts_with_extend(file_paths: list[str]) -> None:
             )
 
     print(f"Saved CSV:  {csv_path}")
+    return results
 
 
 async def main() -> None:
@@ -447,40 +444,37 @@ async def main() -> None:
     # Initialize Browserbase SDK for session management and download retrieval
     bb = Browserbase(api_key=browserbase_api_key)
 
-    # Initialize AsyncStagehand client (v3 BYOB architecture)
-    client = AsyncStagehand(
-        browserbase_api_key=browserbase_api_key,
-    )
-
-    # Start a Stagehand session (returns a response with session_id)
-    start_response = await client.sessions.start(
-        model_name="google/gemini-2.5-flash",
-    )
-    session_id = start_response.data.session_id
-    print(f"Stagehand session started: {session_id}")
+    browser = await browserbase.launch(api_key=browserbase_api_key)
+    session_id = browser.session_id
+    if not session_id:
+        await browser.close()
+        raise RuntimeError("Browserbase launch did not return a session ID")
 
     try:
-        # Get live view URL for monitoring browser session in real-time
-        # Use asyncio.to_thread for synchronous Browserbase SDK calls
-        live_view_links = await asyncio.to_thread(bb.sessions.debug, session_id)
-        live_view_link = live_view_links.debuggerFullscreenUrl
-        print(f"Live View Link: {live_view_link}")
-        open_in_browser(live_view_link)
+        stagehand = await Stagehand.create(
+            browser=browser,
+        )
+        pages = await browser.context.pages()
+        page = pages[0] if pages else await browser.context.new_page()
+        print("Live View is available in the Browserbase Sessions dashboard")
 
         # Navigate to the expense portal where receipts are hosted
         print("\nNavigating to expense portal...")
-        await client.sessions.navigate(
-            id=session_id,
-            url="https://v0-reimburse-me-expense-portal.vercel.app/",
+        await page.goto(
+            "https://v0-reimburse-me-expense-portal.vercel.app/",
+            wait_until="domcontentloaded",
+            timeout=60_000,
         )
 
         # Use observe to find all individual download buttons (not the Download All button)
         print("\nFinding all individual download buttons...")
-        observe_response = await client.sessions.observe(
-            id=session_id,
-            instruction="Find all the small Download links on individual receipt cards.",
+        observe_response = await stagehand.observe(
+            "Find all the small Download links on individual receipt cards.",
+            page=page,
         )
-        download_buttons = observe_response.data.result
+        download_buttons = observe_response.data
+        if not download_buttons:
+            raise RuntimeError("No receipt download links were found")
 
         # Click each download button using observe -> act pattern
         # Pass the observed action directly to act for precise element targeting
@@ -488,32 +482,27 @@ async def main() -> None:
         for i, action in enumerate(download_buttons):
             print(f"Downloading receipt {i + 1}/{len(download_buttons)}...")
 
-            # Convert observed action to dict for passing to act
-            action_dict = (
-                action.to_dict(exclude_none=True) if hasattr(action, "to_dict") else action
-            )
-
             try:
-                await client.sessions.act(id=session_id, input=action_dict)
+                await stagehand.act(action, page=page)
                 success_count += 1
             except Exception:
                 # If click fails, scroll element into view and retry
                 print(f"  Could not click download button {i + 1}, trying to scroll and retry...")
                 try:
-                    await client.sessions.act(id=session_id, input="Scroll down slightly")
-                    await client.sessions.act(id=session_id, input=action_dict)
+                    await stagehand.act("Scroll down slightly", page=page)
+                    await stagehand.act(action, page=page)
                     success_count += 1
                 except Exception:
                     print(f"  Skipping receipt {i + 1}")
 
             # Scroll down periodically to ensure elements are in view
             if (i + 1) % 4 == 0 and (i + 1) < len(download_buttons):
-                await client.sessions.act(id=session_id, input="Scroll down slightly")
+                await stagehand.act("Scroll down slightly", page=page)
 
         print(f"\nDownload clicks completed! ({success_count}/{len(download_buttons)} successful)")
 
-        # End the Stagehand session before fetching downloads
-        await client.sessions.end(id=session_id)
+        await stagehand.close()
+        await browser.close()
         print("Session closed successfully")
 
         # Wait for session to finalize downloads before polling
@@ -540,11 +529,9 @@ async def main() -> None:
 
     except Exception as error:
         print(f"Error during automation: {error}")
-        try:
-            await client.sessions.end(id=session_id)
-        except Exception:
-            # Ignore close errors during cleanup
-            pass
+        if "stagehand" in locals():
+            await stagehand.close()
+        await browser.close()
         raise
 
 
@@ -557,5 +544,5 @@ if __name__ == "__main__":
         print("  - Check .env file has BROWSERBASE_API_KEY")
         print("  - Add EXTEND_API_KEY to .env to enable receipt parsing with Extend AI")
         print("  - Verify internet connection and expense portal accessibility")
-        print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
+        print("Docs: https://docs.stagehand.dev/v4/first-steps/introduction")
         exit(1)

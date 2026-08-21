@@ -1,74 +1,52 @@
-# Stagehand + Browserbase: Company Address Finder
+# Company address finder with Python agents
 
-## AT A GLANCE
+Stagehand is the SDK for browser agents.
 
-- Goal: Automate discovery of company legal information and physical addresses from Terms of Service and Privacy Policy pages.
-- CUA Agent: Uses autonomous computer-use agent to search for company homepages via Google and navigate to legal documents.
-- Data Extraction: Extracts structured data including homepage URLs, ToS/Privacy Policy links, and physical mailing addresses.
-- Fallback Strategy: Intelligently falls back from Terms of Service to Privacy Policy if address is not found.
-- Retry Logic: Built-in exponential backoff for reliability against network failures.
-- Scalable: Supports both sequential and concurrent processing (concurrent requires Startup/Developer plan or higher).
+This template gives one LangChain Deep Agent at a time a persistent Stagehand V4 browser. Each
+agent finds a company's official homepage and legal pages, then returns a validated physical
+mailing address when the company publishes one.
 
-## GLOSSARY
+## How it works
 
-- agent: autonomous AI agent with computer-use capabilities that can navigate websites like a human
-  Docs → https://docs.stagehand.dev/basics/agent
-- extract: pull structured data from web pages using natural language instructions and Pydantic schemas
-  Docs → https://docs.stagehand.dev/basics/extract
-- CUA (Computer Use Agent): agent mode that enables full browser interaction (search, click, scroll, type)
-  Docs → https://docs.stagehand.dev/basics/agent#what-is-cua-mode
-- concurrent sessions: run multiple browser sessions simultaneously for faster batch processing
-  Docs → https://docs.browserbase.com/guides/concurrency-rate-limits
-- exponential backoff: retry strategy that increases wait time between attempts for reliability
+- `create_deep_agent` owns planning, model calls, and Pydantic structured output.
+- Stagehand code mode exposes `run`, `snapshot`, and `screenshot` over a stateful MCP session.
+- Vercel AI Gateway supplies the bring-your-own agent model.
+- Each company gets a separate Browserbase session; `MAX_CONCURRENT` controls the batch size.
+- The Stagehand server runs in an isolated `uvx` environment to keep its dependencies separate
+  from the Deep Agents client.
 
-## QUICKSTART
+## Quickstart
 
-1. uv venv venv
-2. source venv/bin/activate # On Windows: venv\Scripts\activate
-3. uvx install stagehand python-dotenv pydantic
-4. cp .env.example .env # Add your Browserbase API key and Google Generative AI API key to .env
-5. Edit COMPANY_NAMES array in main.py to specify which companies to process
-6. python main.py
+Requirements: Python 3.11–3.13 and [uv](https://docs.astral.sh/uv/).
 
-## EXPECTED OUTPUT
+```bash
+cp .env.example .env
+# Add BROWSERBASE_API_KEY and AI_GATEWAY_API_KEY to .env.
+uv sync
+uv run python main.py
+```
 
-- Initializes browser session for each company with live view link
-- Agent navigates to Google and searches for company homepage
-- Extracts Terms of Service and Privacy Policy links from homepage
-- Navigates to Terms of Service and extracts physical address
-- Falls back to Privacy Policy if address not found in ToS
-- Outputs comprehensive JSON with all extracted data for each company
-- Displays processing status and session closure for each company
+Edit `COMPANY_NAMES` in `main.py` to change the batch. Keep `MAX_CONCURRENT = 1` unless your
+Browserbase plan supports enough simultaneous sessions.
 
-## COMMON PITFALLS
+The first run installs the Stagehand Deep Agents integration from `stagehand/main` in `uvx`; the
+integration pins its Stagehand server dependency to `stagehand==4.0.0`.
 
-- Missing credentials: verify .env contains BROWSERBASE_API_KEY and GOOGLE_GENERATIVE_AI_API_KEY (or GOOGLE_API_KEY)
-- Google API access: ensure you have access to gemini-2.5-computer-use-preview-10-2025 model
-- Concurrent processing: MAX_CONCURRENT > 1 requires Browserbase Startup or Developer plan or higher (default is 1 for sequential)
-- Company not found: agent may fail if company name is ambiguous or doesn't have a clear web presence
-- Address extraction: some companies may not list physical addresses in their legal documents
-- Session timeouts: long-running batches may hit 900s timeout (adjust browserbase_session_create_params if needed)
+## Expected outcome
 
-## USE CASES
+The script processes Browserbase, Mintlify, Wordware, and Reducto. For each company it returns the
+official homepage, Terms and Privacy links when found, and a physical address when published. A
+missing address may be `null`; a per-company browser failure is included in that company's output.
 
-• Legal compliance research: Collect company addresses and legal document URLs for due diligence, vendor verification, or compliance audits.
-• Business intelligence: Build datasets of company locations and legal information for market research or competitive analysis.
-• Contact data enrichment: Augment CRM or database records with verified physical addresses extracted from official company documents.
-• Multi-company batch processing: Process lists of companies (investors, partners, clients) to gather standardized location data at scale.
+## Configuration
 
-## NEXT STEPS
+- `BROWSERBASE_API_KEY`: launches each Browserbase session.
+- `AI_GATEWAY_API_KEY`: authenticates the Deep Agents model through Vercel AI Gateway.
+- `DEEPAGENTS_MODEL`: optional model override; defaults to `anthropic/claude-sonnet-4.6`.
+- `STAGEHAND_RUN_TIMEOUT_MS`: optional browser-tool timeout; defaults to 120 seconds.
 
-• Parameterize inputs: Accept company names from CSV files, command-line arguments, or API endpoints for dynamic batch processing.
-• Expand extraction: Add support for additional fields like contact emails, phone numbers, business registration numbers, or founding dates.
-• Multi-source validation: Cross-reference addresses from multiple pages (About, Contact, Footer) to improve accuracy and confidence.
-• Export formats: Add CSV, Excel, or database export options with configurable field mappings for downstream integrations.
-• Error handling: Implement more granular error categorization (not found vs. no address vs. extraction failure) for better reporting.
+## Resources
 
-## HELPFUL RESOURCES
-
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
-🎮 Browserbase: https://www.browserbase.com
-💡 Try it out: https://www.browserbase.com/playground
-🔧 Templates: https://www.browserbase.com/templates
-📧 Need help? support@browserbase.com
-💬 Discord: http://stagehand.dev/discord
+- [Stagehand V4 documentation](https://docs.stagehand.dev/v4)
+- [Stagehand Deep Agents integration](https://github.com/browserbase/stagehand/tree/main/packages/integrations/deepagents)
+- [Browserbase concurrency](https://docs.browserbase.com/features/concurrency-rate-limits)

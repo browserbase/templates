@@ -2,10 +2,11 @@
 name = "browserbase-form-filler"
 version = "0.1.0"
 description = "Voice agent that fills web forms using Stagehand browser automation"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.14"
 dependencies = [
-    "cartesia-line",
-    "stagehand>=3.19.0",
+    "cartesia-line==0.1.12",
+    "fastapi==0.115.14",
+    "stagehand==4.0.0",
     "google-genai>=1.26.0",
     "python-dotenv>=1.0.0",
     "loguru>=0.7.0",

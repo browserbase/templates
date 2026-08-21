@@ -14,11 +14,20 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import httpx
+from browserbase import Browserbase
+from deepagents import create_deep_agent
 from dotenv import load_dotenv
+from langchain_mcp_adapters.tools import load_mcp_tools
 from openai import AsyncOpenAI, OpenAI
 from playwright.async_api import async_playwright
 from pydantic import BaseModel, Field
-from stagehand import Stagehand
+
+from agent_runtime import (
+    BROWSER_INSTRUCTIONS,
+    SERVER_NAME,
+    create_cerebras_model,
+    create_stagehand_client,
+)
 
 load_dotenv(override=True)
 
@@ -30,13 +39,13 @@ if not all([CEREBRAS_API_KEY, BROWSERBASE_API_KEY]):
     raise ValueError("Missing required API keys. Check .env file.")
 
 # Cerebras model to use for verification and analysis (override via CEREBRAS_MODEL env var)
-CEREBRAS_MODEL = os.getenv("CEREBRAS_MODEL", "llama-3.3-70b")
+CEREBRAS_MODEL = os.getenv("CEREBRAS_MODEL", "gpt-oss-120b")
 
 # Crawl configuration (modify these to control scope and speed)
 DEFAULT_URL = "https://docs.stagehand.dev"  # Target docs site (can also be passed as CLI arg)
-MAX_PAGES = 20       # Maximum number of pages to crawl
-MAX_DEPTH = 2        # Maximum link depth from the root page
-MAX_CRAWL_WORKERS = 5  # Number of parallel browser sessions for crawling
+MAX_PAGES = int(os.getenv("MAX_PAGES", "20"))
+MAX_DEPTH = int(os.getenv("MAX_DEPTH", "2"))
+MAX_CRAWL_WORKERS = int(os.getenv("MAX_CRAWL_WORKERS", "5"))
 
 
 # ── Data Models ────────────────────────────────────────────────────
@@ -73,30 +82,18 @@ async def _crawl_worker(
     base_domain: str,
     max_pages: int,
     max_depth: int,
-    stagehand: Stagehand,
     counter: list,
 ):
-    """Worker coroutine: pops URLs from the shared queue, navigates via Stagehand, and extracts
-    the accessibility tree (aria tree) for each page. Each worker runs its own browser session."""
+    """Crawl docs in a Browserbase session and capture their accessibility trees."""
 
-    session_id = None
+    playwright = None
     browser = None
-    pw = None
 
     try:
-        # Start a new Browserbase session via the Stagehand REST API
-        start_response = stagehand.sessions.start(model_name="cerebras/llama-3.3-70b")
-        session_id = start_response.data.session_id
-        live_url = f"https://www.browserbase.com/sessions/{session_id}"
-        print(f"  [Worker {worker_id}] Live session: {live_url}")
-
-        # Connect Playwright to the remote browser via Chrome DevTools Protocol (BYOB pattern)
-        cdp_url = (
-            f"wss://connect.browserbase.com?apiKey={BROWSERBASE_API_KEY}&sessionId={session_id}"
-        )
-
-        pw = await async_playwright().start()
-        browser = await pw.chromium.connect_over_cdp(cdp_url)
+        api = Browserbase(api_key=BROWSERBASE_API_KEY)
+        session = await asyncio.to_thread(api.sessions.create)
+        playwright = await async_playwright().start()
+        browser = await playwright.chromium.connect_over_cdp(session.connect_url)
         context = browser.contexts[0]
         page = context.pages[0] if context.pages else await context.new_page()
 
@@ -138,26 +135,20 @@ async def _crawl_worker(
             start_time = asyncio.get_event_loop().time()
 
             try:
-                # Navigate to the URL using Stagehand's server-side navigation
-                stagehand.sessions.navigate(id=session_id, url=url)
+                await page.goto(url, wait_until="domcontentloaded", timeout=60_000)
                 title = await page.title()
 
-                # Extract the accessibility tree (aria tree) — this is free, no LLM call needed.
-                # The aria tree gives us the page's text content in a structured format.
-                extract_response = stagehand.sessions.extract(id=session_id)
-                result = extract_response.data.result
-                if isinstance(result, dict):
-                    aria_tree = result.get("pageText", str(result))
-                elif isinstance(result, str):
-                    aria_tree = result
-                else:
-                    aria_tree = str(result)
+                aria_tree = await page.locator("body").aria_snapshot()
 
                 # Collect all links on the page for BFS crawling and broken link detection
-                links = await page.eval_on_selector_all(
-                    "a[href]",
-                    "els => els.map(e => ({href: e.href, text: e.textContent.trim().slice(0,30)}))",
+                links = await page.evaluate(
+                    """() => Array.from(document.querySelectorAll('a[href]'))
+                      .map((link) => ({
+                        href: link.href,
+                        text: (link.textContent || '').trim().slice(0, 30),
+                      }))"""
                 )
+                links = links if isinstance(links, list) else []
 
                 # Check first 15 links for broken URLs using HEAD requests
                 broken = []
@@ -225,19 +216,14 @@ async def _crawl_worker(
     finally:
         if browser:
             await browser.close()
-        if pw:
-            await pw.stop()
-        if session_id:
-            try:
-                stagehand.sessions.end(id=session_id)
-            except Exception:
-                pass
+        if playwright:
+            await playwright.stop()
 
 
 async def crawl(
     root_url: str, max_pages: int = 30, max_depth: int = 2, max_workers: int = 5
 ) -> list[Page]:
-    """Parallel BFS crawl using an async work queue with multiple Stagehand sessions.
+    """Parallel BFS crawl using an async work queue with Browserbase sessions.
     Each worker gets its own browser session and pulls URLs from a shared queue."""
     parsed_root = urlparse(root_url)
     base_domain = parsed_root.netloc
@@ -250,19 +236,19 @@ async def crawl(
     queue = asyncio.Queue()
     queue.put_nowait((root_url, 0))
 
-    # Initialize the Stagehand REST client (used to create and manage browser sessions)
-    stagehand = Stagehand(
-        browserbase_api_key=BROWSERBASE_API_KEY,
-        model_api_key=CEREBRAS_API_KEY,
-    )
-
     print(f"Starting {max_workers} crawl workers...")
 
     workers = [
         asyncio.create_task(
             _crawl_worker(
-                i, queue, visited, visited_lock, base_domain,
-                max_pages, max_depth, stagehand, counter,
+                i,
+                queue,
+                visited,
+                visited_lock,
+                base_domain,
+                max_pages,
+                max_depth,
+                counter,
             )
         )
         for i in range(max_workers)
@@ -305,89 +291,49 @@ def discover_repo_from_pages(pages: list[Page]) -> Optional[str]:
     return None
 
 
-async def discover_repo_with_agent(root_url: str, stagehand: Stagehand) -> Optional[str]:
-    """Fallback: use a Stagehand agent to find the GitHub repo link on a dynamic page.
-    Some sites render the GitHub link via JavaScript, so regex alone won't find it."""
-    print("  Using Stagehand agent to find GitHub repo link...")
+class RepositoryResult(BaseModel):
+    repository_url: str | None
 
-    session_id = None
-    browser = None
-    pw = None
 
+async def discover_repo_with_agent(root_url: str) -> Optional[str]:
+    """Use Cerebras + Deep Agents with Stagehand V4 code mode as a fallback."""
+    print("  Using the code-mode agent to find the GitHub repository...")
+    client = create_stagehand_client()
     try:
-        # Start a new browser session for the agent
-        start_response = stagehand.sessions.start(model_name="cerebras/llama-3.3-70b")
-        session_id = start_response.data.session_id
-        live_url = f"https://www.browserbase.com/sessions/{session_id}"
-        print(f"  Live session (agent): {live_url}")
-
-        # Connect Playwright via CDP (same BYOB pattern as crawl workers)
-        cdp_url = (
-            f"wss://connect.browserbase.com?apiKey={BROWSERBASE_API_KEY}&sessionId={session_id}"
-        )
-
-        pw = await async_playwright().start()
-        browser = await pw.chromium.connect_over_cdp(cdp_url)
-        context = browser.contexts[0]
-        page = context.pages[0] if context.pages else await context.new_page()
-
-        # Navigate and wait for JavaScript to render
-        stagehand.sessions.navigate(id=session_id, url=root_url)
-        await page.wait_for_timeout(3000)
-
-        # Use the Stagehand agent to autonomously click around and find the GitHub link
-        agent_result = stagehand.sessions.execute(
-            id=session_id,
-            agent_config={
-                "model": {
-                    "modelName": "cerebras/llama-3.3-70b",
-                    "apiKey": CEREBRAS_API_KEY,
+        async with client.session(SERVER_NAME) as session:
+            tools = await load_mcp_tools(session)
+            agent = create_deep_agent(
+                model=create_cerebras_model(CEREBRAS_MODEL),
+                tools=tools,
+                system_prompt=BROWSER_INSTRUCTIONS,
+                response_format=RepositoryResult,
+            )
+            result = await agent.ainvoke(
+                {
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": (
+                                f"Open {root_url} and find the official GitHub source repository "
+                                "for these docs. Inspect navigation and footer links; click a "
+                                "source or GitHub control if needed. Return null only after "
+                                "checking the rendered site."
+                            ),
+                        }
+                    ]
                 },
-            },
-            execute_options={
-                "instruction": (
-                    "Find the GitHub repository link on this page. It may be in a button, "
-                    "footer, navigation, or generated by JavaScript. Click any button that "
-                    "might reveal it (like a 'Source' or 'GitHub' button). "
-                    "Return the full GitHub URL."
-                ),
-                "max_steps": 10,
-            },
-        )
-
-        # Parse the agent's response for a GitHub URL
-        result_text = str(agent_result.data) if agent_result.data else ""
-        github_pattern = re.compile(r"https?://github\.com/[\w\-]+/[\w\-]+")
-        matches = github_pattern.findall(result_text)
-
-        if matches:
-            print(f"  Agent found repo: {matches[0]}")
-            return matches[0]
-
-        # Fallback: check the aria tree after the agent has interacted with the page
-        extract_response = stagehand.sessions.extract(id=session_id)
-        result = extract_response.data.result
-        matches = github_pattern.findall(str(result))
-        if matches:
-            print(f"  Found repo in post-agent aria tree: {matches[0]}")
-            return matches[0]
-
-        print("  Agent could not find GitHub repo link")
+                config={"recursion_limit": 40},
+            )
+            repository: RepositoryResult = result["structured_response"]
+    except Exception as error:
+        print(f"  Agent error: {error}")
         return None
 
-    except Exception as e:
-        print(f"  Agent error: {e}")
-        return None
-    finally:
-        if browser:
-            await browser.close()
-        if pw:
-            await pw.stop()
-        if session_id:
-            try:
-                stagehand.sessions.end(id=session_id)
-            except Exception:
-                pass
+    url = repository.repository_url
+    if url and re.fullmatch(r"https?://github\.com/[\w\-]+/[\w\-]+/?", url):
+        print(f"  Agent found repo: {url}")
+        return url.rstrip("/")
+    return None
 
 
 # ── Phase 3: Clone Repository ─────────────────────────────────────
@@ -404,9 +350,12 @@ def clone_repo(repo_url: str) -> Optional[Path]:
     try:
         subprocess.run(
             ["git", "clone", clone_url, str(clone_dir)],
-            capture_output=True, text=True, timeout=60, check=True,
+            capture_output=True,
+            text=True,
+            timeout=60,
+            check=True,
         )
-        print(f"  Cloned successfully")
+        print("  Cloned successfully")
         return clone_dir
     except subprocess.CalledProcessError as e:
         print(f"  Clone failed: {e.stderr.strip()}")
@@ -465,8 +414,8 @@ VERIFICATION_TOOLS = [
     },
 ]
 
-VERIFICATION_SYSTEM_PROMPT = """You are a documentation accuracy verifier. Your job is to check whether \
-a documentation page is accurate against the actual source code of the project.
+VERIFICATION_SYSTEM_PROMPT = """You are a documentation accuracy verifier. Your job is to
+check whether a documentation page is accurate against the actual source code of the project.
 
 You have access to tools that let you search and read the codebase. Use them to verify every claim \
 in the documentation:
@@ -499,7 +448,9 @@ def _execute_verification_tool(name: str, args: dict, codebase_path: Path) -> st
         try:
             result = subprocess.run(
                 ["grep", "-rn", pattern, str(codebase_path)],
-                capture_output=True, text=True, timeout=10,
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
             output = result.stdout.strip()
             if not output:
@@ -559,9 +510,12 @@ def verify_page(
         print(f"  [{page_num}/{total}] Skip:  {short_url} (crawl error)")
         return [
             Issue(
-                url=pg.url, type="error", severity="high",
+                url=pg.url,
+                type="error",
+                severity="high",
                 description="Page failed to load during crawl",
-                suggestion="Check URL accessibility", context=pg.content[:100],
+                suggestion="Check URL accessibility",
+                context=pg.content[:100],
             )
         ]
 
@@ -589,11 +543,14 @@ def verify_page(
         try:
             # Ask the model to verify the docs, allowing it to call tools
             resp = llm.chat.completions.create(
-                model=CEREBRAS_MODEL, messages=messages,
-                tools=VERIFICATION_TOOLS, tool_choice="auto",
+                model=CEREBRAS_MODEL,
+                messages=messages,
+                tools=VERIFICATION_TOOLS,
+                tool_choice="auto",
             )
         except Exception as e:
-            # Some models return tool_use_failed when tool calling isn't supported — retry without tools
+            # Some models return tool_use_failed when tool calling is unavailable.
+            # Retry without tools so the page still receives content-level analysis.
             if "tool_use_failed" in str(e):
                 resp = llm.chat.completions.create(model=CEREBRAS_MODEL, messages=messages)
             else:
@@ -618,7 +575,10 @@ def verify_page(
     else:
         # Force the agent to return its findings if it used all turns without finishing
         messages.append(
-            {"role": "user", "content": "Provide your final JSON response now with all issues found."}
+            {
+                "role": "user",
+                "content": "Provide your final JSON response now with all issues found.",
+            }
         )
         resp = llm.chat.completions.create(model=CEREBRAS_MODEL, messages=messages)
         issues = _parse_verification_response(resp.choices[0].message.content or "", pg.url)
@@ -627,17 +587,25 @@ def verify_page(
     for link in pg.broken_links:
         issues.append(
             Issue(
-                url=pg.url, type="broken_link", severity="high",
-                description=f"Broken link: {link.get('text', '?')} -> status {link.get('status', '?')}",
-                suggestion="Fix or remove the link", context=link.get("url", ""),
+                url=pg.url,
+                type="broken_link",
+                severity="high",
+                description=(
+                    f"Broken link: {link.get('text', '?')} -> status {link.get('status', '?')}"
+                ),
+                suggestion="Fix or remove the link",
+                context=link.get("url", ""),
             )
         )
     for anchor in pg.broken_anchors:
         issues.append(
             Issue(
-                url=pg.url, type="broken_anchor", severity="medium",
+                url=pg.url,
+                type="broken_anchor",
+                severity="medium",
                 description=f"Broken anchor: #{anchor}",
-                suggestion="Add missing ID or fix link", context=anchor,
+                suggestion="Add missing ID or fix link",
+                context=anchor,
             )
         )
 
@@ -726,7 +694,11 @@ Accessibility tree:
 
 
 async def analyze_page(
-    pg: Page, llm: AsyncOpenAI, page_num: int, total: int, current_datetime: str,
+    pg: Page,
+    llm: AsyncOpenAI,
+    page_num: int,
+    total: int,
+    current_datetime: str,
 ) -> list[Issue]:
     """Analyze a single page by sending its aria tree to Cerebras."""
     short_url = pg.url.split("/")[-1] or pg.url.split("/")[-2] or "index"
@@ -736,16 +708,21 @@ async def analyze_page(
         print(f"  [{page_num}/{total}] Skip:  {short_url} (crawl error)")
         return [
             Issue(
-                url=pg.url, type="error", severity="high",
+                url=pg.url,
+                type="error",
+                severity="high",
                 description="Page failed to load during crawl",
-                suggestion="Check URL accessibility", context=pg.content[:100],
+                suggestion="Check URL accessibility",
+                context=pg.content[:100],
             )
         ]
 
     try:
         prompt = ANALYSIS_PROMPT.format(
-            current_datetime=current_datetime, url=pg.url,
-            title=pg.title, content=pg.content[:12000],
+            current_datetime=current_datetime,
+            url=pg.url,
+            title=pg.title,
+            content=pg.content[:12000],
         )
 
         resp = await llm.chat.completions.create(
@@ -776,17 +753,25 @@ async def analyze_page(
     for link in pg.broken_links:
         issues.append(
             Issue(
-                url=pg.url, type="broken_link", severity="high",
-                description=f"Broken link: {link.get('text', '?')} -> status {link.get('status', '?')}",
-                suggestion="Fix or remove the link", context=link.get("url", ""),
+                url=pg.url,
+                type="broken_link",
+                severity="high",
+                description=(
+                    f"Broken link: {link.get('text', '?')} -> status {link.get('status', '?')}"
+                ),
+                suggestion="Fix or remove the link",
+                context=link.get("url", ""),
             )
         )
     for anchor in pg.broken_anchors:
         issues.append(
             Issue(
-                url=pg.url, type="broken_anchor", severity="medium",
+                url=pg.url,
+                type="broken_anchor",
+                severity="medium",
                 description=f"Broken anchor: #{anchor}",
-                suggestion="Add missing ID or fix link", context=anchor,
+                suggestion="Add missing ID or fix link",
+                context=anchor,
             )
         )
 
@@ -842,7 +827,7 @@ def print_summary(pages: list[Page], issues: list[Issue], root_url: str):
     type_counts = Counter(i.type for i in issues)
 
     print(f"\n{'=' * 60}")
-    print(f"  Documentation Analysis Summary")
+    print("  Documentation Analysis Summary")
     print(f"{'=' * 60}")
     print(f"  Site:           {root_url}")
     print(f"  Pages crawled:  {len(pages)}")
@@ -872,7 +857,9 @@ def print_issues(issues: list[Issue], severity_filter: str = None):
         print()
 
 
-def export_markdown(pages: list[Page], issues: list[Issue], root_url: str, filename: str = None) -> str:
+def export_markdown(
+    pages: list[Page], issues: list[Issue], root_url: str, filename: str = None
+) -> str:
     """Generate and save a markdown report."""
     if filename is None:
         filename = f"docs_report_{datetime.now().strftime('%Y%m%d_%H%M')}.md"
@@ -934,7 +921,11 @@ async def main():
 
     # Phase 1: Crawl the docs site using parallel browser sessions
     print("Phase 1: Crawling documentation site...")
-    pages = await crawl(docs_url, max_pages=MAX_PAGES, max_depth=MAX_DEPTH, max_workers=MAX_CRAWL_WORKERS)
+    pages = await crawl(
+        docs_url, max_pages=MAX_PAGES, max_depth=MAX_DEPTH, max_workers=MAX_CRAWL_WORKERS
+    )
+    if not pages:
+        raise RuntimeError("The documentation crawl returned no pages")
 
     # Phase 2: Try to find the source GitHub repo (regex first, then agent fallback)
     print("Phase 2: Discovering source repository...")
@@ -942,20 +933,16 @@ async def main():
 
     if not repo_url:
         # Regex didn't find a repo — try using a Stagehand agent to click around and find it
-        stagehand = Stagehand(
-            browserbase_api_key=BROWSERBASE_API_KEY,
-            model_api_key=CEREBRAS_API_KEY,
-        )
-        repo_url = await discover_repo_with_agent(docs_url, stagehand)
+        repo_url = await discover_repo_with_agent(docs_url)
 
     if repo_url:
         # Phase 3: Clone the repo so the verification agent can inspect source code
-        print(f"\nPhase 3: Cloning repository...")
+        print("\nPhase 3: Cloning repository...")
         codebase_path = clone_repo(repo_url)
 
         if codebase_path:
             # Phase 4: Run the Cerebras tool-calling agent to verify docs against source
-            print(f"\nPhase 4: Verification agent...")
+            print("\nPhase 4: Verification agent...")
             issues = verify_all(pages, codebase_path)
         else:
             print("\nClone failed, falling back to basic analysis...")
@@ -968,7 +955,9 @@ async def main():
     # Display results and save markdown report
     print_summary(pages, issues, docs_url)
     print_issues(issues)
-    export_markdown(pages, issues, docs_url)
+    report = export_markdown(pages, issues, docs_url)
+    if "# Documentation Analysis Report" not in report:
+        raise RuntimeError("The documentation audit report was not generated")
 
 
 if __name__ == "__main__":
@@ -978,6 +967,6 @@ if __name__ == "__main__":
         print(f"Application error: {err}")
         print("\nCommon issues:")
         print("  - Check .env file has CEREBRAS_API_KEY and BROWSERBASE_API_KEY")
-        print("  - Ensure playwright is installed: playwright install chromium")
-        print("Docs: https://docs.stagehand.dev/v3/sdk/python")
+        print("  - Ensure the target docs and repository are publicly reachable")
+        print("Docs: https://docs.stagehand.dev/v4/first-steps/introduction")
         exit(1)

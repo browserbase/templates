@@ -1,25 +1,24 @@
 # Stagehand + Browserbase: Cerebras Documentation Checker
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: Crawl any documentation site, discover its source repo, and verify docs accuracy against the actual codebase using Cerebras LLMs.
-- Parallel browser workers crawl docs pages and extract accessibility trees via Stagehand BYOB (Bring Your Own Browser).
-- Cerebras-powered verification agent uses tool calling to grep and read source code, cross-referencing every function, parameter, and code example.
+- Parallel Browserbase workers crawl docs pages and capture Playwright accessibility snapshots.
+- A Deep Agents verification agent uses Cerebras for planning and Stagehand V4 code-mode browser tools for fallback research, while local code tools cross-reference functions, parameters, and examples.
 - Falls back to content-only analysis when no source repository is found.
 - Docs → https://docs.stagehand.dev
 
 ## GLOSSARY
 
-- extract: pull structured data or the accessibility tree from a page without LLM cost
-  Docs → https://docs.stagehand.dev/basics/extract
-- execute: run a multi-step Stagehand agent with an instruction and step limit
-  Docs → https://docs.stagehand.dev/basics/agent
-- BYOB (Bring Your Own Browser): connect Playwright directly to a Browserbase session for low-level control
-  Docs → https://docs.browserbase.com
+- snapshot: capture the current page's structured accessibility representation.
+- code mode: Stagehand's `snapshot`, `run`, and `screenshot` tools, exposed to a bring-your-own Deep Agents loop over MCP.
+- Deep Agents: the external agent framework; Stagehand V4 does not expose `stagehand.agent()`.
 
 ## QUICKSTART
 
-1. uv sync && playwright install chromium
+1. uv sync
 2. cp .env.example .env # Add your CEREBRAS_API_KEY and BROWSERBASE_API_KEY
 3. uv run python main.py https://your-docs-site.com
 
@@ -49,12 +48,12 @@
 ## NEXT STEPS
 
 - Add JSON export: Extend the output to include a machine-readable JSON issues file for downstream tooling.
-- Configurable models: Support switching between Cerebras models (llama-3.3-70b for speed, qwen-3-235b for precision) via CLI flags.
+- Configurable models: Set `CEREBRAS_MODEL` to any model available to your Cerebras account; the template defaults to `gpt-oss-120b`.
 - Incremental checks: Cache previously verified pages and only re-check pages whose content has changed.
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

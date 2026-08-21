@@ -1,180 +1,98 @@
-# Stagehand + Browserbase: Automated Nurse License Verification - See README.md for full documentation
+"""Verify nurse-license records with Stagehand V4."""
 
+import asyncio
 import json
 import os
 
 from dotenv import load_dotenv
-from playwright.sync_api import sync_playwright
 from pydantic import BaseModel, Field
 
-from stagehand import Stagehand
+from stagehand import Stagehand, browserbase
 
-# Load environment variables
 load_dotenv()
 
 
 class LicenseRecord(BaseModel):
-    """Single license verification record"""
-
-    name: str = Field(..., description="the name of the license holder")
-    license_number: str = Field(..., description="the license number")
-    status: str = Field(..., description="the status of the license")
-    more_info_url: str = Field(..., description="URL for more information")
+    name: str = Field(min_length=1, description="License holder name")
+    license_number: str = Field(min_length=1, description="License number")
+    status: str = Field(min_length=1, description="License status")
+    more_info_url: str = Field(description="URL for more information")
 
 
 class LicenseResults(BaseModel):
-    """Collection of license verification results"""
-
-    list_of_licenses: list[LicenseRecord] = Field(
-        ..., description="array of license verification results"
-    )
+    list_of_licenses: list[LicenseRecord]
 
 
-# License records to verify - add more records as needed
 LICENSE_RECORDS = [
     {
-        "Site": "https://pod-search.kalmservices.net/",
-        "FirstName": "Ronald",
-        "LastName": "Agee",
-        "LicenseNumber": "346",
-    },
+        "site": "https://pod-search.kalmservices.net/",
+        "first_name": "Ronald",
+        "last_name": "Agee",
+        "license_number": "346",
+    }
 ]
 
 
-def main():
-    """
-    Automated nurse license verification using AI-powered browser automation.
-    Processes multiple license records and extracts verification results.
-    """
-    print("Starting Nurse License Verification Automation...")
+def require_env(name: str) -> str:
+    value = os.environ.get(name)
+    if not value:
+        raise RuntimeError(f"{name} is required")
+    return value
 
-    # Initialize Stagehand with Browserbase for cloud-based browser automation
-    client = Stagehand(
-        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-    )
 
-    # Start a new session
-    start_response = client.sessions.start(
-        model_name="openai/gpt-4.1",
-    )
-    session_id = start_response.data.session_id
-
+async def main() -> None:
+    print("Starting nurse license verification...")
+    browser = await browserbase.launch(api_key=require_env("BROWSERBASE_API_KEY"))
     try:
-        print("Initializing browser session...")
-        print("Stagehand session started successfully")
-        print(f"Watch live: https://browserbase.com/sessions/{session_id}")
+        stagehand = await Stagehand.create(
+            browser=browser,
+        )
+        try:
+            pages = await browser.context.pages()
+            page = pages[0] if pages else await browser.context.new_page()
 
-        # Connect to the browser via CDP
-        with sync_playwright() as playwright:
-            browser = playwright.chromium.connect_over_cdp(
-                f"wss://connect.browserbase.com?apiKey={os.environ['BROWSERBASE_API_KEY']}&sessionId={session_id}"
-            )
-            context = browser.contexts[0]
-            page = context.pages[0] if context.pages else context.new_page()
-
-            # Process each license record sequentially
-            for license_record in LICENSE_RECORDS:
-                print(
-                    f"Verifying license for: {license_record['FirstName']} {license_record['LastName']}"
+            for record in LICENSE_RECORDS:
+                expected_name = f"{record['first_name']} {record['last_name']}"
+                print(f"Verifying {expected_name}, license {record['license_number']}")
+                await page.goto(
+                    record["site"],
+                    wait_until="domcontentloaded",
+                    timeout=60_000,
+                )
+                await stagehand.act(
+                    f"Type {record['first_name']} into the first name field",
+                    page=page,
+                )
+                await stagehand.act(
+                    f"Type {record['last_name']} into the last name field",
+                    page=page,
+                )
+                await stagehand.act(
+                    f"Type {record['license_number']} into the license number field",
+                    page=page,
+                )
+                await stagehand.act("Click the Search button", page=page)
+                await stagehand.observe(
+                    "Find the first visible license result row",
+                    page=page,
                 )
 
-                # Navigate to license verification site
-                print(f"Navigating to: {license_record['Site']}")
-                page.goto(license_record["Site"])
-                page.wait_for_load_state("domcontentloaded")
-                # Brief timeout to ensure form fields are interactive
-                page.wait_for_timeout(1000)
-
-                # Fill in form fields with license information
-                print("Filling in license information...")
-                client.sessions.act(
-                    id=session_id,
-                    input=f'Type "{license_record["FirstName"]}" into the first name field',
+                extracted = await stagehand.extract(
+                    "Extract every license result with name, license number, status, and details URL",
+                    LicenseResults,
+                    page=page,
                 )
-                client.sessions.act(
-                    id=session_id,
-                    input=f'Type "{license_record["LastName"]}" into the last name field',
-                )
-                client.sessions.act(
-                    id=session_id,
-                    input=f'Type "{license_record["LicenseNumber"]}" into the license number field',
-                )
-
-                # Submit search
-                print("Clicking search button...")
-                client.sessions.act(
-                    id=session_id,
-                    input="Click the search button",
-                )
-
-                # Wait for search results to load
-                page.wait_for_load_state("domcontentloaded")
-                page.wait_for_timeout(1000)
-
-                # Extract license verification results using inline schema (avoids $ref issues)
-                print("Extracting license verification results...")
-                license_schema = {
-                    "type": "object",
-                    "properties": {
-                        "list_of_licenses": {
-                            "type": "array",
-                            "description": "array of license verification results",
-                            "items": {
-                                "type": "object",
-                                "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "description": "the name of the license holder",
-                                    },
-                                    "license_number": {
-                                        "type": "string",
-                                        "description": "the license number",
-                                    },
-                                    "status": {
-                                        "type": "string",
-                                        "description": "the status of the license",
-                                    },
-                                    "more_info_url": {
-                                        "type": "string",
-                                        "description": "URL for more information",
-                                    },
-                                },
-                                "required": ["name", "license_number", "status", "more_info_url"],
-                            },
-                        }
-                    },
-                    "required": ["list_of_licenses"],
-                }
-                extract_response = client.sessions.extract(
-                    id=session_id,
-                    instruction="Extract ALL the license verification results from the page, including name, license number and status",
-                    schema=license_schema,
-                )
-
-                print("License verification results extracted:")
-                print(json.dumps(extract_response.data.result, indent=2))
-
-            browser.close()
-
-        client.sessions.end(id=session_id)
-        print("Session closed successfully")
-
-    except Exception as error:
-        print(f"Error during license verification: {error}")
-
-        # Provide helpful troubleshooting information
-        print("\nCommon issues:")
-        print("1. Check .env file has BROWSERBASE_API_KEY")
-        print("2. Ensure internet access and license verification site is accessible")
-        print("3. Verify Browserbase account has sufficient credits")
-
-        client.sessions.end(id=session_id)
-        raise
+                print(json.dumps(extracted.data.model_dump(mode="json"), indent=2))
+        finally:
+            await stagehand.close()
+    finally:
+        await browser.close()
 
 
 if __name__ == "__main__":
     try:
-        main()
-    except Exception as err:
-        print(f"Application error: {err}")
-        exit(1)
+        asyncio.run(main())
+    except Exception as error:
+        print(f"Nurse license verification failed: {error}")
+        print("Docs: https://docs.stagehand.dev/v4/first-steps/introduction")
+        raise

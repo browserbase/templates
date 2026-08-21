@@ -40,9 +40,9 @@ async function validateSourceFile(filePath) {
     );
   }
 
-  if (hasStagehandUsage(sourceText) && !/new\s+Stagehand\s*\(/.test(sourceText)) {
+  if (hasStagehandUsage(sourceText) && !/Stagehand\.create\s*\(/.test(sourceText)) {
     throw new Error(
-      `${path.relative(ROOT, filePath)}: Stagehand usage detected but no \`new Stagehand({...})\` — playground config merge requires a constructor call.`,
+      `${path.relative(ROOT, filePath)}: Stagehand usage detected but no \`Stagehand.create({...})\` call — playground config merge requires a Stagehand factory call.`,
     );
   }
 }

@@ -12,7 +12,7 @@ from enum import Enum
 
 from loguru import logger
 
-from stagehand import AsyncStagehand
+from stagehand import Page, Stagehand, StagehandBrowser, browserbase
 
 
 class FieldType(Enum):
@@ -81,7 +81,7 @@ class FormFieldMapping:
             ),
             "role_selection": FormField(
                 field_id="role_selection",
-                field_type=FieldType.CHECKBOX,
+                field_type=FieldType.RADIO,
                 label="Which of these roles are you applying for?",
                 options=[
                     "Sales manager",
@@ -127,8 +127,9 @@ class StagehandFormFiller:
 
     def __init__(self, form_url: str):
         self.form_url = form_url
-        self.client: AsyncStagehand | None = None
-        self.session = None
+        self.browser: StagehandBrowser | None = None
+        self.stagehand: Stagehand | None = None
+        self.page: Page | None = None
         self.is_initialized = False
         self.field_mapper = FormFieldMapping()
         self.collected_data: dict[str, str] = {}
@@ -145,19 +146,23 @@ class StagehandFormFiller:
         try:
             logger.info("Initializing Stagehand browser automation")
 
-            self.client = AsyncStagehand(
-                browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+            api_key = os.environ.get("BROWSERBASE_API_KEY")
+            if not api_key:
+                raise RuntimeError("BROWSERBASE_API_KEY is required")
+            self.browser = await browserbase.launch(api_key=api_key)
+            self.stagehand = await Stagehand.create(
+                browser=self.browser,
             )
-
-            self.session = await self.client.sessions.create(
-                model_name="google/gemini-3-flash-preview"
-            )
-
-            logger.info(f"Session started: {self.session.id}")
+            pages = await self.browser.context.pages()
+            self.page = pages[0] if pages else await self.browser.context.new_page()
 
             # Navigate to form
             logger.info(f"Opening form: {self.form_url}")
-            await self.session.navigate(url=self.form_url)
+            await self.page.goto(
+                self.form_url,
+                wait_until="domcontentloaded",
+                timeout=60_000,
+            )
 
             # Wait for form to load
             await asyncio.sleep(2)
@@ -185,6 +190,9 @@ class StagehandFormFiller:
             await init_task
 
         try:
+            if self.stagehand is None or self.page is None:
+                raise RuntimeError("Stagehand form filler is not initialized")
+
             # Get field mapping
             field = self.field_mapper.get_form_field(question_id)
             if not field:
@@ -198,25 +206,65 @@ class StagehandFormFiller:
             logger.info(f"Async filling field '{field.label}' with: {answer}")
 
             # Use Stagehand's natural language API to fill the field
+            act_variables = {"answer": answer}
+            if field.field_type == FieldType.RADIO:
+                act_variables = None
+                instruction = (
+                    f"Within the question '{field.label}', select the one option that best "
+                    f"matches the user's spoken answer {answer!r}. Available options: "
+                    f"{', '.join(field.options or [])}."
+                )
             if field.field_type in [FieldType.TEXT, FieldType.EMAIL, FieldType.PHONE]:
-                await self.session.act(input=f"Fill in the '{field.label}' field with: {answer}")
+                instruction = f"Fill the '{field.label}' field with %answer%"
 
             elif field.field_type == FieldType.TEXTAREA:
-                await self.session.act(input=f"Type in the '{field.label}' text area: {answer}")
+                instruction = f"Fill the '{field.label}' text area with %answer%"
 
-            elif field.field_type in [FieldType.SELECT, FieldType.RADIO]:
-                await self.session.act(input=f"Select '{answer}' for the '{field.label}' field")
+            elif field.field_type == FieldType.SELECT:
+                instruction = (
+                    f"Within the question '{field.label}', click the option labeled %answer%"
+                )
 
             elif field.field_type == FieldType.CHECKBOX:
                 # For role selection, check the specific role checkbox
                 if question_id == "role_selection":
-                    await self.session.act(input=f"Check the '{answer}' checkbox")
+                    instruction = "Check the %answer% checkbox"
                 else:
                     # For other checkboxes, check/uncheck based on answer
                     if answer.lower() in ["yes", "true"]:
-                        await self.session.act(input=f"Check the '{field.label}' checkbox")
+                        instruction = f"Check the '{field.label}' checkbox"
                     else:
-                        await self.session.act(input=f"Uncheck the '{field.label}' checkbox")
+                        instruction = f"Uncheck the '{field.label}' checkbox"
+
+            result = None
+            for attempt in range(2):
+                try:
+                    result = await self.stagehand.act(
+                        instruction,
+                        page=self.page,
+                        variables=act_variables,
+                    )
+                    if result.data.success:
+                        break
+                except Exception:
+                    result = None
+                if attempt == 0:
+                    await self.page.wait_for_timeout(750)
+
+            if field.field_type == FieldType.RADIO and (result is None or not result.data.success):
+                observed = await self.stagehand.observe(
+                    f"Within the question {field.label!r}, find the one option that best "
+                    f"matches the user's spoken answer {answer!r}. Available options: "
+                    f"{', '.join(field.options or [])}.",
+                    page=self.page,
+                )
+                if observed.data:
+                    result = await self.stagehand.act(observed.data[0], page=self.page)
+
+            if result is None:
+                raise RuntimeError(f"Could not fill {field.label}")
+            if not result.data.success:
+                raise RuntimeError(result.data.message or f"Could not fill {field.label}")
 
             return True
 
@@ -231,10 +279,17 @@ class StagehandFormFiller:
             True if form was submitted successfully, False otherwise.
         """
         try:
+            if self.stagehand is None or self.page is None:
+                raise RuntimeError("Stagehand form filler is not initialized")
             logger.info("Submitting the form")
             logger.info(f"Form has {len(self.collected_data)} fields filled")
 
-            await self.session.act(input="Find and click the Submit button to submit the form")
+            result = await self.stagehand.act(
+                "Click the Apply for a role at AB Technologies submit button",
+                page=self.page,
+            )
+            if not result.data.success:
+                raise RuntimeError(result.data.message or "Form submission button was not found")
 
             # Wait for submission to process
             await asyncio.sleep(1)
@@ -252,9 +307,14 @@ class StagehandFormFiller:
         Returns:
             None.
         """
-        if self.session:
+        if self.stagehand:
             try:
-                await self.session.end()
-                logger.info("Session ended")
-            except Exception as e:
-                logger.error(f"Error ending session: {e}")
+                await self.stagehand.close()
+            except Exception as error:
+                logger.error(f"Error closing Stagehand: {error}")
+        if self.browser:
+            try:
+                await self.browser.close()
+            except Exception as error:
+                logger.error(f"Error closing browser: {error}")
+        logger.info("Session ended")

@@ -1,5 +1,7 @@
 # Stagehand + Browserbase: AI-Powered Gift Finder
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: find personalized gift recommendations using AI-generated search queries and intelligent product scoring.
@@ -10,9 +12,9 @@
 ## GLOSSARY
 
 - act: perform UI actions from a prompt (search, click, type)
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: pull structured data from pages using schemas
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - concurrent sessions: run multiple browser sessions simultaneously for faster searching
   Docs → https://docs.browserbase.com/guides/concurrency-rate-limits
 - proxies: use geolocation-based routing for European website access (Firebox.eu)
@@ -59,7 +61,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

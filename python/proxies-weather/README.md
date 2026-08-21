@@ -1,5 +1,7 @@
 # Stagehand + Browserbase: Weather Proxy Demo
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: demonstrate geolocation proxies by fetching location-specific weather data from multiple cities using Browserbase's proxy infrastructure.
@@ -13,7 +15,7 @@
 - geolocation proxies: route traffic through specific geographic locations (city, country, state) to access location-specific content
   Docs → https://docs.browserbase.com/features/proxies#set-proxy-geolocation
 - extract: extract structured data from web pages using natural language instructions and Pydantic schemas
-  Docs → https://docs.stagehand.dev/v2/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - proxies: Browserbase's managed proxy infrastructure supporting 201+ countries for geolocation-based routing
   Docs → https://docs.browserbase.com/features/proxies
 
@@ -48,7 +50,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v2/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

@@ -1,112 +1,82 @@
-# Stagehand + Browserbase: Form Filling Automation - See README.md for full documentation
+"""Fill Browserbase's contact form with Stagehand V4."""
 
+import asyncio
 import os
-import time
 
 from dotenv import load_dotenv
 
-from stagehand import Stagehand
+from stagehand import Stagehand, browserbase
 
-# Load environment variables
 load_dotenv()
 
-# Form data variables - using random/fake data for testing
-# Set your own variables below to customize the form submission
-first_name = "Alex"
-last_name = "Johnson"
-company = "TechCorp Solutions"
-job_title = "Software Developer"
-email = "alex.johnson@techcorp.com"
-message = (
-    "Hello, I'm interested in learning more about your services and would like to schedule a demo."
-)
+FORM_FIELDS = {
+    "firstName": "Alex",
+    "lastName": "Johnson",
+    "companyName": "TechCorp Solutions",
+    "jobTitle": "Software Developer",
+    "email": "alex.johnson@techcorp.com",
+    "project": (
+        "Hello, I'm interested in learning more about your services and would "
+        "like to schedule a demo."
+    ),
+}
 
 
-def main():
+async def main() -> None:
+    api_key = os.environ.get("BROWSERBASE_API_KEY")
+    if not api_key:
+        raise RuntimeError("BROWSERBASE_API_KEY is required")
+
     print("Starting Form Filling Example...")
-
-    # Initialize Stagehand with Browserbase for cloud-based browser automation
-    client = Stagehand(
-        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
-    )
-
-    # Start a new session
-    start_response = client.sessions.start(
-        model_name="openai/gpt-4.1",
-    )
-    session_id = start_response.data.session_id
-    print(f"Live View Link: https://browserbase.com/sessions/{session_id}")
-
+    browser = await browserbase.launch(api_key=api_key)
     try:
-        print("Stagehand initialized successfully!")
-
-        # Navigate to contact page
-        print("Navigating to Browserbase contact page...")
-        client.sessions.navigate(id=session_id, url="https://www.browserbase.com/contact")
-
-        # Fill form using individual act() calls for reliability
-        print("Filling in contact form...")
-
-        # Fill each field individually for better reliability
-        client.sessions.act(
-            id=session_id,
-            input=f'Fill in the first name field with "{first_name}"',
+        stagehand = await Stagehand.create(
+            browser=browser,
         )
-        client.sessions.act(
-            id=session_id,
-            input=f'Fill in the last name field with "{last_name}"',
-        )
-        client.sessions.act(
-            id=session_id,
-            input=f'Fill in the company field with "{company}"',
-        )
-        client.sessions.act(
-            id=session_id,
-            input=f'Fill in the job title field with "{job_title}"',
-        )
-        client.sessions.act(
-            id=session_id,
-            input=f'Fill in the email field with "{email}"',
-        )
-        client.sessions.act(
-            id=session_id,
-            input=f'Fill in the message field with "{message}"',
-        )
+        try:
+            pages = await browser.context.pages()
+            page = pages[0] if pages else await browser.context.new_page()
 
-        # Language choice in Stagehand act() is crucial for reliable automation.
-        # Use "click" for dropdown interactions rather than "select"
-        client.sessions.act(
-            id=session_id,
-            input="Click on the How Can we help? dropdown",
-        )
-        time.sleep(0.5)
-        client.sessions.act(
-            id=session_id,
-            input="Click on the first option from the dropdown",
-        )
+            print("Navigating to Browserbase contact page...")
+            await page.goto(
+                "https://www.browserbase.com/contact",
+                wait_until="domcontentloaded",
+                timeout=60_000,
+            )
+            await page.wait_for_timeout(1_500)
 
-        # Uncomment the line below if you want to submit the form
-        # client.sessions.act(id=session_id, input="Click the submit button")
+            field_prompts = {
+                "firstName": "first name",
+                "lastName": "last name",
+                "companyName": "company",
+                "jobTitle": "job title",
+                "email": "work email",
+                "project": "project description or message",
+            }
+            for name, label in field_prompts.items():
+                await stagehand.act(
+                    f"Fill the {label} field with %value%",
+                    page=page,
+                    variables={"value": FORM_FIELDS[name]},
+                )
 
-        print("Form filled successfully! Waiting 30 seconds...")
-        time.sleep(30)
+            await stagehand.act("Click the How Can We Help dropdown", page=page)
+            await stagehand.act("Click the demo option in the open dropdown", page=page)
 
-    except Exception as error:
-        print(f"Error during form filling: {error}")
-        raise
-
+            # Uncomment to submit the form:
+            # await stagehand.act("Click the submit button", page=page)
+            print("Form filled successfully")
+        finally:
+            await stagehand.close()
     finally:
-        client.sessions.end(id=session_id)
+        await browser.close()
         print("Session closed successfully")
 
 
 if __name__ == "__main__":
     try:
-        main()
-    except Exception as err:
-        print(f"Error in form filling example: {err}")
-        print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_API_KEY")
-        print("  - Ensure form fields are available on the contact page")
-        print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
-        exit(1)
+        asyncio.run(main())
+    except Exception as error:
+        print(f"Error in form filling example: {error}")
+        print("Docs: https://docs.stagehand.dev/v4/first-steps/introduction")
+        raise

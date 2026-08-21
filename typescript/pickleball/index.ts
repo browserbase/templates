@@ -1,8 +1,8 @@
 // SF Court Booking Automation - See README.md for full documentation
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
 import inquirer from "inquirer";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 async function loginToSite(stagehand: Stagehand, email: string, password: string): Promise<void> {
   console.log("Logging in...");
@@ -63,13 +63,13 @@ async function checkAndExtractCourts(stagehand: Stagehand, timeOfDay: string): P
   console.log("Checking for available courts...");
 
   // First observe the page to find all available court booking options.
-  const availableCourts = await stagehand.observe(
+  const { data: availableCourts } = await stagehand.observe(
     "Find all available court booking slots, time slots, or court reservation options",
   );
   console.log(`Found ${availableCourts.length} available court options`);
 
   // Extract structured court data using Zod schema for type safety and validation.
-  const courtData = await stagehand.extract(
+  const { data: courtData } = await stagehand.extract(
     "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
     z.object({
       courts: z.array(
@@ -113,13 +113,13 @@ async function checkAndExtractCourts(stagehand: Stagehand, timeOfDay: string): P
       await stagehand.act(`Select ${altTime} from the time period options`);
       await stagehand.act(`Click the Done button`);
 
-      const altAvailableCourts = await stagehand.observe(
+      const { data: altAvailableCourts } = await stagehand.observe(
         "Find all available court booking slots, time slots, or court reservation options",
       );
       console.log(`Found ${altAvailableCourts.length} available court options for ${altTime}`);
 
       if (altAvailableCourts.length > 0) {
-        const altCourtData = await stagehand.extract(
+        const { data: altCourtData } = await stagehand.extract(
           "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
           z.object({
             courts: z.array(
@@ -161,7 +161,7 @@ async function checkAndExtractCourts(stagehand: Stagehand, timeOfDay: string): P
   // If still no available courts found, extract final court data for display.
   if (!hasAvailableCourts) {
     console.log("Extracting final court information...");
-    const finalCourtData = await stagehand.extract(
+    const { data: finalCourtData } = await stagehand.extract(
       "Extract all available court booking information including court names, time slots, locations, and any other relevant details",
       z.object({
         courts: z.array(
@@ -253,7 +253,7 @@ async function bookCourt(stagehand: Stagehand): Promise<void> {
 
     // Extract booking confirmation details to verify successful reservation.
     console.log("Checking for booking confirmation...");
-    const confirmation = await stagehand.extract(
+    const { data: confirmation } = await stagehand.extract(
       "Extract any booking confirmation message, success notification, or reservation details",
       z.object({
         confirmationMessage: z.string().nullable().describe("any confirmation or success message"),
@@ -393,27 +393,22 @@ async function bookTennisPaddleCourt() {
 
   // Initialize Stagehand with Browserbase for AI-powered browser automation.
   console.log("Initializing Stagehand with Browserbase");
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 1,
-    // 0 = errors only, 1 = info, 2 = debug
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-    // https://docs.stagehand.dev/configuration/logging
-    model: "openai/gpt-4.1",
-    browserbaseSessionCreateParams: {
-      timeout: 900,
-      region: "us-west-2",
-    },
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+    api_timeout: 900,
+    region: "us-west-2",
+  });
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    model: { modelName: "openai/gpt-4.1" },
+    logging: { level: "info" },
   });
 
   try {
     // Start browser session and connect to SF Rec & Parks booking system.
-    await stagehand.init();
 
     console.log("Browserbase Session Started");
-    console.log(`Watch live: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`);
-
-    const page = stagehand.context.pages()[0];
+    const page = (await browser.context.pages())[0];
 
     // Navigate to SF Rec & Parks booking site with extended timeout for slow loading.
     console.log("Navigating to court booking site...");
@@ -433,6 +428,7 @@ async function bookTennisPaddleCourt() {
   } finally {
     // Always close browser session to release resources and clean up.
     await stagehand.close();
+    await browser.close();
     console.log("\nBrowser session closed");
   }
 }

@@ -3,11 +3,12 @@ name = "sec-filing-research"
 version = "0.1.0"
 description = "SEC Filing Research: Extract company and filing metadata from SEC EDGAR using Stagehand and Browserbase"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11,<3.14"
 dependencies = [
+    "beautifulsoup4==4.14.3",
     "pydantic",
     "python-dotenv",
-    "stagehand>=3.19.0",
+    "stagehand==4.0.0",
 ]
 
 [project.optional-dependencies]

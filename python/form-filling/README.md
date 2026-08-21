@@ -1,19 +1,19 @@
 # Stagehand + Browserbase: Form Filling Automation
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: showcase how to automate form filling with Stagehand and Browserbase.
 - Smart Form Automation: dynamically fill contact forms with variable-driven data.
-- Field Detection: analyze page structure with `observe` before interacting with fields.
-- AI-Powered Interaction: leverage Stagehand to map inputs to the right fields reliably.
+- AI-Powered Interaction: use `act()` to map each labeled input to the right field reliably.
+- Variable-driven actions: fill each form control with the supplied sample values.
   Docs → https://docs.browserbase.com/fundamentals/create-browser-session
 
 ## GLOSSARY
 
 - act: perform UI actions from a prompt (type, click, fill forms)
-  Docs → https://docs.stagehand.dev/basics/act
-- observe: analyze a page and return selectors or action plans before executing
-  Docs → https://docs.stagehand.dev/basics/observe
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - variable substitution: inject dynamic values into actions using `%variable%` syntax
 
 ## QUICKSTART
@@ -28,9 +28,7 @@
 
 - Initializes Stagehand session with Browserbase
 - Navigates to contact form page
-- Analyzes available form fields using observe
-- Fills form with sample data using variable substitution
-- Displays session recording link for monitoring
+- Fills form with sample data using `act()` and variable substitution
 - Closes session cleanly
 
 ## COMMON PITFALLS
@@ -56,7 +54,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

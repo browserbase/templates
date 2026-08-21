@@ -9,16 +9,29 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@9.15.0",
+  "packageManager": "pnpm@10.24.0",
   "type": "module",
   "dependencies": {
+    "@ai-sdk/mcp": "^2.0.29",
     "@browserbasehq/sdk": "^2.9.0",
-    "@browserbasehq/stagehand": "^3.2.0",
+    "@browserbasehq/stagehand-codemode": "github:browserbase/stagehand#54302fc5f13be5ad8e717d8e1388502de22be2ed&path:packages/integrations",
+    "ai": "^7.0.58",
     "dotenv": "^17.4.0"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
     "tsx": "^4.19.0",
     "typescript": "^5.8.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "@browserbasehq/stagehand": "4.0.0",
+      "@modelcontextprotocol/sdk": "1.29.0",
+      "zod": "4.4.3"
+    }
+  },
+  "//": "TODO: Replace this commit pin and its pnpm overrides with @browserbasehq/stagehand-codemode@4.0.0 after it is published.",
+  "engines": {
+    "node": ">=22.18.0"
   }
 }

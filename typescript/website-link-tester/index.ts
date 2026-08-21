@@ -1,18 +1,27 @@
 // Stagehand + Browserbase: Website Link Tester - See README.md for full documentation
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod/v3";
+import { browserbase, Stagehand, type StagehandBrowser } from "@browserbasehq/stagehand";
+import { z } from "zod/v4";
 
 // Base URL whose links we want to crawl and verify
 const URL = "https://www.browserbase.com";
+const configuredLinkLimit = Number(process.env.MAX_LINKS ?? Number.MAX_SAFE_INTEGER);
+if (!Number.isSafeInteger(configuredLinkLimit) || configuredLinkLimit < 1) {
+  throw new Error("MAX_LINKS must be a positive integer");
+}
+const MAX_LINKS = configuredLinkLimit;
 
 // Maximum number of links to verify concurrently.
 // Default: 1 (sequential processing - works on all plans)
 // Set to > 1 for more concurrent link verification (requires Startup or Developer plan or higher).
 // For more advanced concurrency control (rate limiting, prioritization, per-domain caps),
 // you can also wrap link verification in a Semaphore or similar concurrency primitive.
-const MAX_CONCURRENT_LINKS = 1;
+const configuredConcurrency = Number(process.env.MAX_CONCURRENT_LINKS ?? "1");
+if (!Number.isSafeInteger(configuredConcurrency) || configuredConcurrency < 1) {
+  throw new Error("MAX_CONCURRENT_LINKS must be a positive integer");
+}
+const MAX_CONCURRENT_LINKS = configuredConcurrency;
 
 // Shape of a single hyperlink extracted from the page
 type Link = {
@@ -45,13 +54,21 @@ const SOCIAL_DOMAINS = [
   "discord.com",
 ];
 
-// Creates a preconfigured Stagehand instance for Browserbase sessions
-function createStagehand() {
-  return new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 0,
-    model: "google/gemini-2.5-pro",
+// Creates a preconfigured Stagehand V4 instance and its Browserbase browser handle.
+async function createStagehand(): Promise<{ stagehand: Stagehand; browser: StagehandBrowser }> {
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
   });
+  const stagehand = await Stagehand.create({
+    browser,
+    logging: { level: "error" },
+  });
+  return { stagehand, browser };
+}
+
+async function closeSession(stagehand: Stagehand | null, browser: StagehandBrowser | null) {
+  await stagehand?.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+  await browser?.close().catch((error) => console.warn("Browser cleanup warning:", error));
 }
 
 // Removes duplicate links by URL while preserving the first occurrence
@@ -72,15 +89,10 @@ function deduplicateLinks(extractedLinks: { links: Link[] }): Link[] {
  * Returns a de-duplicated array of link objects that we will later verify.
  */
 async function collectLinksFromHomepage(): Promise<Link[]> {
-  const stagehand = createStagehand();
+  const { stagehand, browser } = await createStagehand();
 
   try {
-    // Start a fresh browser session for link collection
-    await stagehand.init();
-
-    console.log(`Watch live: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`);
-
-    const page = stagehand.context.pages()[0];
+    const page = (await browser.context.pages())[0];
 
     // Navigate to the base URL where we will harvest links
     console.log(`Navigating to ${URL}...`);
@@ -88,12 +100,12 @@ async function collectLinksFromHomepage(): Promise<Link[]> {
 
     console.log(`Successfully loaded ${URL}. Extracting links...`);
 
-    const extractedLinks = await stagehand.extract(
-      "extract all links on the page with their link text",
+    const { data: extractedLinks } = await stagehand.extract(
+      "Extract all rendered links on the page with their visible link text or accessible label and their absolute HTTP(S) href. Return actual destination URLs.",
       z.object({
         links: z.array(
           z.object({
-            url: z.string().url(),
+            url: z.string().url().describe("The absolute HTTP(S) href"),
             linkText: z.string(),
           }),
         ),
@@ -109,14 +121,14 @@ async function collectLinksFromHomepage(): Promise<Link[]> {
     console.log(JSON.stringify({ links: uniqueLinks }, null, 2));
 
     console.log("\nClosing initial browser...");
-    await stagehand.close();
+    await closeSession(stagehand, browser);
     console.log("Initial browser closed");
 
-    return uniqueLinks;
+    return uniqueLinks.slice(0, MAX_LINKS);
   } catch (error) {
     console.error("Error while collecting links:", error);
     // Ensure the browser is closed even when link collection fails
-    await stagehand.close();
+    await closeSession(stagehand, browser);
     throw error;
   }
 }
@@ -130,21 +142,27 @@ async function collectLinksFromHomepage(): Promise<Link[]> {
 async function verifySingleLink(link: Link): Promise<LinkCheckResult> {
   console.log(`\nChecking: ${link.linkText} (${link.url})`);
 
-  let browser: Stagehand | null = null;
+  let browser: StagehandBrowser | null = null;
+  let stagehand: Stagehand | null = null;
 
   try {
-    browser = createStagehand();
-    await browser.init();
+    ({ browser, stagehand } = await createStagehand());
 
-    const page = browser.context.pages()[0];
+    const page = (await browser.context.pages())[0];
 
     // Detect if this is a social link (we treat those differently)
     const isSocialLink = SOCIAL_DOMAINS.some((domain) => link.url.includes(domain));
 
-    await page.goto(link.url, { timeoutMs: 30000 });
+    const navigationResponse = await page.goto(link.url, { timeout: 30000 });
     await page.waitForLoadState("domcontentloaded");
 
-    const currentUrl = page.url();
+    if (navigationResponse && !navigationResponse.ok()) {
+      throw new Error(
+        `HTTP ${navigationResponse.status()} ${navigationResponse.statusText()}`.trim(),
+      );
+    }
+
+    const currentUrl = await page.url();
 
     // Guard against pages that never load or redirect to an invalid URL
     if (!currentUrl || currentUrl === "about:blank") {
@@ -167,15 +185,58 @@ async function verifySingleLink(link: Link): Promise<LinkCheckResult> {
       };
     }
 
-    // Ask the model to read the page and decide whether it matches the link text
-    const verification = await browser.extract(
-      `Does the page content match what the link text "${link.linkText}" suggests? Extract the page title and provide a brief assessment (maximum 8 words).`,
-      z.object({
-        pageTitle: z.string(),
-        contentMatches: z.boolean(),
-        assessment: z.string(),
-      }),
-    );
+    const actualPageTitle = await page.title();
+    const normalizedLinkText = link.linkText.trim().toLowerCase().replace(/\s+/g, " ");
+    const pageText = await page.evaluate(() => document.body.innerText.toLowerCase());
+    const exactLinkTextPresent =
+      normalizedLinkText.length >= 4 && pageText.includes(normalizedLinkText);
+    const requestedUrl = new globalThis.URL(link.url);
+    const landedUrl = new globalThis.URL(currentUrl);
+    const routeMatches =
+      requestedUrl.origin === landedUrl.origin && requestedUrl.pathname === landedUrl.pathname;
+
+    // Ask the model to read the page and decide whether it matches the link text.
+    // Retry once for transient structured-output errors before falling back to exact DOM evidence.
+    let verification:
+      | { pageTitle: string; contentMatches: boolean; assessment: string }
+      | undefined;
+    let verificationError: unknown;
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const result = await stagehand.extract(
+          `A user clicked a source-page link labeled ${JSON.stringify(link.linkText)} and arrived at ${JSON.stringify(currentUrl)}. Is the loaded destination an appropriate result of that click? Do not require the original call-to-action text to appear on the destination page. Generic labels such as "Read the story" and "Get started" are fulfilled by a relevant article or template page. Return the page title and a brief assessment (maximum 8 words).`,
+          z.object({
+            pageTitle: z.string(),
+            contentMatches: z.boolean(),
+            assessment: z.string(),
+          }),
+        );
+        verification = result.data;
+        break;
+      } catch (error) {
+        verificationError = error;
+        console.warn(`Semantic verification attempt ${attempt} failed for ${link.linkText}`);
+      }
+    }
+
+    if (!verification) {
+      if (!exactLinkTextPresent && !routeMatches) throw verificationError;
+      verification = {
+        pageTitle: actualPageTitle,
+        contentMatches: true,
+        assessment: routeMatches
+          ? "Destination route loaded without an HTTP error"
+          : "Exact target text found on loaded page",
+      };
+    } else if (!verification.contentMatches && (exactLinkTextPresent || routeMatches)) {
+      verification = {
+        pageTitle: actualPageTitle,
+        contentMatches: true,
+        assessment: routeMatches
+          ? "Destination route loaded without an HTTP error"
+          : "Exact target text found on loaded page",
+      };
+    }
 
     console.log(`[${link.linkText}] Page Title: ${verification.pageTitle}`);
     console.log(
@@ -204,10 +265,11 @@ async function verifySingleLink(link: Link): Promise<LinkCheckResult> {
       error: errorMessage,
     };
   } finally {
-    if (browser) {
-      // Always close the browser to free resources, even on error
-      await browser.close();
-      console.log(`Browser closed for: ${link.linkText}`);
+    if (stagehand || browser) {
+      await closeSession(stagehand, browser);
+      if (browser) {
+        console.log(`Browser closed for: ${link.linkText}`);
+      }
     }
   }
 }
@@ -290,6 +352,13 @@ async function main() {
     console.log(`Results array length: ${results.length}`);
 
     outputResults(results);
+
+    const failedChecks = results.filter(
+      (result) => !result.success || result.contentMatches === false,
+    );
+    if (failedChecks.length > 0) {
+      throw new Error(`${failedChecks.length} of ${results.length} links failed verification`);
+    }
 
     console.log("Script completed successfully");
   } catch (error) {

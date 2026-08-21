@@ -1,137 +1,101 @@
 // Browserbase Proxy Testing Script - See README.md for full documentation
 
-import { chromium } from "playwright-core";
-import { Browserbase } from "@browserbasehq/sdk";
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
-import dotenv from "dotenv";
+import { browserbase, Stagehand, type BrowserbaseLaunchOptions } from "@browserbasehq/stagehand";
+import { z } from "zod/v4";
+import "dotenv/config";
 
-dotenv.config();
+const GeoInfoSchema = z.object({
+  ip: z.string().min(1),
+  city: z.string().min(1),
+  region: z.string().min(1),
+  country: z.string().min(1),
+  loc: z.string().min(1),
+  timezone: z.string().min(1),
+  org: z.string().min(1),
+  postal: z.string().nullable(),
+  hostname: z.string().nullable(),
+});
 
-const bb = new Browserbase({ apiKey: process.env.BROWSERBASE_API_KEY! });
-
-async function createSessionWithBuiltInProxies() {
-  // Use Browserbase's default proxy rotation for enhanced privacy and IP diversity.
-  const session = await bb.sessions.create({
-    proxies: true, // Enables automatic proxy rotation across different IP addresses.
-  });
-  return session;
-}
-
-async function createSessionWithGeoLocation() {
-  // Route traffic through specific geographic location to test location-based restrictions.
-  const session = await bb.sessions.create({
-    proxies: [
-      {
-        type: "browserbase", // Use Browserbase's managed proxy infrastructure.
-        geolocation: {
-          city: "NEW_YORK", // Simulate traffic from New York for testing geo-specific content.
-          state: "NY", // See https://docs.browserbase.com/features/proxies for more geolocation options.
-          country: "US",
-        },
-      },
-    ],
-  });
-  return session;
-}
-
-async function createSessionWithCustomProxies() {
-  // Use external proxy servers for custom routing or specific proxy requirements.
-  const session = await bb.sessions.create({
-    proxies: [
-      {
-        type: "external", // Connect to your own proxy server infrastructure.
-        server: "http://...", // Your proxy server endpoint.
-        username: "user", // Authentication credentials for proxy access.
-        password: "pass",
-      },
-    ],
-  });
-  return session;
-}
+type GeoInfo = z.infer<typeof GeoInfoSchema>;
 
 async function testSession(
-  sessionFunction: () => Promise<{ id: string; connectUrl: string }>,
+  proxies: BrowserbaseLaunchOptions["proxies"],
   sessionName: string,
-) {
+): Promise<GeoInfo> {
   console.log(`\n=== Testing ${sessionName} ===`);
 
-  // Create session with specific proxy configuration to test different routing scenarios.
-  const session = await sessionFunction();
-  console.log("Session URL: https://browserbase.com/sessions/" + session.id);
-
-  // Connect to browser via CDP to control the session programmatically.
-  const browser = await chromium.connectOverCDP(session.connectUrl);
-  const defaultContext = browser.contexts()[0];
-  if (!defaultContext) {
-    throw new Error("No default context found");
-  }
-  const page = defaultContext.pages()[0];
-  if (!page) {
-    throw new Error("No page found in default context");
-  }
-
-  // Initialize Stagehand for structured data extraction
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 1,
-    // 0 = errors only, 1 = info, 2 = debug
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-    // https://docs.stagehand.dev/configuration/logging
-    model: "openai/gpt-4.1",
-    browserbaseSessionID: session.id, // Use the existing Browserbase session
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+    proxies,
+  });
+  const stagehand = await Stagehand.create({
+    browser,
+    logging: { level: "error" },
   });
 
   try {
-    // Initialize Stagehand
-    await stagehand.init();
+    console.log("Browserbase session launched");
+    const page = (await browser.context.pages())[0];
 
-    const stagehandPage = stagehand.context.pages()[0];
-
-    // Navigate to IP info service to verify proxy location and IP address.
-    await stagehandPage.goto("https://ipinfo.io/json", {
-      waitUntil: "domcontentloaded",
-    });
-
-    // Extract structured IP and location data using Stagehand and Zod schema
-    const geoInfo = await stagehand.extract(
-      "Extract all IP information and geolocation data from the JSON response",
-      z.object({
-        ip: z.string().optional().describe("The IP address"),
-        city: z.string().optional().describe("The city name"),
-        region: z.string().optional().describe("The state or region"),
-        country: z.string().optional().describe("The country code"),
-        loc: z.string().optional().describe("The latitude and longitude coordinates"),
-        timezone: z.string().optional().describe("The timezone"),
-        org: z.string().optional().describe("The organization or ISP"),
-        postal: z.string().optional().describe("The postal code"),
-        hostname: z.string().optional().describe("The hostname if available"),
-      }),
-    );
+    // These services report the public IP observed after Browserbase applies the proxy.
+    // Keep a second provider because public IP endpoints occasionally reject cloud traffic.
+    let geoInfo: GeoInfo | undefined;
+    let endpointError: unknown;
+    for (const endpoint of ["https://ipinfo.io/json", "https://ifconfig.co/json"]) {
+      try {
+        await page.goto(endpoint, { waitUntil: "domcontentloaded" });
+        const extracted = await stagehand.extract(
+          "Extract the complete IP geolocation record shown in this JSON response. Return country as its two-letter code, loc as latitude,longitude, timezone as its IANA name, org as the network organization, and null for missing postal or hostname values.",
+          GeoInfoSchema,
+        );
+        geoInfo = extracted.data;
+        break;
+      } catch (error) {
+        endpointError = error;
+        console.warn(`Could not read ${endpoint}; trying the next geolocation endpoint`);
+      }
+    }
+    if (!geoInfo) throw endpointError ?? new Error("No IP geolocation endpoint succeeded");
 
     console.log("Geo Info:", JSON.stringify(geoInfo, null, 2));
-
-    // Close Stagehand session
-    await stagehand.close();
-  } catch (error) {
-    console.error("Error during Stagehand extraction:", error);
+    console.log(`${sessionName} test completed`);
+    return geoInfo;
+  } finally {
+    await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+    await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
   }
-
-  // Close browser to release resources and end the test session.
-  await browser.close();
-  console.log(`${sessionName} test completed`);
 }
 
 async function main() {
-  // Test 1: Built-in proxies - Verify default proxy rotation works and shows different IPs.
-  await testSession(createSessionWithBuiltInProxies, "Built-in Proxies");
+  const builtIn = await testSession(true, "Built-in Proxies");
 
-  // Test 2: Geolocation proxies - Confirm traffic routes through specified location (New York).
-  await testSession(createSessionWithGeoLocation, "Geolocation Proxies (New York)");
+  const newYork = await testSession(
+    [
+      {
+        type: "browserbase",
+        geolocation: { city: "NEW_YORK", state: "NY", country: "US" },
+      },
+    ],
+    "Geolocation Proxies (New York)",
+  );
 
-  // Test 3: Custom external proxies - Enable if you have a custom proxy server set up.
-  // await testSession(createSessionWithCustomProxies, "Custom External Proxies");
-  console.log("\n=== All tests completed ===");
+  if (
+    newYork.country !== "US" ||
+    !/^(?:new york|new jersey|ny|nj)$/i.test(newYork.region.trim()) ||
+    newYork.timezone !== "America/New_York"
+  ) {
+    throw new Error(
+      `Expected a New York-region proxy; received ${newYork.city}, ${newYork.region}, ${newYork.country}`,
+    );
+  }
+  if (builtIn.ip === newYork.ip) {
+    throw new Error("Built-in and geolocation proxy sessions returned the same IP");
+  }
+
+  console.log("\n=== All proxy tests completed with distinct IPs ===");
 }
 
-main();
+main().catch((error) => {
+  console.error("Proxy test failed:", error);
+  process.exit(1);
+});

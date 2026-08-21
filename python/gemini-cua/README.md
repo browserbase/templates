@@ -1,57 +1,47 @@
-# Stagehand + Browserbase: Computer Use Agent (CUA) Example
+# Gemini browser agent with Stagehand V4
 
-## AT A GLANCE
+Stagehand is the SDK for browser agents.
 
-- Goal: demonstrate autonomous web browsing using Google's Computer Use Agent with Stagehand and Browserbase.
-- Uses Stagehand Agent to automate complex workflows with AI powered browser agents
-- Leverages Google's gemini-2.5-computer-use-preview model for autonomous web interaction and decision-making.
+This template pairs a bring-your-own Gemini model with LangChain Deep Agents and Stagehand V4 code
+mode. The agent researches the next two visible solar eclipses in North America, cross-checks live
+NASA and Timeanddate sources, and cites only URLs it opened in the browser.
 
-## GLOSSARY
+## How it works
 
-- agent: create an autonomous AI agent that can execute complex multi-step tasks
-  Docs → https://docs.stagehand.dev/basics/agent#what-is-agent
+- `create_deep_agent` owns the Gemini reasoning and tool loop.
+- Stagehand code mode exposes one persistent Browserbase session through `run`, `snapshot`, and
+  `screenshot` MCP tools.
+- Vercel AI Gateway provides the Gemini model through its OpenAI-compatible endpoint.
+- Closing the MCP session shuts down the Stagehand client and Browserbase browser.
 
-## QUICKSTART
+## Quickstart
 
-1.  uv venv venv
-2.  source venv/bin/activate # On Windows: venv\Scripts\activate
-3.  pip install -r requirements.txt
-4.  cp .env.example .env # Add your Browserbase API key and Google API key to .env
-5.  python main.py
+Requirements: Python 3.11–3.13 and [uv](https://docs.astral.sh/uv/).
 
-## EXPECTED OUTPUT
+```bash
+cp .env.example .env
+# Add BROWSERBASE_API_KEY and AI_GATEWAY_API_KEY to .env.
+uv sync
+uv run python main.py
+```
 
-- Initializes Stagehand session with Browserbase
-- Navigates to Google search engine
-- Executes autonomous search and data extraction task
-- Displays live session link for monitoring
-- Returns structured results or completion status
-- Closes session cleanly
+The first run installs the pinned Stagehand Deep Agents integration in `uvx`; the integration pins
+its Stagehand server dependency to `stagehand==4.0.0`.
 
-## COMMON PITFALLS
+## Expected outcome
 
-- "ModuleNotFoundError": ensure all dependencies are installed via pip
-- Missing credentials: verify .env contains BROWSERBASE_API_KEY and GOOGLE_API_KEY
-- Google API access: ensure you have access to Google's gemini-2.5-computer-use-preview model
-- Import errors: activate your virtual environment if you created one
+The agent returns the expected dates of the next two visible solar eclipses in North America and
+the live source URLs it opened. The script exits nonzero only when the agent workflow itself fails.
 
-## USE CASES
+## Configuration
 
-• Autonomous research: Let AI agents independently research topics, gather information, and compile reports without manual intervention.
-• Complex web workflows: Automate multi-step processes that require decision-making, form filling, and data extraction across multiple pages.
-• Content discovery: Search for specific information, verify data accuracy, and cross-reference sources autonomously.
+- `BROWSERBASE_API_KEY`: launches the Browserbase session.
+- `AI_GATEWAY_API_KEY`: authenticates Gemini through Vercel AI Gateway.
+- `DEEPAGENTS_MODEL`: optional model override; defaults to `google/gemini-3-flash-preview`.
+- `STAGEHAND_RUN_TIMEOUT_MS`: optional browser-tool timeout; defaults to 120 seconds.
 
-## NEXT STEPS
+## Resources
 
-• Customize instructions: Modify the instruction variable to test different autonomous tasks and scenarios.
-• Add error handling: Implement retry logic, fallback strategies, and better error recovery for failed agent actions.
-• Extend capabilities: Add support for file downloads, form submissions, and more complex interaction patterns.
-
-## HELPFUL RESOURCES
-
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
-🎮 Browserbase: https://www.browserbase.com
-💡 Try it out: https://www.browserbase.com/playground
-🔧 Templates: https://www.browserbase.com/templates
-📧 Need help? support@browserbase.com
-💬 Discord: http://stagehand.dev/discord
+- [Stagehand V4 documentation](https://docs.stagehand.dev/v4)
+- [Stagehand Deep Agents integration](https://github.com/browserbase/stagehand/tree/main/packages/integrations/deepagents)
+- [Vercel AI Gateway Python integration](https://vercel.com/docs/ai-gateway/sdks-and-apis/python)

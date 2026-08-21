@@ -1,62 +1,34 @@
-# Stagehand + Browserbase: Business Lookup with Agent
+# Stagehand Code Mode + Vercel AI SDK: Business Lookup
 
 ## AT A GLANCE
 
-- Goal: Automate business registry searches using an autonomous AI agent with computer-use capabilities.
-- Uses Stagehand Agent in CUA mode to navigate complex UI elements, apply filters, and extract structured business data.
-- Demonstrates extraction with Zod schema validation for consistent data retrieval.
-- Docs → https://docs.stagehand.dev/basics/agent
-
-## GLOSSARY
-
-- agent: create an autonomous AI agent that can execute complex multi-step tasks
-  Docs → https://docs.stagehand.dev/basics/agent#what-is-agent
-- extract: extract structured data from web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/basics/extract
+- Goal: give an external agent a Browserbase browser and have it research one SF business record.
+- Agent framework: Vercel AI SDK `ToolLoopAgent` owns the reasoning loop.
+- Browser tool: Stagehand code mode exposes one stateful MCP tool, `code_execute`.
+- Stagehand is the SDK for browser agents.
 
 ## QUICKSTART
 
-1. npm install
-2. cp .env.example .env
-3. Add required API keys/IDs to .env
-4. npm start
+1. `cd business-lookup`
+2. `pnpm install`
+3. Add `BROWSERBASE_API_KEY` and `AI_GATEWAY_API_KEY` to `.env`
+4. `pnpm start`
+
+Set `AGENT_MODEL` to override the default `anthropic/claude-sonnet-4.6` outer-agent model.
 
 ## EXPECTED OUTPUT
 
-- Initializes Stagehand session with Browserbase
-- Displays live session link for monitoring
-- Navigates to SF Business Registry search page
-- Agent searches for business using DBA Name filter
-- Agent completes search and opens business details
-- Extracts structured business information (DBA Name, Account Number, NAICS Code, etc.)
-- Outputs extracted data as JSON
-- Closes session cleanly
+- The AI SDK starts the packaged Stagehand code-mode MCP over stdio.
+- The agent uses `code_execute` to search the SF business registry.
+- The final result is validated against a Zod schema and printed as JSON.
+- Closing the MCP client closes Stagehand and the Browserbase browser.
 
-## COMMON PITFALLS
+## SAFETY
 
-- Dependency install errors: ensure npm install completed
-- Missing credentials: verify .env contains BROWSERBASE_API_KEY and GOOGLE_API_KEY
-- Google API access: ensure you have access to Google's gemini-2.5-computer-use-preview-10-2025 model
-- Agent failures: check that the business name exists in the registry and that maxSteps is sufficient for complex searches
-- Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in
+Code mode executes model-authored JavaScript and is not itself a security sandbox. Run it inside an isolation boundary when prompts or pages are untrusted.
 
-## USE CASES
+## RESOURCES
 
-• Business verification: Automate registration status checks, license validation, and compliance verification for multiple businesses.
-• Data enrichment: Collect structured business metadata (NAICS codes, addresses, ownership) for research or CRM updates.
-• Due diligence: Streamline background checks by autonomously searching and extracting business registration details from public registries.
-
-## NEXT STEPS
-
-• Parameterize search: Accept business names as command-line arguments or from a CSV file for batch processing.
-• Expand extraction: Add support for additional fields like tax status, licenses, or historical registration changes.
-• Multi-registry support: Extend agent to search across multiple city or state business registries with routing logic.
-
-## HELPFUL RESOURCES
-
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
-🎮 Browserbase: https://www.browserbase.com
-💡 Try it out: https://www.browserbase.com/playground
-🔧 Templates: https://www.browserbase.com/templates
-📧 Need help? support@browserbase.com
-💬 Discord: http://stagehand.dev/discord
+- Stagehand: https://docs.stagehand.dev
+- Vercel AI SDK agents: https://ai-sdk.dev/docs/agents/building-agents
+- Vercel AI SDK MCP tools: https://ai-sdk.dev/docs/ai-sdk-core/mcp-tools

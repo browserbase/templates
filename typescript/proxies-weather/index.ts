@@ -1,8 +1,8 @@
 // Stagehand + Browserbase: Weather Proxy Demo - See README.md for full documentation
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
+import { z } from "zod/v4";
 
 interface GeolocationConfig {
   city: string;
@@ -15,7 +15,32 @@ interface WeatherResult {
   country: string;
   temperature: number;
   unit: string;
+  conditions: string;
+  reportedLocation: string;
+  reportedCountry: string;
   error?: string;
+}
+
+const WeatherSchema = z.object({
+  temperature: z.number().describe("Current temperature in degrees Celsius"),
+  conditions: z.string().min(1).describe("Current weather description"),
+  reportedLocation: z.string().min(1).describe("Nearest reported city or area"),
+  reportedCountry: z.string().min(1).describe("Reported country name"),
+});
+
+const EXPECTED_COUNTRIES: Record<string, string> = {
+  US: "United States",
+  GB: "United Kingdom",
+  JP: "Japan",
+  BR: "Brazil",
+};
+
+async function closeSession(
+  stagehand: Stagehand,
+  browser: Awaited<ReturnType<typeof browserbase.launch>>,
+) {
+  await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+  await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
 }
 
 // Fetches weather data for a specific location using geolocation proxies
@@ -27,75 +52,83 @@ async function getWeatherForLocation(geolocation: GeolocationConfig): Promise<We
 
   // Initialize Stagehand with geolocation proxy configuration
   // This ensures all browser traffic routes through the specified geographic location
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 0,
-    // 0 = errors only, 1 = info, 2 = debug
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-    // https://docs.stagehand.dev/configuration/logging
-    browserbaseSessionCreateParams: {
-      proxies: [
-        {
-          type: "browserbase", // Use Browserbase's managed proxy infrastructure for reliable geolocation routing
-          geolocation: {
-            city: geolocation.city, // City name (case-insensitive, e.g., "NEW_YORK", "new_york", "New York" all work)
-            country: geolocation.country, // ISO country code (case-insensitive, e.g., "US", "us", "gb", "GB" all work)
-            ...(geolocation.state && { state: geolocation.state }), // State required for US locations (case-insensitive)
-          },
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+    proxies: [
+      {
+        type: "browserbase", // Use Browserbase's managed proxy infrastructure for reliable geolocation routing
+        geolocation: {
+          city: geolocation.city, // City name (case-insensitive, e.g., "NEW_YORK", "new_york", "New York" all work)
+          country: geolocation.country, // ISO country code (case-insensitive, e.g., "US", "us", "gb", "GB" all work)
+          ...(geolocation.state && { state: geolocation.state }), // State required for US locations (case-insensitive)
         },
-      ],
-    },
+      },
+    ],
   });
+  const stagehand = await Stagehand.create({ browser: browser, logging: { level: "error" } });
 
   try {
     // Initialize browser session to start automation
     console.log(`Initializing Stagehand for ${cityName}...`);
-    await stagehand.init();
+
     console.log(`Stagehand initialized successfully for ${cityName}`);
 
-    const page = stagehand.context.pages()[0];
+    const page = (await browser.context.pages())[0];
 
     // Navigate to weather service - geolocation proxy ensures location-specific weather data
     console.log(`Navigating to weather service for ${cityName}...`);
-    await page.goto("https://www.windy.com/", {
-      waitUntil: "networkidle", // Wait for network to be idle to ensure weather data is loaded
+    await page.goto("https://wttr.in/?format=j1", {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
     });
     console.log(`Page loaded for ${cityName}`);
 
-    // Wait a bit for weather data to render
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
-    // Extract structured temperature data using Stagehand and Zod schema for type safety
-    console.log(`Extracting temperature data for ${cityName}...`);
-    const extractResult = await stagehand.extract(
-      "Extract the current temperature and its unit",
-      z.object({
-        temperature: z.number().describe("The current temperature value"),
-        unit: z.string().describe("The temperature unit)"),
-      }),
+    // wttr.in derives the location from the proxied IP and returns current
+    // conditions as JSON; Stagehand turns that response into the template schema.
+    console.log(`Extracting current weather data for ${cityName}...`);
+    const { data: weather } = await stagehand.extract(
+      "Extract the current temperature in Celsius, weather description, nearest reported city or area, and reported country from this weather JSON",
+      WeatherSchema,
     );
+    const { temperature, conditions, reportedLocation, reportedCountry } = weather;
+
+    const expectedCountry = EXPECTED_COUNTRIES[geolocation.country];
+    if (!Number.isFinite(temperature)) {
+      throw new Error("Weather service did not return a numeric current temperature");
+    }
+    if (!reportedCountry.toLowerCase().includes(expectedCountry.toLowerCase())) {
+      throw new Error(
+        `Proxy location mismatch: expected ${expectedCountry}, received ${reportedCountry}`,
+      );
+    }
 
     console.log(
-      `Successfully extracted weather data for ${cityName}: ${extractResult.temperature} ${extractResult.unit}`,
+      `Successfully read weather near ${reportedLocation}, ${reportedCountry}: ${temperature} °C, ${conditions}`,
     );
 
     // Close Stagehand session to release resources
-    await stagehand.close();
+    await closeSession(stagehand, browser);
 
     return {
       city: cityName,
       country: geolocation.country,
-      temperature: extractResult.temperature,
-      unit: extractResult.unit,
+      temperature,
+      unit: "°C",
+      conditions,
+      reportedLocation,
+      reportedCountry,
     };
   } catch (error) {
-    await stagehand.close();
+    await closeSession(stagehand, browser);
     console.error(`Error getting weather for ${cityName}:`, error);
     return {
       city: cityName,
       country: geolocation.country,
       temperature: 0,
       unit: "",
+      conditions: "",
+      reportedLocation: "",
+      reportedCountry: "",
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -110,7 +143,9 @@ function displayResults(results: WeatherResult[]) {
     if (result.error) {
       console.log(`${result.city}, ${result.country}: Error - ${result.error}`);
     } else {
-      console.log(`${result.city}, ${result.country}: ${result.temperature} ${result.unit}`);
+      console.log(
+        `${result.city}, ${result.country}: ${result.temperature} ${result.unit}, ${result.conditions} (reported near ${result.reportedLocation}, ${result.reportedCountry})`,
+      );
     }
   }
 }
@@ -162,6 +197,13 @@ async function main() {
   // Display all results in formatted summary
   displayResults(results);
 
+  const failures = results.filter((result) => result.error);
+  if (failures.length > 0) {
+    throw new Error(
+      `Weather extraction failed for ${failures.length} of ${results.length} locations`,
+    );
+  }
+
   console.log("\n=== All locations completed ===");
 }
 
@@ -173,6 +215,6 @@ main().catch((err) => {
     "  - Verify geolocation proxy locations are valid (see https://docs.browserbase.com/features/proxies)",
   );
   console.error("  - Ensure locations array is properly configured");
-  console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
+  console.error("Docs: https://docs.stagehand.dev/v4/first-steps/introduction");
   process.exit(1);
 });

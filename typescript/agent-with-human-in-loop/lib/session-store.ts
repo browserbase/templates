@@ -25,14 +25,20 @@ export interface SessionState {
 
 const sessions = new Map<string, SessionState>();
 
-export function createSession(id: string, debuggerUrl: string, bbSessionId: string): SessionState {
+export function createSession(id: string): SessionState {
   const state: SessionState = {
     status: "running",
-    debuggerUrl,
-    sessionId: bbSessionId,
   };
   sessions.set(id, state);
   return state;
+}
+
+export function setSessionBrowser(id: string, debuggerUrl: string, bbSessionId: string) {
+  const session = sessions.get(id);
+  if (session) {
+    session.debuggerUrl = debuggerUrl;
+    session.sessionId = bbSessionId;
+  }
 }
 
 export function getSession(id: string): SessionState | undefined {

@@ -1,61 +1,51 @@
-# Stagehand + Browserbase + Exa: Intelligent Job Application Automation
+# Stagehand + Browserbase + Exa: Review Job Applications
+
+Stagehand is the SDK for browser agents.
 
 ## AT A GLANCE
 
-- **Goal**: Automate job applications with AI that writes smart, tailored responses for each role.
-- **Pattern Template**: Shows how to combine Exa (find companies & jobs) + Browserbase (control browser) + Stagehand Agent (fill forms smartly).
-- **Workflow**: Exa finds companies you want, then finds their careers pages. Browserbase opens the page, Stagehand reads the job posting, and an AI agent fills out the application form with answers tailored to that specific job.
-- **Plans**: Sequential mode works on all plans; concurrent applications and proxies require Startup or Developer plan or higher ([concurrency](https://docs.browserbase.com/guides/concurrency-rate-limits), [proxies](https://docs.browserbase.com/features/proxies)).
-- Docs → [Stagehand Agent](https://docs.stagehand.dev/basics/agent) | [Exa Search](https://docs.exa.ai/reference/search) | [Stagehand Extract](https://docs.stagehand.dev/basics/extract)
+- **Goal**: Discover live jobs, extract structured role details, and prepare applications for human review.
+- **Pattern**: Exa finds direct careers or ATS pages; Stagehand V4 uses `act`, `extract`, and `observe` to inspect and fill them.
+- **Safety**: Fills only non-empty supplied applicant values, uploads a test résumé when requested, and never submits.
+- **Plans**: Sequential mode works on all plans. Bounded concurrency is opt-in and requires sufficient Browserbase concurrency.
+- Docs → [Stagehand V4](https://docs.stagehand.dev/v4/first-steps/introduction) | [Stagehand Python](https://docs.stagehand.dev/v4/sdk/python) | [Exa Search](https://docs.exa.ai/reference/search)
 
 ## THE 5-STEP FLOW
 
-1. **Search for companies** — Exa finds companies matching your criteria (e.g., "AI startups in SF")
-2. **Find careers pages** — For each company, Exa searches for their careers/jobs page
-3. **Extract job details** — Stagehand reads the job posting and extracts structured data (title, requirements, responsibilities)
-4. **Smart form filling** — AI agent fills out application fields with tailored responses based on the job description
-5. **Resume upload** — Playwright handles file uploads for resume/CV attachments
+1. **Discover jobs** — one focused Exa search returns a small ranked set of direct company careers or recognized ATS pages.
+2. **Inspect a role** — `act()` opens one live role and `extract()` returns its title, requirements, and responsibilities.
+3. **Inspect the application** — `act()` opens the form and `observe()` inventories its fields.
+4. **Prepare for review** — `act()` fills matching non-empty applicant values; the exact file input uploads the résumé.
+5. **Report, do not submit** — a final `extract()` summarizes the review and the required fields that remain.
 
-## GLOSSARY
-
-- **agent**: An AI that can plan and do multi-step tasks on its own. It looks at the page and decides what to do next without needing step-by-step instructions.
-  Docs → https://docs.stagehand.dev/basics/agent
-- **extract**: Pull structured data from web pages. You define what you want (job title, requirements, etc.) and it returns clean JSON.
-  Docs → https://docs.stagehand.dev/basics/extract
-- **Exa Search**: AI search engine that finds relevant web content. Can search for companies, find similar pages, and filter by date.
-  Docs → https://docs.exa.ai/reference/search
-- **Tailored responses**: The AI reads the job requirements and writes custom answers for cover letters and open-ended questions that highlight relevant skills.
+Direct page methods are limited to exact navigation, résumé upload, and session lifecycle. They do not replace Stagehand's primary interaction primitives.
 
 ## QUICKSTART
 
-1. cd exa-browserbase
-2. uv pip install -e .
-3. playwright install chromium
-4. cp .env.example .env
-5. Add required API keys to .env:
-   - `BROWSERBASE_API_KEY` — from Browserbase
-   - `EXA_API_KEY` — from https://dashboard.exa.ai/api-keys
-6. Update `APPLICATION_DETAILS` dict in main.py with candidate information
-7. Update `resume_path` to point to your PDF resume
-8. uv run python main.py
+1. `cd exa-browserbase`
+2. `uv sync`
+3. `cp .env.example .env`
+4. Add `BROWSERBASE_API_KEY` and `EXA_API_KEY` to `.env`.
+5. Replace the synthetic `APPLICANT` and `Dummy_CV.pdf` with your test data.
+6. `uv run python main.py`
 
-## EXPECTED OUTPUT
+The default run reviews one application sequentially, trying up to three ranked candidates when an earlier live result has no usable form. For a small, repeatable smoke run, set `COMPANY_QUERY=Browserbase NUM_COMPANIES=1`.
 
-- Uses your exact info for name, email, phone
-- Writes custom answers for open-ended questions
-- Creates a tailored cover letter based on the job
-- Handles location and visa questions smartly
-- Stops before submitting (for testing/review purposes)
-- Closes session cleanly
+Set `NUM_COMPANIES` to review more candidates. Set `CONCURRENT=true MAX_CONCURRENT_BROWSERS=2` to opt into bounded concurrent sessions.
+
+## RESULT CONTRACT
+
+- A run succeeds when it reaches at least one real application and returns a review.
+- `fields_attempted` lists the fields whose Stagehand actions reported success; it is intentionally not a claim that every ATS persisted every value.
+- `resume_uploaded` reports that the deterministic file-upload command completed without throwing; persistence is left to external E2E validation.
+- Null, empty, absent, or ambiguous fields remain outstanding instead of being invented or treated as infrastructure failures.
+- The final submit button is never clicked.
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
-📚 Stagehand Python SDK: https://docs.stagehand.dev/v3/sdk/python
-📚 Stagehand Agent: https://docs.stagehand.dev/basics/agent
-📚 Exa API Key: https://dashboard.exa.ai/api-keys
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
+📚 Stagehand Python SDK: https://docs.stagehand.dev/v4/sdk/python
+📚 Exa API: https://docs.exa.ai/reference/search
 🎮 Browserbase: https://www.browserbase.com
-💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates
-📧 Need help? support@browserbase.com
 💬 Discord: http://stagehand.dev/discord

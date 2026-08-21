@@ -11,8 +11,8 @@
 
 import "dotenv/config";
 import Browserbase from "@browserbasehq/sdk";
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
+import { z } from "zod/v4";
 
 // ============= CONFIGURATION =============
 
@@ -100,18 +100,19 @@ async function tryFetchApi(url: string): Promise<{ content: string; statusCode: 
     // here to have Browserbase return cleaner content or structured data
     // directly — see https://docs.browserbase.com/platform/fetch/overview
     const data = await bb.fetchAPI.create({ url, allowRedirects: true });
+    const content = typeof data.content === "string" ? data.content : JSON.stringify(data.content);
 
     console.log(
-      `[Fetch API] Got response: status=${data.statusCode}, length=${data.content.length} chars`,
+      `[Fetch API] Got response: status=${data.statusCode}, length=${content.length} chars`,
     );
 
-    const fallbackReason = needsBrowserFallback(data.content, data.statusCode);
+    const fallbackReason = needsBrowserFallback(content, data.statusCode);
     if (fallbackReason) {
       console.log(`[Fetch API] Content not usable — ${fallbackReason}`);
       return null;
     }
 
-    return { content: data.content, statusCode: data.statusCode };
+    return { content, statusCode: data.statusCode };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     console.log(`[Fetch API] Failed: ${message}`);
@@ -137,39 +138,35 @@ function parseFromHtml(html: string): { title: string; linkCount: number } {
 async function extractWithBrowser(url: string) {
   console.log("\n[Browser] Starting Stagehand session...");
 
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 1,
-    model: "google/gemini-2.5-flash",
-    browserbaseSessionCreateParams: {
-      proxies: true,
-      browserSettings: {
-        advancedStealth: true,
-        blockAds: true,
-        solveCaptchas: true,
-      },
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+    proxies: true,
+    browserSettings: {
+      advancedStealth: true,
+      blockAds: true,
+      solveCaptchas: true,
     },
+  });
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    logging: { level: "info" },
   });
 
   try {
-    await stagehand.init();
-    console.log(
-      `[Browser] Live View: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`,
-    );
-
-    const page = stagehand.context.pages()[0];
+    const page = (await browser.context.pages())[0];
     await page.goto(url);
 
     console.log("[Browser] Page loaded, extracting structured data with AI...");
 
-    const data = await stagehand.extract(
+    const { data: data } = await stagehand.extract(
       "Extract the page title and all the main items/articles/entries visible on this page. For each item get its title, URL, and any metadata like score, author, or timestamp.",
       PageDataSchema,
     );
 
     return data;
   } finally {
-    await stagehand.close();
+    await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+    await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
     console.log("[Browser] Session closed");
   }
 }

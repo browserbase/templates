@@ -3,12 +3,12 @@ name = "amazon-global-price-comparison"
 version = "0.1.0"
 description = "Compare Amazon product prices across multiple countries using geolocation proxies"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "browserbase>=1.7.0",
     "python-dotenv",
     "pydantic>=2.0.0",
-    "stagehand>=3.19.0",
+    "stagehand==4.0.0",
 ]
 
 [project.optional-dependencies]

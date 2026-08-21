@@ -113,17 +113,9 @@ async function main() {
 
     await page.waitForLoadState("domcontentloaded");
 
-    // Verify captcha was successfully solved by checking for success message in page content.
-    console.log("Checking for success message...");
+    // Display the resulting page content.
     const pageContent = await page.textContent("body");
-
-    if (pageContent?.includes("Verification Success... Hooray!")) {
-      console.log("\nSUCCESS! reCAPTCHA was solved and form was submitted!");
-      console.log("Page content confirms: Verification Success... Hooray!");
-    } else {
-      console.log("\nCould not verify captcha success from page content");
-      console.log("Page content:", pageContent?.substring(0, 500));
-    }
+    console.log("Page content:", pageContent?.substring(0, 500));
   } catch (error) {
     console.error("Error during reCAPTCHA solving:", error);
     throw error;

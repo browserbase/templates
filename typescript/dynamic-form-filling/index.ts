@@ -1,82 +1,49 @@
-// Dynamic Form Filling with Agent - See README.md for full documentation
+// Dynamic Form Filling with a bring-your-own agent - See README.md for full documentation
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
+import { createMCPClient } from "@ai-sdk/mcp";
+import { Experimental_StdioMCPTransport } from "@ai-sdk/mcp/mcp-stdio";
+import { ToolLoopAgent, stepCountIs } from "ai";
 
-// Trip details to be used for form filling
+const childEnv = Object.fromEntries(
+  Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
+);
+
 const tripDetails = `I'm planning a Summer in Japan. We're going to Tokyo, Kyoto, and Osaka (Japan) for 14 days. There will be 2 of us, and our budget is around $3,500 USD. We have a couple of dietary needs: vegetarian, and no shellfish. For activities, we'd love food tours, historical sites and temples, nature/scenic walks, local markets, and generally an itinerary that's easy to do with public transit. For accommodation, we prefer mid-range hotels or a traditional ryokan. We like a relaxed pace, with maybe a few busier days mixed in. It's our first time in Japan, and we'd love help balancing must-see attractions with less touristy experiences, plus recommendations for vegetarian-friendly restaurants.`;
 
 async function main() {
-  // Initialize Stagehand with Browserbase for cloud-based browser automation.
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 0,
+  const mcpClient = await createMCPClient({
+    transport: new Experimental_StdioMCPTransport({
+      command: "stagehand-codemode",
+      env: childEnv,
+      stderr: "inherit",
+    }),
   });
 
   try {
-    // Initialize browser session to start automation.
-    await stagehand.init();
-    console.log(`Stagehand Session Started`);
-    console.log(`Watch live: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`);
+    const tools = await mcpClient.tools();
+    if (!tools.code_execute) throw new Error("Stagehand code mode did not expose code_execute");
 
-    const page = stagehand.context.pages()[0];
-
-    // Navigate to the trip example form.
-    console.log("Navigating to form...");
-    await page.goto("https://forms.gle/DVX84XynAJwUWNu26");
-
-    // Create agent with custom system prompt for intelligent form filling.
-    // The agent will use semantic matching to select appropriate form options.
-    const agent = stagehand.agent({
-      cua: false,
-      model: "google/gemini-2.5-pro", // Routed through Model Gateway
-      systemPrompt: `You are filling out a trip planning form. 
-    - When filling out fields, extract relevant information from the trip details provided
-    - For fields with options (radio buttons, dropdowns, checkboxes), always choose the closest matching option from the available choices
-    - Use semantic matching - look for options that convey similar meaning even if the exact wording differs
-    - Only select "Other" if no other option reasonably matches the trip details
-    - For checkbox fields, select all options that semantically match the trip details`,
+    const agent = new ToolLoopAgent({
+      model: process.env.AGENT_MODEL ?? "anthropic/claude-sonnet-4.6",
+      instructions:
+        "You are a browser form-filling agent. Use code_execute for all browser work. Inspect the page before acting, prefer deterministic locators, use Stagehand act or observe inside code_execute when labels are ambiguous, and never invent values that the user did not provide.",
+      tools,
+      stopWhen: stepCountIs(20),
     });
 
-    // Instruction for the agent to fill out the form with trip details.
-    const instruction = `Fill out this form with the following trip details: ${tripDetails}
-
-Make sure to:
-- Fill in all required fields
-- When an exact match isn't available, choose the closest matching option from the available choices
-- Use semantic matching to find the best option - look for options that convey similar meaning even if the wording differs
-- Only select "Other" if no other option reasonably matches the trip details
-- Extract relevant information from the trip details (duration, accommodation preferences, activities, dietary needs, etc.) and map them to the form fields
-- IMPORTANT: Once all fields are filled out, you must click the submit button to complete the form submission`;
-
-    // Execute agent to autonomously fill out the form based on details.
-    console.log("\nFilling out the form with agent...");
-    const result = await agent.execute({
-      instruction,
-      maxSteps: 30,
+    const result = await agent.generate({
+      prompt: `Open https://forms.gle/DVX84XynAJwUWNu26 and complete the trip-planning form from these details:\n\n${tripDetails}\n\nReview every answer, submit the form, and report whether submission succeeded.`,
     });
-
-    if (result.success) {
-      console.log("Form filled successfully!");
-      console.log("Agent message:", result.message);
-    } else {
-      console.log("Form filling may be incomplete");
-      console.log("Agent message:", result.message);
-    }
-  } catch (error) {
-    console.error("Error during form filling:", error);
+    console.log(result.text);
   } finally {
-    // Always close session to release resources and clean up.
-    await stagehand.close();
-    console.log("Session closed successfully");
+    await mcpClient.close();
+    console.log("Stagehand code-mode session closed successfully");
   }
 }
 
-main().catch((err) => {
-  console.error("Error in dynamic form filling:", err);
-  console.error("Common issues:");
-  console.error("  - Check .env file has BROWSERBASE_API_KEY");
-  console.error("  - Ensure the form URL is accessible and form fields are available");
-  console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
+main().catch((error) => {
+  console.error("Error in dynamic form filling:", error);
+  console.error("Check BROWSERBASE_API_KEY and AI_GATEWAY_API_KEY in .env");
   process.exit(1);
 });

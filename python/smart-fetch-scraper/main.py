@@ -18,7 +18,7 @@ import sys
 from browserbase import Browserbase
 from dotenv import load_dotenv
 from pydantic import BaseModel, Field
-from stagehand import AsyncStagehand
+from stagehand import Stagehand, browserbase
 
 # Load environment variables from .env file
 load_dotenv()
@@ -63,23 +63,6 @@ class PageDataSchema(BaseModel):
 
 
 # =========================================
-
-
-def dereference_schema(schema: dict) -> dict:
-    """Inline all $ref references in a JSON schema for Gemini compatibility."""
-    defs = schema.pop("$defs", {})
-
-    def resolve_refs(obj):
-        if isinstance(obj, dict):
-            if "$ref" in obj:
-                ref_path = obj["$ref"].split("/")[-1]
-                return resolve_refs(defs.get(ref_path, {}))
-            return {k: resolve_refs(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [resolve_refs(item) for item in obj]
-        return obj
-
-    return resolve_refs(schema)
 
 
 def needs_browser_fallback(content: str, status_code: int) -> str | None:
@@ -160,39 +143,44 @@ async def extract_with_browser(url: str) -> dict:
     """
     print("\n[Browser] Starting Stagehand session...")
 
-    # Initialize AsyncStagehand client (v3 BYOB architecture)
-    client = AsyncStagehand(
-        browserbase_api_key=os.environ.get("BROWSERBASE_API_KEY"),
+    api_key = os.environ.get("BROWSERBASE_API_KEY")
+    if not api_key:
+        raise RuntimeError("BROWSERBASE_API_KEY is required")
+    browser = await browserbase.launch(
+        api_key=api_key,
+        proxies=True,
+        browser_settings={
+            "advanced_stealth": True,
+            "block_ads": True,
+            "solve_captchas": True,
+        },
     )
-
-    # Start session
-    # Note: For advanced settings (proxies, stealth, captchas), create session via
-    # Browserbase SDK directly, then pass session_id to Stagehand
-    start_response = await client.sessions.start(model_name="google/gemini-2.5-flash")
-    session_id = start_response.data.session_id
-    print(f"[Browser] Live View: https://browserbase.com/sessions/{session_id}")
-
     try:
-        # Navigate to the target URL
-        await client.sessions.navigate(id=session_id, url=url)
-
-        print("[Browser] Page loaded, extracting structured data with AI...")
-
-        # Extract structured data using the schema
-        extract_response = await client.sessions.extract(
-            id=session_id,
-            instruction=(
-                "Extract the page title and all the main items/articles/entries "
-                "visible on this page. For each item get its title, URL, and any "
-                "metadata like score, author, or timestamp."
-            ),
-            schema=dereference_schema(PageDataSchema.model_json_schema()),
+        stagehand = await Stagehand.create(
+            browser=browser,
         )
-
-        return extract_response.data.result
-
+        try:
+            pages = await browser.context.pages()
+            page = pages[0] if pages else await browser.context.new_page()
+            await page.goto(url, wait_until="domcontentloaded", timeout=60_000)
+            print("[Browser] Page loaded, extracting structured data with AI...")
+            extracted = await stagehand.extract(
+                (
+                    "Extract the page title and all the main items/articles/entries "
+                    "visible on this page. For each item get its title, URL, and any "
+                    "metadata like score, author, or timestamp."
+                ),
+                PageDataSchema,
+                page=page,
+            )
+            data = extracted.data
+            if not data.title or not data.items:
+                raise RuntimeError("Browser fallback returned no structured items")
+            return data.model_dump(mode="json")
+        finally:
+            await stagehand.close()
     finally:
-        await client.sessions.end(id=session_id)
+        await browser.close()
         print("[Browser] Session closed")
 
 

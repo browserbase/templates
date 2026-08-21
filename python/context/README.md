@@ -1,5 +1,7 @@
 # Stagehand + Browserbase: Context Authentication Example
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: demonstrate persistent authentication using Browserbase **contexts** that survive across sessions.
@@ -13,7 +15,7 @@
   Docs → https://docs.browserbase.com/features/contexts
 - persist: when true, any state changes during a session are written back to the context for future reuse.
 - act: perform UI actions from a prompt (click, type, navigate).
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 
 ## QUICKSTART
 
@@ -53,7 +55,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

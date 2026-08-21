@@ -2,19 +2,11 @@
 
 import "dotenv/config";
 import { Browserbase } from "@browserbasehq/sdk";
-import { Stagehand } from "@browserbasehq/stagehand";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
 import fs from "fs";
 import path from "path";
 import AdmZip from "adm-zip";
 import { ExtendClient } from "extend-ai";
-import open from "open";
-
-// Opens a URL in the default browser (cross-platform)
-function openInBrowser(url: string): void {
-  open(url).catch(() => {
-    console.log(`Could not auto-open: ${url}`);
-  });
-}
 
 // Polls Browserbase API for completed downloads with retry logic.
 // Retries every 2 seconds until downloads are ready or timeout is reached.
@@ -259,7 +251,7 @@ async function parseReceiptsWithExtend(filePaths: string[]): Promise<void> {
           const blob = new Blob([fileBuffer]);
           const uploadResponse = await client.files.upload(
             blob as Parameters<typeof client.files.upload>[0],
-            { maxRetries: 4 },
+            {},
           );
           const fileId = uploadResponse.id;
 
@@ -346,31 +338,24 @@ async function main(): Promise<void> {
     apiKey: process.env.BROWSERBASE_API_KEY as string,
   });
 
-  // Initialize Stagehand with Browserbase for cloud-based browser automation
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 1,
-    // 0 = errors only, 1 = info, 2 = debug
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-    // https://docs.stagehand.dev/configuration/logging
-    model: "google/gemini-2.5-flash", // Routed through Model Gateway
+  // V4's browser factory provisions and owns the Stagehand extension.
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
   });
-
-  let sessionId: string | undefined;
+  const sessionId = browser.sessionId;
+  if (!sessionId) throw new Error("Browserbase launch did not return a session ID");
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    model: { modelName: "google/gemini-2.5-flash" },
+    logging: { level: "info" },
+  });
 
   try {
     // Initialize browser session to start automation
-    await stagehand.init();
-    console.log("Stagehand initialized successfully!");
-    const page = stagehand.context.pages()[0];
-    sessionId = stagehand.browserbaseSessionId;
 
-    // Get live view URL for monitoring browser session in real-time
-    if (sessionId) {
-      const liveViewLinks = await bb.sessions.debug(sessionId);
-      console.log(`Live View Link: ${liveViewLinks.debuggerFullscreenUrl}`);
-      openInBrowser(liveViewLinks.debuggerFullscreenUrl);
-    }
+    console.log("Stagehand initialized successfully!");
+    const page = (await browser.context.pages())[0];
+    console.log("Live View is available in the Browserbase Sessions dashboard");
 
     // Navigate to the expense portal where receipts are hosted
     console.log("\nNavigating to expense portal...");
@@ -380,9 +365,10 @@ async function main(): Promise<void> {
 
     // Use observe to find all individual download buttons (not the Download All button)
     console.log("\nFinding all individual download buttons...");
-    const downloadButtons = await stagehand.observe(
+    const { data: downloadButtons } = await stagehand.observe(
       "Find all the small Download links on individual receipt cards.",
     );
+    if (downloadButtons.length === 0) throw new Error("No receipt download links were found");
 
     // Click each download button using observe → act pattern
     // Pass the observed action directly to act for precise element targeting
@@ -394,11 +380,11 @@ async function main(): Promise<void> {
       try {
         await stagehand.act(action, { page });
         successCount++;
-      } catch (clickError) {
+      } catch (_clickError) {
         // If click fails, scroll element into view and retry
         console.log(`  Could not click download button ${i + 1}, trying to scroll and retry...`);
         try {
-          await page.evaluate(() => window.scrollBy(0, 200));
+          await stagehand.act("Scroll down slightly", { page });
           await stagehand.act(action, { page });
           successCount++;
         } catch {
@@ -408,7 +394,7 @@ async function main(): Promise<void> {
 
       // Scroll down periodically to ensure elements are in view
       if ((i + 1) % 4 === 0 && i + 1 < downloadButtons.length) {
-        await page.evaluate(() => window.scrollBy(0, 300));
+        await stagehand.act("Scroll down slightly", { page });
       }
     }
 
@@ -421,7 +407,8 @@ async function main(): Promise<void> {
       console.log("\nRetrieving downloads from Browserbase...");
 
       // Close the browser session before fetching downloads
-      await stagehand.close();
+      await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+      await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
 
       // Wait for session to finalize downloads before polling
       await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -444,6 +431,7 @@ async function main(): Promise<void> {
         }
       } catch (downloadError) {
         console.error("Download retrieval failed:", downloadError);
+        throw downloadError;
       }
     }
 
@@ -451,7 +439,8 @@ async function main(): Promise<void> {
   } catch (error) {
     console.error("Error during automation:", error);
     try {
-      await stagehand.close();
+      await stagehand.close().catch(() => undefined);
+      await browser.close().catch(() => undefined);
     } catch {
       // Ignore close errors during cleanup
     }
@@ -465,6 +454,6 @@ main().catch((err) => {
   console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Add EXTEND_API_KEY to .env to enable receipt parsing with Extend AI");
   console.error("  - Verify internet connection and expense portal accessibility");
-  console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
+  console.error("Docs: https://docs.stagehand.dev/v4/first-steps/introduction");
   process.exit(1);
 });

@@ -1,5 +1,7 @@
 # Stagehand + Browserbase: SEC Filing Research
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: automate searching SEC EDGAR for a company and extracting recent filing metadata (type, date, description, accession number, file number).
@@ -10,9 +12,9 @@
 ## GLOSSARY
 
 - act: perform UI actions from a natural language prompt (click, type, submit).
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: pull structured data from web pages into validated objects using a JSON schema.
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - schema: JSON schema definition for filing and company info; enforces types and validation.
 - SEC EDGAR: SEC’s company and filing search and filing system.
   https://www.sec.gov/edgar/searchedgar/companysearch.html
@@ -66,7 +68,7 @@
 - "ModuleNotFoundError": run `uv sync` or `pip install -e .` in sec-filing-research
 - Missing credentials: ensure .env has BROWSERBASE_API_KEY
 - No company match: use a valid company name, ticker, or CIK; SEC search is case-sensitive for some queries
-- Extraction errors: SEC page layout changes can break selectors; check live view and adjust act/extract prompts if needed
+- Extraction errors: if SEC changes its UI, inspect the session and adjust the act/extract prompts
 - Rate limiting: avoid excessive runs; SEC may throttle heavy or automated traffic
 
 ## USE CASES
@@ -85,7 +87,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

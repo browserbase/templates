@@ -10,9 +10,9 @@
 ## GLOSSARY
 
 - act: perform UI actions from a natural language prompt (type, click, navigate).
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: pull structured data from web pages into validated objects.
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - schema: a Zod definition that enforces data types, optional fields, and validation rules.
   Docs → https://zod.dev/
 - council events automation: navigate to council website, select calendar, and extract event information.
@@ -30,7 +30,7 @@
 
 - Navigates to Philadelphia Council website
 - Clicks calendar from the navigation menu
-- Selects 2025 from the month dropdown
+- Selects 2025 from the year dropdown
 - Extracts structured event data including name, date, and time
 - Returns typed object with event information
 
@@ -57,7 +57,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

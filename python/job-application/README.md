@@ -1,88 +1,19 @@
-# Stagehand + Browserbase: Automated Job Application Agent
+# Stagehand + Browserbase: Job Application Automation
 
-## AT A GLANCE
+Stagehand is the SDK for browser agents.
 
-- Goal: Automate job applications by discovering job listings and submitting applications with unique agent identifiers.
-- Concurrent Processing: applies to multiple jobs in parallel with configurable concurrency limits based on Browserbase project settings.
-- Dynamic Data Generation: generates unique agent IDs and email addresses for each application.
-- File Upload Support: automatically uploads resume PDF from a remote URL during the application process.
-- Docs → https://docs.stagehand.dev/basics/agent
+This template uses Stagehand V4 to discover every role on a public test job board, fill each application with unique test data, upload a PDF resume, and submit it.
 
-## GLOSSARY
+## Run
 
-- agent: create an autonomous AI agent that can execute complex multi-step tasks
-  Docs → https://docs.stagehand.dev/basics/agent#what-is-agent
-- act: perform UI actions from a prompt (click, type, fill forms)
-  Docs → https://docs.stagehand.dev/basics/act
-- extract: extract structured data from web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/basics/extract
-- observe: analyze a page and return selectors or action plans before executing
-  Docs → https://docs.stagehand.dev/basics/observe
-- asyncio.Semaphore: concurrency control mechanism to limit parallel job applications based on project limits
+```bash
+cp .env.example .env
+uv sync
+uv run python main.py
+```
 
-## QUICKSTART
+Set `BROWSERBASE_API_KEY` in `.env`. `MAX_CONCURRENCY` defaults to `2`; set `MAX_JOBS` to a positive number when you want a bounded test run.
 
-1. uv venv venv
-2. source venv/bin/activate # On Windows: venv\Scripts\activate
-3. uvx install stagehand browserbase pydantic python-dotenv httpx
-4. cp .env.example .env # Add your Browserbase API key and Project ID to .env (BROWSERBASE_API_KEY, BROWSERBASE_PROJECT_ID)
-5. python main.py
+Expected output includes the number of discovered jobs, a submission line for every application, and a final completed-submission count. Runtime errors still make the process exit nonzero.
 
-## EXPECTED OUTPUT
-
-- Fetches project concurrency limit from Browserbase (maxed at 5)
-- Initializes main Stagehand session with Browserbase
-- Displays live session link for monitoring
-- Navigates to agent job board
-- Clicks "View Jobs" button
-- Extracts all job listings with titles and URLs using Pydantic schema validation
-- Closes main session
-- Creates asyncio.Semaphore for concurrency control
-- Applies to all jobs in parallel (respecting concurrency limit)
-- For each job application:
-  - Generates unique agent ID and email
-  - Navigates to job page
-  - Clicks on specific job
-  - Fills agent identifier field
-  - Fills contact endpoint (email) field
-  - Fills deployment region field
-  - Uploads resume PDF from remote URL using httpx
-  - Selects multi-region deployment option
-  - Submits application
-- Displays completion message when all applications are finished
-
-## COMMON PITFALLS
-
-- "ModuleNotFoundError": ensure all dependencies are installed via uvx install
-- Missing credentials: verify .env contains BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY
-- Concurrency limits: script automatically respects Browserbase project concurrency (capped at 5)
-- Resume URL: ensure the resume URL (https://agent-job-board.vercel.app/Agent%20Resume.pdf) is accessible
-- Job detection: verify that job listings are visible on the page and match expected structure
-- Network issues: check internet connection and website accessibility
-- Import errors: activate your virtual environment if you created one
-- Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in
-
-## USE CASES
-
-• Bulk job applications: Automate applying to multiple job postings simultaneously with unique credentials for each application.
-• Agent deployment automation: Streamline the process of deploying multiple AI agents by automating the application and registration workflow.
-• Testing & QA: Validate job application forms and workflows across multiple listings to ensure consistent functionality.
-• Recruitment automation: Scale agent recruitment processes by programmatically submitting applications with generated identifiers.
-
-## NEXT STEPS
-
-• Add filtering: Implement job filtering by title keywords, location, or other criteria before applying.
-• Error handling: Add retry logic for failed applications and better error reporting with job-specific logs.
-• Resume customization: Support multiple resume versions or dynamic resume generation based on job requirements.
-• Application tracking: Store application status, timestamps, and results in a database for tracking and follow-up.
-• Rate limiting: Add delays between applications to avoid overwhelming the target system.
-• Multi-site support: Extend to support multiple job boards with site-specific form field mappings.
-
-## HELPFUL RESOURCES
-
-📚 Stagehand Docs: https://docs.stagehand.dev/v2/first-steps/introduction
-🎮 Browserbase: https://www.browserbase.com
-💡 Try it out: https://www.browserbase.com/playground
-🔧 Templates: https://www.browserbase.com/templates
-📧 Need help? support@browserbase.com
-💬 Discord: http://stagehand.dev/discord
+Docs: https://docs.stagehand.dev/v4/first-steps/introduction

@@ -12,9 +12,9 @@
 ## GLOSSARY
 
 - **act**: perform UI actions from natural language prompts (click, scroll, navigate)
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - **observe**: find and return interactive elements on the page matching a description, without performing actions. Used here to locate all individual download buttons before clicking them.
-  Docs → https://docs.stagehand.dev/basics/observe
+  Docs → https://docs.stagehand.dev/v4/basics/observe
 - **Browserbase Downloads**: When files are downloaded during a browser session, Browserbase captures and stores them. Files are retrieved via the Session Downloads API as a ZIP archive.
   Docs → https://docs.browserbase.com/features/downloads
 - **Extend AI extraction**: A configurable document extraction pipeline that parses files against a JSON schema and returns structured data. Config can be passed inline or via a saved extractor resource.
@@ -33,7 +33,7 @@
 
 ## EXPECTED OUTPUT
 
-- Initializes Stagehand session with Browserbase and opens the live view link
+- Initializes Stagehand V4 with Browserbase; Live View remains available in the Sessions dashboard
 - Navigates to the expense portal and finds all per-receipt download links via observe
 - Clicks each download button; Browserbase captures files
 - After closing the session, polls for the session's download ZIP and extracts to `output/documents/`
@@ -45,7 +45,7 @@
 - "Cannot find module": ensure pnpm install completed in the extend-browserbase directory
 - Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Download timeout: increase `retryForSeconds` parameter in `saveDownloadsWithRetry` if downloads take longer than 60 seconds
-- Empty ZIP file: ensure downloads were actually triggered (check live view link to debug)
+- Empty ZIP file: ensure downloads were actually triggered (inspect the session in the Browserbase dashboard)
 - Rate limiting on Extend: the script retries with exponential backoff on 429 errors, but very large batches may need the batch size reduced from 9
 - Find more information on your Browserbase dashboard → https://www.browserbase.com/sign-in
 
@@ -64,7 +64,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 📚 Browserbase Downloads: https://docs.browserbase.com/features/downloads
 📚 Extend AI: https://docs.extend.app
 🎮 Browserbase: https://www.browserbase.com

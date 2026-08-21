@@ -1,5 +1,7 @@
 # Stagehand + Browserbase: Basic reCAPTCHA Solving
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: Demonstrate automatic reCAPTCHA solving using Browserbase's built-in captcha solving capabilities.
@@ -7,7 +9,7 @@
 - Solving Time: CAPTCHA solving typically takes between 5-30 seconds depending on CAPTCHA type and complexity.
 - Progress Monitoring: Listen for console messages (`browserbase-solving-started`, `browserbase-solving-finished`) to track captcha solving progress in real-time.
 - Proxies Recommended: Enable proxies for higher CAPTCHA solving success rates.
-- Verification: Extracts page content to verify successful captcha solving and form submission.
+- Result inspection: Extracts and prints the page content after form submission.
 - Docs → https://docs.browserbase.com/features/stealth-mode#captcha-solving
 
 ## GLOSSARY
@@ -20,9 +22,9 @@
   - `browserbase-solving-finished`: emitted when CAPTCHA solving completes
 - custom CAPTCHA solving: For non-standard or custom captcha providers, you can specify CSS selectors for the captcha image and input field using `captchaImageSelector` and `captchaInputSelector` in browserSettings.
 - act: perform UI actions from a prompt (type, click, fill forms)
-  Docs → https://docs.stagehand.dev/v2/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: pull data from web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/v2/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 
 ## CAPTCHA SOLVING DETAILS
 
@@ -41,11 +43,11 @@ Browserbase provides integrated CAPTCHA solving to handle challenges automatical
 For non-standard or custom captcha providers, you can specify CSS selectors to guide the solution process:
 
 ```python
-browserbase_session_create_params={
+browserbase_session_create_params = {
     "browser_settings": {
         "solveCaptchas": True,
         "captchaImageSelector": "#custom-captcha-image-id",
-        "captchaInputSelector": "#custom-captcha-input-id"
+        "captchaInputSelector": "#custom-captcha-input-id",
     }
 }
 ```
@@ -61,11 +63,7 @@ To find the selectors:
 If you want to disable automatic captcha solving, set `solveCaptchas: False` in browserSettings:
 
 ```python
-browserbase_session_create_params={
-    "browser_settings": {
-        "solveCaptchas": False
-    }
-}
+browserbase_session_create_params = {"browser_settings": {"solveCaptchas": False}}
 ```
 
 ## QUICKSTART
@@ -85,7 +83,7 @@ browserbase_session_create_params={
 - Logs captcha solving progress messages
 - Clicks submit button after captcha is solved
 - Extracts and displays page content
-- Verifies successful captcha solving by checking for success message
+- Prints the resulting page content for inspection
 - Closes session cleanly
 
 ## COMMON PITFALLS
@@ -96,14 +94,13 @@ browserbase_session_create_params={
 - Proxies not enabled: enable proxies in browserSettings for higher CAPTCHA solving success rates
 - Demo page inaccessible: verify the reCAPTCHA demo page URL is accessible and hasn't changed
 - Console message timing: ensure console event listeners are set up before triggering the captcha
-- Verification failure: success message check may fail if page structure changes; check extracted text manually
 - Custom captcha selectors: for non-standard CAPTCHAs, verify that `captchaImageSelector` and `captchaInputSelector` are correctly defined
 - Import errors: activate your virtual environment if you created one
 - ModuleNotFoundError: ensure all dependencies are installed via uvx install
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v2/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

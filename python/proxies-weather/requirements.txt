@@ -1,4 +1,3 @@
 python-dotenv
 pydantic
-stagehand>=3.19.0
-
+stagehand==4.0.0

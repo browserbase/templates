@@ -5,14 +5,14 @@
 - Goal: automate verification of nurse licenses by filling forms and extracting structured results from verification sites.
 - Flow: loop through license records → navigate to verification site → fill form → search → extract verification results.
 - Benefits: quickly verify multiple licenses without manual form filling, structured data ready for compliance tracking or HR systems.
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 
 ## GLOSSARY
 
 - act: perform UI actions from a prompt (type, click, fill forms).
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: pull structured data from a page using AI and Zod schemas.
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - schema: a Zod definition that enforces data types, optional fields, and validation rules.
   Docs → https://zod.dev/
 - license verification: process of confirming the validity and status of professional licenses.
@@ -32,7 +32,7 @@
 - For each record: navigates to verification site, fills form, searches
 - Extracts verification results: name, license number, status, info URL
 - Displays structured JSON output with all verification results
-- Provides live session URL for monitoring
+- Closes both the Stagehand instance and browser handle after verification
 - Closes session cleanly
 
 ## COMMON PITFALLS
@@ -57,7 +57,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 📧 Need help? support@browserbase.com
 💬 Discord: http://stagehand.dev/discord

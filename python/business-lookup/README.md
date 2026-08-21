@@ -1,64 +1,50 @@
-# Stagehand + Browserbase: Business Lookup with Agent
+# Business lookup with a Python agent
 
-## AT A GLANCE
+Stagehand is the SDK for browser agents.
 
-- Goal: Automate business registry searches using an autonomous AI agent with computer-use capabilities.
-- Uses Stagehand Agent in CUA mode to navigate complex UI elements, apply filters, and extract structured business data.
-- Demonstrates extraction with Pydantic schema validation for consistent data retrieval.
-- Docs → https://docs.stagehand.dev/basics/agent
+This template uses LangChain Deep Agents for the reasoning loop and Stagehand V4 code mode for the
+browser. The agent opens San Francisco's official Open Data API, finds an exact DBA record, and
+returns a validated Pydantic object.
 
-## GLOSSARY
+## How it works
 
-- agent: create an autonomous AI agent that can execute complex multi-step tasks
-  Docs → https://docs.stagehand.dev/basics/agent#what-is-agent
-- extract: extract structured data from web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/basics/extract
+- `create_deep_agent` owns planning, model calls, and structured output.
+- Stagehand code mode exposes one persistent Browserbase session through `run`, `snapshot`, and
+  `screenshot` MCP tools.
+- Vercel AI Gateway supplies the bring-your-own agent model.
+- The Stagehand MCP server runs in an isolated `uvx` environment because the current Stagehand and
+  Deep Agents clients require different `websockets` versions.
+- The template closes the MCP session and browser process automatically.
 
-## QUICKSTART
+## Quickstart
 
-1. uv venv venv
-2. source venv/bin/activate # On Windows: venv\Scripts\activate
-3. uvx install stagehand python-dotenv pydantic
-4. cp .env.example .env # Add required API keys/IDs to .env
-5. python main.py
+Requirements: Python 3.11–3.13 and [uv](https://docs.astral.sh/uv/).
 
-## EXPECTED OUTPUT
+```bash
+cp .env.example .env
+# Add BROWSERBASE_API_KEY and AI_GATEWAY_API_KEY to .env.
+uv sync
+uv run python main.py
+```
 
-- Initializes Stagehand session with Browserbase
-- Displays live session link for monitoring
-- Navigates to SF Business Registry search page
-- Agent searches for business using DBA Name filter
-- Agent completes search and opens business details
-- Extracts structured business information (DBA Name, Account Number, NAICS Code, etc.)
-- Outputs extracted data as JSON
-- Closes session cleanly
+The first run installs the Stagehand Deep Agents integration from `stagehand/main` in `uvx`; the
+integration pins its Stagehand server dependency to `stagehand==4.0.0`.
 
-## COMMON PITFALLS
+## Expected outcome
 
-- "ModuleNotFoundError": ensure all dependencies are installed via pip
-- Missing credentials: verify .env contains BROWSERBASE_API_KEY and GOOGLE_API_KEY
-- Google API access: ensure you have access to Google's gemini-2.5-computer-use-preview-10-2025 model
-- Agent failures: check that the business name exists in the registry and that max_steps is sufficient for complex searches
-- Import errors: activate your virtual environment if you created one
-- Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in
+The agent opens the official SF Open Data JSON endpoint and returns the exact Jalebi Street record,
+including its business account number, location ID, address, NAICS data when present, and the
+official source URL. The script exits nonzero if the returned DBA or evidence source does not match.
 
-## USE CASES
+## Configuration
 
-• Business verification: Automate registration status checks, license validation, and compliance verification for multiple businesses.
-• Data enrichment: Collect structured business metadata (NAICS codes, addresses, ownership) for research or CRM updates.
-• Due diligence: Streamline background checks by autonomously searching and extracting business registration details from public registries.
+- `BROWSERBASE_API_KEY`: launches the Browserbase session.
+- `AI_GATEWAY_API_KEY`: authenticates the Deep Agents model through Vercel AI Gateway.
+- `DEEPAGENTS_MODEL`: optional model override; defaults to `anthropic/claude-sonnet-4.6`.
+- `STAGEHAND_RUN_TIMEOUT_MS`: optional browser-tool timeout; defaults to 120 seconds.
 
-## NEXT STEPS
+## Resources
 
-• Parameterize search: Accept business names as command-line arguments or from a CSV file for batch processing.
-• Expand extraction: Add support for additional fields like tax status, licenses, or historical registration changes.
-• Multi-registry support: Extend agent to search across multiple city or state business registries with routing logic.
-
-## HELPFUL RESOURCES
-
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
-🎮 Browserbase: https://www.browserbase.com
-💡 Try it out: https://www.browserbase.com/playground
-🔧 Templates: https://www.browserbase.com/templates
-📧 Need help? support@browserbase.com
-💬 Discord: http://stagehand.dev/discord
+- [Stagehand V4 documentation](https://docs.stagehand.dev/v4)
+- [Stagehand Deep Agents integration](https://github.com/browserbase/stagehand/tree/main/packages/integrations/deepagents)
+- [Browserbase sessions](https://www.browserbase.com/overview/sessions)

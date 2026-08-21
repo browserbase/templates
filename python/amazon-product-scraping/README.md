@@ -1,5 +1,7 @@
 # Stagehand + Browserbase: Amazon Product Scraping
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - **Goal**: Scrape the first 3 Amazon search results for a given query and return structured product data.
@@ -11,9 +13,9 @@
 ## GLOSSARY
 
 - **act**: Perform UI actions from a prompt (type in search bar, click search).
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - **extract**: Pull structured data from pages using JSON schemas.
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 
 ## QUICKSTART
 
@@ -57,7 +59,7 @@
 ## HELPFUL RESOURCES
 
 📚 Stagehand Docs: https://docs.stagehand.dev
-📚 Python SDK: https://docs.stagehand.dev/v3/sdk/python
+📚 Python SDK: https://docs.stagehand.dev/v4/sdk/python
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

@@ -1,5 +1,7 @@
 # Stagehand + Browserbase + Extend: Download Expense Receipts and Parse with Extend AI
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - **Goal**: Automate downloading receipts from an expense portal and extract structured receipt data using AI-powered document parsing.
@@ -12,9 +14,9 @@
 ## GLOSSARY
 
 - **act**: perform UI actions from natural language prompts (click, scroll, navigate)
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - **observe**: find and return interactive elements on the page matching a description, without performing actions. Used here to locate all individual download buttons before clicking them.
-  Docs → https://docs.stagehand.dev/basics/observe
+  Docs → https://docs.stagehand.dev/v4/basics/observe
 - **Browserbase Downloads**: When files are downloaded during a browser session, Browserbase captures and stores them. Files are retrieved via the Session Downloads API as a ZIP archive.
   Docs → https://docs.browserbase.com/features/downloads
 - **Extend AI extraction**: A configurable document extraction pipeline that parses files against a JSON schema and returns structured data. Config can be passed inline or via a saved extractor resource.
@@ -67,8 +69,8 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
-📚 Python SDK: https://docs.stagehand.dev/v3/sdk/python
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
+📚 Python SDK: https://docs.stagehand.dev/v4/sdk/python
 📚 Browserbase Downloads: https://docs.browserbase.com/features/downloads
 📚 Extend AI: https://docs.extend.app
 🎮 Browserbase: https://www.browserbase.com

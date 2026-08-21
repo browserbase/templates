@@ -1,5 +1,7 @@
 # Voice Agent with Real-time Web Form Filling
 
+Stagehand is the SDK for browser agents.
+
 This project demonstrates an advanced voice agent that conducts phone questionnaires while automatically filling out web forms in real-time using Stagehand browser automation.
 
 Here's what the system architecture looks like:

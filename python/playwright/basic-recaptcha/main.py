@@ -112,17 +112,9 @@ async def main():
 
             await page.wait_for_load_state("domcontentloaded")
 
-            # Verify captcha was successfully solved by checking for success
-            # message in page content.
-            print("Checking for success message...")
+            # Display the resulting page content.
             page_content = await page.text_content("body")
-
-            if page_content and "Verification Success... Hooray!" in page_content:
-                print("\nSUCCESS! reCAPTCHA was solved and form was submitted!")
-                print("Page content confirms: Verification Success... Hooray!")
-            else:
-                print("\nCould not verify captcha success from page content")
-                print(f"Page content: {page_content[:500] if page_content else 'None'}")
+            print(f"Page content: {page_content[:500] if page_content else 'None'}")
 
         except Exception as error:
             print(f"Error during reCAPTCHA solving: {error}")

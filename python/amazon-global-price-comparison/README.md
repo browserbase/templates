@@ -1,5 +1,7 @@
 # Amazon Global Price Comparison
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - **Goal**: Compare Amazon product prices across multiple countries using geolocation proxies.
@@ -7,16 +9,16 @@
 - **Workflow**: Creates Browserbase sessions with geolocation proxies for each country, navigates to Amazon, searches for products, and extracts structured pricing data using Stagehand's AI-powered extraction.
 - **Concurrent Processing**: Runs all country searches in parallel using `asyncio.gather()` for faster execution.
 - **Structured Extraction**: Uses Pydantic schemas to extract consistent product data (name, price, rating, reviews) across different Amazon regions.
-- Docs → [Browserbase Proxies](https://docs.browserbase.com/features/proxies) | [Stagehand Extract](https://docs.stagehand.dev/basics/extract)
+- Docs → [Browserbase Proxies](https://docs.browserbase.com/features/proxies) | [Stagehand Extract](https://docs.stagehand.dev/v4/basics/extract)
 
 ## GLOSSARY
 
 - **geolocation proxies**: Route traffic through specific geographic locations (city, country) to access location-specific content and pricing.
   Docs → https://docs.browserbase.com/features/proxies#set-proxy-geolocation
 - **extract**: Extract structured data from web pages using natural language instructions and JSON schemas.
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - **act**: Perform UI actions from natural language prompts (click, scroll, type, navigate).
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - **proxies**: Browserbase's managed proxy infrastructure supporting 201+ countries for geolocation-based routing.
   Docs → https://docs.browserbase.com/features/proxies
 
@@ -65,8 +67,8 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
-📚 Python SDK: https://docs.stagehand.dev/v3/sdk/python
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
+📚 Python SDK: https://docs.stagehand.dev/v4/sdk/python
 📚 Browserbase Proxies: https://docs.browserbase.com/features/proxies
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground

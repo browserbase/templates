@@ -5,14 +5,14 @@
 - Goal: Extract trending search keywords from Google Trends for any country with structured JSON output.
 - Configurable by country code (US, GB, IN, DE, etc.) and language preference.
 - Uses Zod schema validation for consistent, typed data extraction.
-- Docs → https://docs.stagehand.dev/basics/extract
+- Docs → https://docs.stagehand.dev/v4/basics/extract
 
 ## GLOSSARY
 
 - extract: extract structured data from web pages using natural language instructions and Zod schemas
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - act: perform UI actions from a prompt (click, type, dismiss dialogs)
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 
 ## QUICKSTART
 
@@ -24,7 +24,7 @@
 ## EXPECTED OUTPUT
 
 - Initializes Stagehand session with Browserbase
-- Displays live session link for monitoring
+- Closes both the Stagehand instance and browser handle after extraction
 - Navigates to Google Trends trending page with configured country/language
 - Dismisses any consent dialogs if present
 - Extracts trending keywords with rank positions
@@ -53,7 +53,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

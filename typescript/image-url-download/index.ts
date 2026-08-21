@@ -1,12 +1,13 @@
 // Stagehand + Browserbase: Image URL Download - See README.md for full documentation
 //
 // Uses Stagehand extract() to find all image URLs on a page, then downloads each
-// image through the browser's proxied fetch() — inheriting session cookies, headers,
-// and the Browserbase proxy. Works for any image format (JPG, PNG, WebP, etc.).
+// image through the Browserbase Fetch API. Works for any image format (JPG, PNG,
+// WebP, etc.).
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
+import { Browserbase } from "@browserbasehq/sdk";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
+import { z } from "zod/v4";
 import fs from "fs";
 import path from "path";
 
@@ -64,56 +65,84 @@ async function main(): Promise<void> {
   console.log(`Image URL Download — target: ${targetUrl}`);
   console.log(`Max images: ${MAX_IMAGES} | Output: ${OUTPUT_DIR}/<hostname>/\n`);
 
+  if (!process.env.BROWSERBASE_API_KEY) {
+    throw new Error("BROWSERBASE_API_KEY is required");
+  }
+  const bb = new Browserbase({ apiKey: process.env.BROWSERBASE_API_KEY });
+
   // Initialize Stagehand with Browserbase for cloud-based browser automation.
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    model: "google/gemini-2.5-flash",
-    verbose: 1,
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+  });
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    model: { modelName: "google/gemini-2.5-flash" },
+    logging: { level: "info" },
   });
 
   try {
     // Initialize browser session to start automation.
-    await stagehand.init();
+
     console.log("Stagehand initialized successfully!");
-    console.log(
-      `Live View Link: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`,
-    );
+    const page = (await browser.context.pages())[0];
+    const exactDomImageUrls = async (): Promise<string[]> =>
+      (await page.evaluate(() => {
+        const urls = new Set<string>();
+        for (const image of Array.from(document.images)) {
+          if (image.currentSrc) urls.add(image.currentSrc);
+          if (image.src) urls.add(image.src);
+        }
+        for (const element of Array.from(document.querySelectorAll<HTMLElement>("[style]"))) {
+          const background = getComputedStyle(element).backgroundImage;
+          for (const match of background.matchAll(/url\(["']?(.*?)["']?\)/g)) {
+            if (match[1]) urls.add(new URL(match[1], document.baseURI).href);
+          }
+        }
+        return [...urls];
+      })) as string[];
 
-    const page = stagehand.context.pages()[0];
-
-    // Navigate and wait for network activity to settle so JS-injected images are in the DOM.
+    // Many modern sites keep analytics and streaming requests open indefinitely, so
+    // wait for DOM readiness and then allow client-rendered images a short settle period.
     console.log(`\nNavigating to ${targetUrl}...`);
     await page.goto(targetUrl, {
-      waitUntil: "networkidle", // Wait for network to settle so JS-injected images are in the DOM.
-      timeoutMs: 60000, // Extended timeout for reliable page loading.
+      waitUntil: "domcontentloaded",
+      timeout: 60000, // Extended timeout for reliable page loading.
     });
+    await page.waitForTimeout(3000);
 
-    // Use extract() with a URL schema so Stagehand knows to look for image URLs.
     console.log("Extracting image URLs from page...");
-    const { urls: allUrls } = await stagehand.extract(
-      "extract all image URLs on this page, including src attributes from <img> tags and any background image URLs",
-      z.object({ urls: z.array(z.string().url()) }),
+    const { data: extractedUrls } = await stagehand.extract(
+      "Extract the absolute HTTP(S) source URLs of all rendered images on this page, including image src attributes and background-image URLs. Return each URL exactly as rendered and preserve every hostname character, including any www prefix.",
+      z.object({
+        urls: z
+          .array(z.string())
+          .describe("Absolute HTTP(S) image resource URLs from src or background-image values"),
+      }),
     );
+    let allUrls = extractedUrls.urls.filter((url) => /^https?:\/\//i.test(url));
+    if (allUrls.length === 0) {
+      // Accessibility snapshots can omit decorative images. Use the exact DOM
+      // shape only when semantic extraction returns no candidates at all.
+      allUrls = await exactDomImageUrls();
+    }
 
-    // Deduplicate and filter out any empty/malformed URLs before applying the limit.
-    const uniqueUrls = [...new Set(allUrls)].filter((u) => {
+    // Extract only absolute image resource URLs, then deduplicate before applying the limit.
+    const normalizedUrls = allUrls.flatMap((url) => {
       try {
-        const { protocol } = new URL(u);
-        return protocol === "https:" || protocol === "http:";
+        return [new URL(url).href];
       } catch {
-        return false;
+        return [];
       }
+    });
+    const uniqueUrls = [...new Set(normalizedUrls)].filter((url) => {
+      const { protocol } = new URL(url);
+      return protocol === "https:" || protocol === "http:";
     });
     console.log(`Found ${uniqueUrls.length} unique image URL(s)`);
 
     const urls = uniqueUrls.slice(0, MAX_IMAGES);
     if (uniqueUrls.length > MAX_IMAGES) {
       console.log(`Capping at ${MAX_IMAGES} (adjust MAX_IMAGES to change this)`);
-    }
-
-    if (urls.length === 0) {
-      console.log("No image URLs found on the page.");
-      return;
     }
 
     // Create a subdirectory scoped to the target site's hostname (e.g. images/browserbase.com/).
@@ -124,73 +153,66 @@ async function main(): Promise<void> {
     let saved = 0;
     let failed = 0;
 
-    console.log(`\nDownloading ${urls.length} image(s) via browser fetch...\n`);
+    const downloadImages = async (candidateUrls: string[]): Promise<void> => {
+      for (let i = 0; i < candidateUrls.length; i++) {
+        const url = candidateUrls[i];
+        process.stdout.write(`[${i + 1}/${candidateUrls.length}] ${url} → `);
 
-    for (let i = 0; i < urls.length; i++) {
-      const url = urls[i];
-
-      process.stdout.write(`[${i + 1}/${urls.length}] ${url} → `);
-
-      // Fetch the image through the browser's proxied connection.
-      // Running fetch() inside page.evaluate() means it inherits the Browserbase
-      // proxy and all active session cookies — no CORS or auth issues.
-      // FileReader.readAsDataURL() is the most reliable browser-native way to
-      // encode binary data as base64, and it also gives us the real MIME type.
-      // Wrap the entire page.evaluate() call — not just the code inside it — so that
-      // CDP-level errors (execution context destroyed, timeout, page navigation) are
-      // caught per-image and don't abort the rest of the download loop.
-      let result: { base64: string; mimeType: string } | null = null;
-      try {
-        result = await page.evaluate(async (imgUrl: string) => {
-          try {
-            const res = await fetch(imgUrl);
-            if (!res.ok) return null;
-            const blob = await res.blob();
-            return await new Promise<{ base64: string; mimeType: string } | null>((resolve) => {
-              const reader = new FileReader();
-              reader.onload = () => {
-                const dataUrl = reader.result as string;
-                const comma = dataUrl.indexOf(",");
-                if (comma === -1) {
-                  resolve(null);
-                  return;
-                }
-                const prefix = dataUrl.slice(0, comma); // e.g. "data:image/png;base64"
-                const base64 = dataUrl.slice(comma + 1);
-                const mimeMatch = prefix.match(/data:([^;]+)/);
-                resolve({ base64, mimeType: mimeMatch?.[1] ?? "application/octet-stream" });
-              };
-              reader.onerror = () => resolve(null);
-              reader.readAsDataURL(blob);
-            });
-          } catch {
-            return null;
+        let buffer: Buffer | null = null;
+        let mimeType = "";
+        try {
+          const response = await bb.fetchAPI.create({
+            url,
+            format: "raw",
+            allowRedirects: true,
+          });
+          mimeType = response.contentType.split(";", 1)[0];
+          if (
+            response.statusCode >= 200 &&
+            response.statusCode < 300 &&
+            mimeType.startsWith("image/") &&
+            typeof response.content === "string"
+          ) {
+            buffer = Buffer.from(
+              response.content,
+              response.encoding === "base64" ? "base64" : "utf8",
+            );
           }
-        }, url);
-      } catch (err) {
-        console.log(`FAILED (${err instanceof Error ? err.message : err}, skipping)`);
-        failed++;
-        continue;
-      }
+        } catch {
+          // The common failure path below records this URL as skipped.
+        }
 
-      if (!result) {
-        console.log("FAILED (skipping)");
-        failed++;
-        continue;
-      }
+        if (!buffer) {
+          console.log("FAILED (skipping)");
+          failed++;
+          continue;
+        }
 
-      const filename = imageFilename(url, result.mimeType, i);
-      const filepath = path.join(outputDir, filename);
-      const buffer = Buffer.from(result.base64, "base64");
-      try {
-        fs.writeFileSync(filepath, buffer);
-      } catch (err) {
-        console.log(`FAILED (write error: ${err instanceof Error ? err.message : err}, skipping)`);
-        failed++;
-        continue;
+        const filename = imageFilename(url, mimeType, i);
+        const filepath = path.join(outputDir, filename);
+        try {
+          fs.writeFileSync(filepath, buffer);
+        } catch (err) {
+          console.log(
+            `FAILED (write error: ${err instanceof Error ? err.message : err}, skipping)`,
+          );
+          failed++;
+          continue;
+        }
+        console.log(`saved as ${filename} (${buffer.length} bytes)`);
+        saved++;
       }
-      console.log(`saved as ${filename} (${buffer.length} bytes)`);
-      saved++;
+    };
+
+    console.log(`\nDownloading ${urls.length} image(s) via the Browserbase Fetch API...\n`);
+    await downloadImages(urls);
+    if (saved === 0 && uniqueUrls.length > 0) {
+      // If semantic extraction produced URLs that cannot be fetched, fall back to
+      // exact DOM mechanics without changing the semantic-first discovery path.
+      const fallbackUrls = (await exactDomImageUrls())
+        .filter((url) => !uniqueUrls.includes(url))
+        .slice(0, MAX_IMAGES);
+      await downloadImages(fallbackUrls);
     }
 
     console.log(`\nDone! ${saved} saved, ${failed} failed → ${outputDir}/`);
@@ -199,7 +221,16 @@ async function main(): Promise<void> {
     throw error;
   } finally {
     // Always close session to release resources and clean up.
-    await stagehand.close();
+    try {
+      await stagehand.close();
+    } catch (error) {
+      console.warn("Stagehand cleanup warning:", error);
+    }
+    try {
+      await browser.close();
+    } catch (error) {
+      console.warn("Browser cleanup warning:", error);
+    }
     console.log("Session closed successfully");
   }
 }
@@ -209,6 +240,6 @@ main().catch((err) => {
   console.error("Common issues:");
   console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Verify the target URL is accessible");
-  console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
+  console.error("Docs: https://docs.stagehand.dev/v4/first-steps/introduction");
   process.exit(1);
 });

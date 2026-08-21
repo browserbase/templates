@@ -1,125 +1,84 @@
-# Stagehand + Browserbase: Business Lookup with Agent - See README.md for full documentation
+"""Look up an official business record with Deep Agents and Stagehand V4 code mode."""
+
+from __future__ import annotations
 
 import asyncio
-import json
-import os
 
+from agent_runtime import (
+    BROWSER_INSTRUCTIONS,
+    SERVER_NAME,
+    create_gateway_model,
+    create_stagehand_client,
+)
+from deepagents import create_deep_agent
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
+from langchain_mcp_adapters.tools import load_mcp_tools
+from pydantic import BaseModel, ConfigDict, Field
 
-from stagehand import Stagehand, StagehandConfig
-
-# Load environment variables
 load_dotenv()
 
-# Business search variables
-business_name = "Jalebi Street"
+BUSINESS_NAME = "Jalebi Street"
 
 
-async def main():
-    print("Starting business lookup...")
+class BusinessInfo(BaseModel):
+    model_config = ConfigDict(extra="forbid")
 
-    # Initialize Stagehand with Browserbase for cloud-based browser automation.
-    # Note: set verbose: 0 to prevent API keys from appearing in logs when handling sensitive data.
-    config = StagehandConfig(
-        env="BROWSERBASE",
-        api_key=os.environ.get("BROWSERBASE_API_KEY"),
-        model_name="openai/gpt-4.1",
-        model_api_key=os.environ.get("OPENAI_API_KEY"),
-        verbose=1,  # 0 = errors only, 1 = info, 2 = debug
-        # (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-        # https://docs.stagehand.dev/configuration/logging
-    )
+    dba_name: str = Field(description="DBA name")
+    ownership_name: str | None = Field(description="Ownership name")
+    business_account_number: str = Field(description="Business account number (ttxid)")
+    location_id: str | None = Field(description="Location ID (uniqueid)")
+    street_address: str | None = None
+    business_start_date: str | None = None
+    business_end_date: str | None = None
+    neighborhood: str | None = None
+    naics_code: str | None = None
+    naics_code_description: str | None = None
+    source_url: str = Field(description="Official SF Open Data URL opened in the browser")
 
-    try:
-        # Use async context manager for automatic resource management
-        async with Stagehand(config) as stagehand:
-            # Initialize browser session to start automation.
-            print("Stagehand initialized successfully")
-            session_id = None
-            if hasattr(stagehand, "session_id"):
-                session_id = stagehand.session_id
-            elif hasattr(stagehand, "browserbase_session_id"):
-                session_id = stagehand.browserbase_session_id
 
-            if session_id:
-                print(f"Live View Link: https://browserbase.com/sessions/{session_id}")
+async def main() -> None:
+    print(f"Searching for business: {BUSINESS_NAME}")
+    client = create_stagehand_client()
 
-            page = stagehand.page
+    async with client.session(SERVER_NAME) as session:
+        tools = await load_mcp_tools(session)
+        agent = create_deep_agent(
+            model=create_gateway_model("anthropic/claude-sonnet-4.6"),
+            tools=tools,
+            system_prompt=BROWSER_INSTRUCTIONS,
+            response_format=BusinessInfo,
+        )
+        source_url = (
+            "https://data.sfgov.org/resource/g8m3-pdis.json?"
+            f"$q={BUSINESS_NAME.replace(' ', '%20')}&$limit=5"
+        )
+        result = await agent.ainvoke(
+            {
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Open {source_url} in the browser and find the exact DBA record for "
+                            f"{BUSINESS_NAME!r}. Read the rendered JSON, map ttxid to "
+                            "business_account_number and uniqueid to location_id, and return every "
+                            "requested field. Use null when an optional field is absent."
+                        ),
+                    }
+                ]
+            },
+            config={"recursion_limit": 30},
+        )
+        business: BusinessInfo = result["structured_response"]
 
-            # Navigate to SF Business Registry search page.
-            print("Navigating to SF Business Registry...")
-            await page.goto(
-                "https://data.sfgov.org/stories/s/Registered-Business-Lookup/k6sk-2y6w/",
-                wait_until="domcontentloaded",
-                timeout=60000,
-            )
-
-            # Create agent with computer use capabilities for autonomous business search.
-            # Using CUA mode allows the agent to interact with complex UI elements like filters and tables.
-            print("Creating Computer Use Agent...")
-            agent = stagehand.agent(
-                provider="google",
-                model="gemini-2.5-computer-use-preview-10-2025",
-                instructions="You are a helpful assistant that can use a web browser to search for business information.",
-                options={
-                    "api_key": os.getenv("GOOGLE_API_KEY"),
-                },
-            )
-
-            print(f"Searching for business: {business_name}")
-            result = await agent.execute(
-                instruction=f'Find and look up the business "{business_name}" in the SF Business Registry. Use the DBA Name filter to search for "{business_name}", apply the filter, and click on the business row to view detailed information. Scroll towards the right to see the NAICS code.',
-                max_steps=30,
-                auto_screenshot=True,
-            )
-
-            if not result.success:
-                raise Exception("Agent failed to complete the search")
-
-            print("Agent completed search successfully")
-
-            # Extract comprehensive business information after agent completes the search.
-            # Using structured schema ensures consistent data extraction even if page layout changes.
-            print("Extracting business information...")
-
-            # Define schema using Pydantic
-            class BusinessInfo(BaseModel):
-                dba_name: str = Field(..., description="DBA Name")
-                ownership_name: str | None = Field(None, description="Ownership Name")
-                business_account_number: str = Field(..., description="Business Account Number")
-                location_id: str | None = Field(None, description="Location Id")
-                street_address: str | None = Field(None, description="Street Address")
-                business_start_date: str | None = Field(None, description="Business Start Date")
-                business_end_date: str | None = Field(None, description="Business End Date")
-                neighborhood: str | None = Field(None, description="Neighborhood")
-                naics_code: str = Field(..., description="NAICS Code")
-                naics_code_description: str | None = Field(
-                    None, description="NAICS Code Description"
-                )
-
-            business_info = await page.extract(
-                "Extract all visible business information including DBA Name, Ownership Name, Business Account Number, Location Id, Street Address, Business Start Date, Business End Date, Neighborhood, NAICS Code, and NAICS Code Description",
-                schema=BusinessInfo,
-            )
-
-            print("Business information extracted:")
-            print(json.dumps(business_info.model_dump(), indent=2))
-
-        print("Session closed successfully")
-
-    except Exception as error:
-        print(f"Error during business lookup: {error}")
-        raise
+    print("Business information:")
+    print(business.model_dump_json(indent=2))
+    print("Stagehand code-mode session closed successfully")
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
-    except Exception as err:
-        print(f"Error in business lookup: {err}")
-        print("Common issues:")
-        print("  - Check .env file has BROWSERBASE_API_KEY")
-        print("  - Verify GOOGLE_API_KEY is set for the agent")
-        print("Docs: https://docs.stagehand.dev/v3/first-steps/introduction")
-        exit(1)
+    except Exception as error:
+        print(f"Error in business lookup: {error}")
+        print("Check BROWSERBASE_API_KEY and AI_GATEWAY_API_KEY in .env")
+        raise SystemExit(1) from error

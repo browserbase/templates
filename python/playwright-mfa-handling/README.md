@@ -19,9 +19,9 @@
 
 ## STAGEHAND VS PLAYWRIGHT
 
-This template uses **pure Playwright** for browser automation. The Stagehand v3 Python SDK uses a session-based API with **observe** (find actions) and **act** (execute an action) instead. Here's how they compare:
+This template uses **pure Playwright** for browser automation. Stagehand V4 is the SDK for browser agents and adds natural-language **act**, **observe**, and **extract** operations to a browser that your application owns. Here's how they compare:
 
-| Task          | Stagehand v3 — natural language (you describe intent)     | Playwright — specific selectors (you target exact elements) |
+| Task          | Stagehand V4 — natural language (you describe intent)     | Playwright — specific selectors (you target exact elements) |
 | ------------- | --------------------------------------------------------- | ----------------------------------------------------------- |
 | Fill email    | _"Find the email field and type the user's email"_        | `page.locator('input[type="email"]').fill(email)`           |
 | Fill password | _"Find the password field and enter the password"_        | `page.locator('input[type="password"]').fill(password)`     |
@@ -31,17 +31,20 @@ This template uses **pure Playwright** for browser automation. The Stagehand v3 
 **Example - Filling the login form:**
 
 ```python
-# Stagehand v3: session-based; observe finds actions, act executes one
-from stagehand import AsyncStagehand
+# Stagehand V4: launch a browser, then attach Stagehand to it
+from stagehand import Stagehand, browserbase
 
-client = AsyncStagehand()
-session = await client.sessions.create(model_name="openai/gpt-5-nano")
-await session.navigate(url="https://example.com/login")
+browser = await browserbase.launch(api_key=BROWSERBASE_API_KEY)
+stagehand = await Stagehand.create(
+    browser=browser,
+)
+pages = await browser.context.pages()
+page = pages[0] if pages else await browser.context.new_page()
+await page.goto("https://example.com/login")
 
-observe_resp = await session.observe(instruction="find the email input and fill it")
-action = observe_resp.data.result[0].to_dict(exclude_none=True)
-await session.act(input=action)
-# repeat observe/act for password and TOTP field
+await stagehand.act(f"Fill the email field with {email}", page=page)
+await stagehand.act(f"Fill the password field with {password}", page=page)
+await stagehand.act(f"Fill the TOTP field with {totp_code}", page=page)
 
 # Playwright: Explicit selectors, you specify how to find elements
 await page.locator('input[type="email"]').fill(email)
@@ -52,16 +55,16 @@ await page.locator("form input").nth(2).fill(totp_code)
 **Example - Checking authentication result:**
 
 ```python
-# Stagehand v3: extract returns structured data via response.data.result
-extract_response = await session.extract(
-    instruction="Check if the login was successful or if there's an error message",
-    schema={
-        "type": "object",
-        "properties": {"success": {"type": "boolean"}, "message": {"type": "string"}},
-        "required": ["success"],
-    },
+# Stagehand V4: extract returns a typed response envelope
+extract_response = await stagehand.extract(
+    "Check if the login was successful and return its message",
+    AuthResult,
+    page=page,
 )
-result = extract_response.data.result
+result = extract_response.data
+
+await stagehand.close()
+await browser.close()
 
 # Playwright: Must check for specific elements/text on the page
 has_success = await page.locator('text="Login Success"').is_visible()

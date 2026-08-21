@@ -3,30 +3,29 @@
 ## AT A GLANCE
 
 - Goal: Demonstrate how Stagehand's caching feature dramatically reduces cost and latency by reusing previously computed actions instead of calling the LLM every time.
-- Shows side-by-side comparison of workflows with and without caching enabled.
-- Demonstrates massive cost savings for repeated workflows (99.9% reduction in LLM calls).
-- Docs → https://docs.stagehand.dev/v3/best-practices/caching#caching-actions
+- Runs the same observation twice and verifies the second result is a Browserbase Cache hit.
+- Reads cache status and saved-token data from the V4 result metadata.
+- Docs → https://docs.stagehand.dev/v4/best-practices/caching#caching-actions
 
 ## GLOSSARY
 
 - caching: Stagehand can cache action results based on instruction text and page context, eliminating redundant LLM calls
-  Docs → https://docs.stagehand.dev/v3/best-practices/caching#caching-actions
+  Docs → https://docs.stagehand.dev/v4/best-practices/caching#caching-actions
 - act: execute actions on web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 
 ## QUICKSTART
 
 1. pnpm install
 2. cp .env.example .env
 3. Add your Browserbase API key to .env
-4. pnpm start (run twice to see cache benefits!)
+4. pnpm start
 
 ## EXPECTED OUTPUT
 
-- First run: Executes workflow without cache, then with cache enabled (populates cache)
-- Subsequent runs: Uses cached actions for instant execution with zero LLM calls
-- Displays timing comparison, cost savings, and cache statistics
-- Shows cache location and file structure
+- The first observation is normally a cache miss and primes the managed cache.
+- The repeated observation is verified as a `HIT`.
+- Output includes each operation's cache status, duration, and saved-token metadata.
 
 ## HOW CACHING WORKS
 
@@ -46,9 +45,9 @@
 
 **Cache Storage:**
 
-- Location: `.cache/stagehand-demo`
-- Format: JSON files (one per cached action)
-- Persistent across runs
+- Browserbase manages the cache server-side.
+- There are no local cache files or directories to maintain.
+- `result.metadata.cache.status` reports `HIT`, `MISS`, or `DISABLED`.
 
 ## BENEFITS FOR REPEATED WORKFLOWS
 
@@ -74,8 +73,8 @@ Payment portals rarely change → Cache actions once → Reuse for thousands of 
 ## COMMON PITFALLS
 
 - Missing credentials: verify .env contains BROWSERBASE_API_KEY
-- Cache not working: ensure cacheDir path is writable and check that instruction text matches exactly
-- First run slower: expected behavior - cache is populated on first run, subsequent runs will be instant
+- Cache not working: check that the instruction and page content match exactly
+- First observation slower: expected behavior—the first result primes the managed cache
 - Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in
 
 ## USE CASES
@@ -87,33 +86,28 @@ Payment portals rarely change → Cache actions once → Reuse for thousands of 
 ## BEST PRACTICES
 
 - ✅ Enable caching in production for repeated workflows
-- ✅ One cache per portal/interface type
-- ✅ Invalidate cache when page structure changes significantly
+- ✅ Keep the page environment and instruction stable
+- ✅ Tune `cache.threshold` for the workflow's tolerance for change
 - ✅ Monitor cache hit rate to optimize cache effectiveness
 - ✅ Warm cache with test runs before production deployment
 
 ## NEXT STEPS
 
-• Customize cache directory: Modify cacheDir to organize caches by workflow type or environment.
-• Add cache invalidation: Implement logic to clear cache when page structure changes or after a certain time period.
-• Monitor cache performance: Track cache hit rates and cost savings to measure effectiveness.
+• Tune the cache threshold per instance or per operation.
+• Scope operations to a stable selector when the surrounding page changes frequently.
+• Monitor `metadata.cache` to measure hit rates and token savings.
 
 ## TRY IT YOURSELF
 
-1. Run this script again: `pnpm start`
-   → Second run will be MUCH faster (cache hits)
+1. Change the instruction text and run again to observe a miss followed by a hit.
 
-2. Clear cache and run again:
-   `rm -rf .cache/stagehand-demo && pnpm start`
-   → Back to first-run behavior
+2. Change `cache: { threshold: 1 }` to a higher threshold and compare warm-up behavior.
 
-3. Check cache contents:
-   `ls -la .cache/stagehand-demo`
-   → See cached action files
+3. Print the complete `metadata.cache` object to inspect miss reasons and token savings.
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

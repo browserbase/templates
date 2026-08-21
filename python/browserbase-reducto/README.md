@@ -1,5 +1,7 @@
 # Stagehand + Browserbase + Reducto: Download PDFs and Extract Financial Data
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - **Goal**: Automate downloading financial PDFs from websites and extract structured data using AI-powered document parsing.
@@ -12,7 +14,7 @@
 ## GLOSSARY
 
 - **act**: perform UI actions from natural language prompts (click, scroll, navigate)
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - **Browserbase Downloads**: When a PDF URL is opened in a browser session, Browserbase automatically downloads and stores it in cloud storage. Files must be retrieved via the Session Downloads API as a ZIP archive.
   Docs → https://docs.browserbase.com/features/downloads
 - **Reducto Extract**: Extract structured data from PDFs using JSON schema definitions. More efficient than parsing entire documents when you only need specific fields.
@@ -72,7 +74,7 @@ Docs → https://docs.reducto.ai/parse/best-practices#2-enable-agentic-mode-only
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 📚 Browserbase Downloads: https://docs.browserbase.com/features/downloads
 📚 Reducto Best Practices: https://docs.reducto.ai/parse/best-practices
 🎮 Browserbase: https://www.browserbase.com

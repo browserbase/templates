@@ -3,16 +3,15 @@
 ## AT A GLANCE
 
 - Goal: find personalized gift recommendations using AI-generated search queries and intelligent product scoring.
-- AI Integration: Stagehand for AI-generated search queries and score products based on recipient profile.
+- AI Integration: OpenAI through Vercel AI Gateway generates and scores personalized search terms; Stagehand searches and extracts the live products. A direct OpenAI key remains a fallback.
 - Concurrent Sessions: runs multiple browser sessions simultaneously to search different queries in parallel.
-- Proxies: uses Browserbase proxies with UK geolocation for European website access (Firebox.eu).
 
 ## GLOSSARY
 
 - act: perform UI actions from a prompt (search, click, type)
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - extract: pull structured data from pages using schemas
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - concurrent sessions: run multiple browser sessions simultaneously for faster searching
   Docs → https://docs.browserbase.com/guides/concurrency-rate-limits
 - proxies: use geolocation-based routing for European website access (Firebox.eu)
@@ -20,16 +19,15 @@
 
 ## QUICKSTART
 
-1.  cd gift-finder-template
-2.  npm install
-3.  npm install inquirer openai
-4.  cp .env.example .env
-5.  Add your Browserbase API key and Project ID to .env
-6.  npm start
+1. cd gift-finder
+2. npm install
+3. cp .env.example .env
+4. Add `BROWSERBASE_API_KEY` and `AI_GATEWAY_API_KEY` to .env
+5. npm start
 
 ## EXPECTED OUTPUT
 
-- Prompts user for recipient and description
+- Reads the recipient and description from `CONFIG` in `index.ts`
 - Generates 3 search queries using OpenAI
 - Runs concurrent browser sessions to search Firebox.eu
 - Extracts product data using structured schemas
@@ -38,9 +36,8 @@
 
 ## COMMON PITFALLS
 
-- Browserbase Developer plan or higher is required to use proxies (they have been commented out in the code)
 - "Cannot find module": ensure all dependencies are installed
-- Missing credentials: verify .env contains all required API keys
+- Missing credentials: verify .env contains BROWSERBASE_API_KEY and AI_GATEWAY_API_KEY (or OPENAI_API_KEY for the direct fallback)
 - Search failures: check internet connection and website accessibility
 
 ## USE CASES
@@ -57,7 +54,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

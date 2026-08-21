@@ -1,8 +1,8 @@
 // Amazon Global Price Comparison - See README.md for full documentation
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
+import { z } from "zod/v4";
 
 // Schema for a single product with structured extraction fields
 const ProductSchema = z.object({
@@ -14,9 +14,7 @@ const ProductSchema = z.object({
     ),
   rating: z.string().describe("The star rating (e.g., '4.5 out of 5 stars')"),
   reviews_count: z.string().describe("The number of customer reviews (e.g., '1,234')"),
-  product_url: z
-    .string()
-    .describe("The full href URL link to the product detail page (starting with https:// or /dp/)"),
+  product_url: z.string().url().describe("The absolute href URL of the product detail page"),
 });
 
 // Schema for extracting multiple products from search results
@@ -31,6 +29,7 @@ type Product = z.infer<typeof ProductSchema>;
 interface CountryConfig {
   name: string;
   code: string;
+  domain: string;
   city?: string;
   currency: string;
 }
@@ -38,12 +37,18 @@ interface CountryConfig {
 // Supported countries for price comparison
 // Add or remove countries as needed - see https://docs.browserbase.com/features/proxies for available geolocations
 const COUNTRIES: CountryConfig[] = [
-  { name: "United States", code: "US", city: undefined, currency: "USD" },
-  { name: "United Kingdom", code: "GB", city: "LONDON", currency: "GBP" },
-  { name: "Germany", code: "DE", city: "BERLIN", currency: "EUR" },
-  { name: "France", code: "FR", city: "PARIS", currency: "EUR" },
-  { name: "Italy", code: "IT", city: "ROME", currency: "EUR" },
-  { name: "Spain", code: "ES", city: "MADRID", currency: "EUR" },
+  { name: "United States", code: "US", domain: "www.amazon.com", currency: "USD" },
+  {
+    name: "United Kingdom",
+    code: "GB",
+    domain: "www.amazon.co.uk",
+    city: "LONDON",
+    currency: "GBP",
+  },
+  { name: "Germany", code: "DE", domain: "www.amazon.de", city: "BERLIN", currency: "EUR" },
+  { name: "France", code: "FR", domain: "www.amazon.fr", city: "PARIS", currency: "EUR" },
+  { name: "Italy", code: "IT", domain: "www.amazon.it", city: "ROME", currency: "EUR" },
+  { name: "Spain", code: "ES", domain: "www.amazon.es", city: "MADRID", currency: "EUR" },
 ];
 
 // Results structure for each country
@@ -53,6 +58,14 @@ interface CountryResult {
   currency: string;
   products: Product[];
   error?: string;
+}
+
+async function closeSession(
+  stagehand: Stagehand,
+  browser: Awaited<ReturnType<typeof browserbase.launch>>,
+) {
+  await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+  await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
 }
 
 /**
@@ -77,27 +90,21 @@ async function getProductsForCountry(
 
   // Initialize Stagehand with geolocation proxy configuration
   // This ensures all browser traffic routes through the specified geographic location
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 0,
-    // 0 = errors only, 1 = info, 2 = debug
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-    // https://docs.stagehand.dev/configuration/logging
-    browserbaseSessionCreateParams: {
-      proxies: [
-        {
-          type: "browserbase", // Use Browserbase's managed proxy infrastructure for reliable geolocation routing
-          geolocation,
-        },
-      ],
-    },
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+    proxies: [
+      {
+        type: "browserbase", // Use Browserbase's managed proxy infrastructure for reliable geolocation routing
+        geolocation,
+      },
+    ],
   });
+  const stagehand = await Stagehand.create({ browser: browser, logging: { level: "error" } });
 
   try {
     console.log(`Initializing browser session with ${country.name} proxy...`);
-    await stagehand.init();
 
-    const page = stagehand.context.pages()[0];
+    let page = (await browser.context.pages())[0];
 
     // Alternative: Skip the search bar and go straight to results by building the search URL.
     // Uncomment below to use direct navigation instead of stagehand.act() typing + clicking.
@@ -105,30 +112,40 @@ async function getProductsForCountry(
     // console.log(`Navigating to: ${searchUrl}`);
     // await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
 
-    // Navigate to Amazon homepage to begin search
-    console.log(`[${country.name}] Navigating to Amazon...`);
-    await page.goto("https://www.amazon.com", {
+    // Use the matching regional storefront, then let Stagehand perform the
+    // semantic search interaction rather than coupling the template to the DOM.
+    const origin = `https://${country.domain}`;
+    console.log(`[${country.name}] Navigating to ${origin}...`);
+    await page.goto(origin, {
       waitUntil: "domcontentloaded",
       timeout: 60000,
     });
+    let semanticSearchSucceeded = false;
+    try {
+      const typed = await stagehand.act(`Type "${searchQuery}" into the search bar`);
+      const submitted = await stagehand.act("Click the search button");
+      semanticSearchSucceeded = typed.data.success && submitted.data.success;
+    } catch (error) {
+      console.warn(
+        `[${country.name}] Semantic search failed; checking results before fallback`,
+        error,
+      );
+    }
+    page = (await browser.context.activePage()) ?? page;
+    const resultsReady = semanticSearchSucceeded
+      ? await page
+          .waitForSelector('[data-component-type="s-search-result"]', { timeout: 10000 })
+          .catch(() => false)
+      : false;
+    if (!resultsReady) {
+      const searchUrl = `${origin}/s?k=${encodeURIComponent(searchQuery)}`;
+      await page.goto(searchUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+      await page.waitForSelector('[data-component-type="s-search-result"]', { timeout: 15000 });
+    }
 
-    // Perform search using natural language actions
-    console.log(`[${country.name}] Searching for: ${searchQuery}`);
-    await stagehand.act(`Type "${searchQuery}" into the search bar`);
-    await stagehand.act("Click the search button");
-
-    // Extract products from search results using Stagehand's structured extraction
     console.log(`[${country.name}] Extracting top ${resultsCount} products...`);
-
-    const extractionResult = await stagehand.extract(
-      `Extract the first ${resultsCount} product search results from this Amazon page. For each product, extract:
-      1. name: the full product title
-      2. price: the displayed price WITH currency symbol (like $599.99 or 599,99 EUR). If no price shown, use "N/A"
-      3. rating: the star rating text (like "4.5 out of 5 stars")
-      4. reviews_count: the number of reviews (like "2,508")
-      5. product_url: the href link to the product page (starts with /dp/ or https://)
-      
-      Only extract actual product listings, skip sponsored ads or recommendations.`,
+    const { data: extractionResult } = await stagehand.extract(
+      `Extract the first ${resultsCount} product search results from this Amazon page. For each product, extract the full title, displayed price with currency symbol (or "N/A"), star rating, review count, and absolute product-page href. Each URL must be a real Amazon link containing /dp/. Only extract actual product listings.`,
       ProductsSchema,
     );
 
@@ -139,13 +156,13 @@ async function getProductsForCountry(
       product_url: p.product_url?.startsWith("http")
         ? p.product_url
         : p.product_url?.startsWith("/")
-          ? `https://www.amazon.com${p.product_url}`
+          ? `${origin}${p.product_url}`
           : p.product_url || "N/A",
     }));
 
     console.log(`Found ${cleanedProducts.length} products in ${country.name}`);
 
-    await stagehand.close();
+    await closeSession(stagehand, browser);
 
     return {
       country: country.name,
@@ -155,7 +172,7 @@ async function getProductsForCountry(
     };
   } catch (error) {
     console.error(`Error fetching products from ${country.name}:`, error);
-    await stagehand.close();
+    await closeSession(stagehand, browser);
 
     return {
       country: country.name,
@@ -225,21 +242,26 @@ async function main() {
   // Configure search parameters
   const searchQuery = "iPhone 15 Pro Max 256GB";
   const resultsCount = 3;
+  const countryLimit = Number.parseInt(process.env.MAX_COUNTRIES ?? String(COUNTRIES.length), 10);
+  if (!Number.isInteger(countryLimit) || countryLimit < 1) {
+    throw new Error("MAX_COUNTRIES must be a positive integer");
+  }
+  const selectedCountries = COUNTRIES.slice(0, countryLimit);
 
   console.log("=".repeat(60));
   console.log("AMAZON PRICE COMPARISON - GEOLOCATION PROXY DEMO");
   console.log("=".repeat(60));
   console.log(`Search Query: ${searchQuery}`);
   console.log(`Results per country: ${resultsCount}`);
-  console.log(`Countries: ${COUNTRIES.map((c) => c.code).join(", ")}`);
+  console.log(`Countries: ${selectedCountries.map((c) => c.code).join(", ")}`);
   console.log("=".repeat(60));
 
   // Process all countries concurrently for faster execution
   // Each country uses its own browser session, so they can run in parallel
-  console.log(`\nFetching prices from ${COUNTRIES.length} countries concurrently...`);
+  console.log(`\nFetching prices from ${selectedCountries.length} countries concurrently...`);
 
   const results = await Promise.all(
-    COUNTRIES.map((country) => getProductsForCountry(searchQuery, country, resultsCount)),
+    selectedCountries.map((country) => getProductsForCountry(searchQuery, country, resultsCount)),
   );
 
   // Display formatted comparison table
@@ -260,6 +282,6 @@ main().catch((err) => {
     "  - Verify geolocation proxy locations are valid (see https://docs.browserbase.com/features/proxies)",
   );
   console.error("  - Ensure you have sufficient Browserbase credits");
-  console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
+  console.error("Docs: https://docs.stagehand.dev/v4/first-steps/introduction");
   process.exit(1);
 });

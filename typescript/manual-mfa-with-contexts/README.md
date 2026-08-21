@@ -26,11 +26,11 @@
 
 - Creates a new Browserbase context
 - First session: navigates to GitHub login, fills credentials, detects MFA prompt
-- Pauses and displays Browserbase session link for manual MFA completion
+- Pauses and directs the user to the newest session in the Browserbase Sessions dashboard for manual MFA completion
 - Waits for MFA completion (2 minute timeout)
 - Saves authentication state to context
 - Second session: reuses context, navigates to GitHub (already logged in, no MFA)
-- Extracts logged-in username to verify authentication
+- Extracts and prints the GitHub username from the reused context
 - Cleans up context
 
 ## COMMON PITFALLS
@@ -56,7 +56,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 📚 Contexts Docs: https://docs.browserbase.com/features/contexts
 💡 Try it out: https://www.browserbase.com/playground

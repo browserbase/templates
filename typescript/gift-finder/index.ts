@@ -1,9 +1,9 @@
 // Stagehand + Browserbase: AI-Powered Gift Finder - See README.md for full documentation
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
 import OpenAI from "openai";
-import { z } from "zod";
+import { z } from "zod/v4";
 
 // ============= CONFIGURATION =============
 // Update these values to customize your gift search
@@ -33,15 +33,41 @@ interface SearchResult {
   products: Product[];
 }
 
-const client = new OpenAI();
+async function closeSession(
+  stagehand: Stagehand,
+  browser: Awaited<ReturnType<typeof browserbase.launch>>,
+) {
+  await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+  await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
+}
+
+function openAIClient(): { client: OpenAI; model: string } {
+  if (process.env.AI_GATEWAY_API_KEY) {
+    return {
+      client: new OpenAI({
+        apiKey: process.env.AI_GATEWAY_API_KEY,
+        baseURL: "https://ai-gateway.vercel.sh/v1",
+      }),
+      model: "openai/gpt-4.1",
+    };
+  }
+  if (process.env.OPENAI_API_KEY) {
+    return {
+      client: new OpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: "gpt-4.1",
+    };
+  }
+  throw new Error("AI_GATEWAY_API_KEY or OPENAI_API_KEY is required");
+}
 
 async function generateSearchQueries(recipient: string, description: string): Promise<string[]> {
   console.log(`Generating search queries for ${recipient}...`);
 
   // Use AI to generate search terms based on recipient profile
   // This avoids generic searches and focuses on thoughtful, complementary gifts
+  const { client, model } = openAIClient();
   const response = await client.chat.completions.create({
-    model: "gpt-4.1",
+    model,
     messages: [
       {
         role: "user",
@@ -99,8 +125,9 @@ async function scoreProducts(
 
   console.log(`Scoring ${allProducts.length} products...`);
 
+  const { client, model } = openAIClient();
   const response = await client.chat.completions.create({
-    model: "gpt-4.1",
+    model,
     messages: [
       {
         role: "user",
@@ -143,42 +170,36 @@ IMPORTANT:
     max_completion_tokens: 1000,
   });
 
-  try {
-    // Clean up AI response by removing markdown code blocks
-    let responseContent = response.choices[0]?.message?.content?.trim() || "[]";
+  // Clean up AI response by removing markdown code blocks
+  let responseContent = response.choices[0]?.message?.content?.trim() || "[]";
 
-    responseContent = responseContent.replace(/```json\n?/g, "").replace(/```\n?/g, "");
+  responseContent = responseContent.replace(/```json\n?/g, "").replace(/```\n?/g, "");
 
-    // Parse JSON response from AI scoring
-    const scoresData = JSON.parse(responseContent);
-
-    // Map AI scores back to products using index matching
-    const scoredProducts = allProducts.map((product, index) => {
-      const scoreInfo = scoresData.find(
-        (s: { productIndex: number; score: number; reason: string }) =>
-          s.productIndex === index + 1,
-      );
-      return {
-        ...product,
-        aiScore: scoreInfo?.score || 0,
-        aiReason: scoreInfo?.reason || "No scoring available",
-      };
-    });
-
-    // Sort by AI score descending to show best matches first
-    return scoredProducts.sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0));
-  } catch (error) {
-    console.error("Error parsing AI scores:", error);
-    console.log("Using fallback scoring (all products scored as 5)");
-
-    // Fallback scoring ensures app continues working even if AI fails
-    // Neutral score of 5 allows products to still be ranked and displayed
-    return allProducts.map((product) => ({
-      ...product,
-      aiScore: 5,
-      aiReason: "Scoring failed - using neutral score",
-    }));
+  const ScoreSchema = z.object({
+    productIndex: z.number().int().min(1).max(allProducts.length),
+    score: z.number().min(1).max(10),
+    reason: z.string().min(1).max(100),
+  });
+  const scoresData = z
+    .array(ScoreSchema)
+    .length(allProducts.length)
+    .parse(JSON.parse(responseContent));
+  if (new Set(scoresData.map((score) => score.productIndex)).size !== allProducts.length) {
+    throw new Error("OpenAI scoring did not return one unique score per product");
   }
+
+  // Map AI scores back to products using index matching
+  const scoredProducts = allProducts.map((product, index) => {
+    const scoreInfo = scoresData.find((score) => score.productIndex === index + 1)!;
+    return {
+      ...product,
+      aiScore: scoreInfo.score,
+      aiReason: scoreInfo.reason,
+    };
+  });
+
+  // Sort by AI score descending to show best matches first
+  return scoredProducts.sort((a, b) => (b.aiScore || 0) - (a.aiScore || 0));
 }
 
 async function getUserInput(): Promise<GiftFinderAnswers> {
@@ -200,26 +221,28 @@ async function getUserInput(): Promise<GiftFinderAnswers> {
 async function main(): Promise<void> {
   console.log("Starting Gift Finder Application...");
 
+  if (
+    !process.env.BROWSERBASE_API_KEY ||
+    (!process.env.AI_GATEWAY_API_KEY && !process.env.OPENAI_API_KEY)
+  ) {
+    throw new Error(
+      "BROWSERBASE_API_KEY and either AI_GATEWAY_API_KEY or OPENAI_API_KEY are required",
+    );
+  }
+
   const { recipient, description } = await getUserInput();
   console.log(`User input received: ${recipient} - ${description}`);
 
   console.log("\nGenerating intelligent search queries...");
 
-  // Generate search queries with fallback for reliability
-  let searchQueries: string[];
-  try {
-    searchQueries = await generateSearchQueries(recipient, description);
-
-    console.log("\nGenerated Search Queries:");
-    searchQueries.forEach((query, index) => {
-      console.log(`   ${index + 1}. ${query.replace(/['"]/g, "")}`);
-    });
-  } catch (error) {
-    console.error("Error generating search queries:", error);
-    // Fallback queries
-    searchQueries = ["gifts", "accessories", "items"];
-    console.log("Using fallback search queries");
+  const searchQueries = await generateSearchQueries(recipient, description);
+  if (searchQueries.length !== 3) {
+    throw new Error(`Expected 3 generated search queries, received ${searchQueries.length}`);
   }
+  console.log("\nGenerated Search Queries:");
+  searchQueries.forEach((query, index) => {
+    console.log(`   ${index + 1}. ${query.replace(/['"]/g, "")}`);
+  });
 
   console.log("\nStarting concurrent browser searches...");
 
@@ -228,45 +251,25 @@ async function main(): Promise<void> {
 
     // Create separate Stagehand instance for each search to run concurrently
     // Each session searches independently to maximize speed
-    const sessionStagehand = new Stagehand({
-      env: "BROWSERBASE",
-      verbose: 1,
-      // 0 = errors only, 1 = info, 2 = debug
-      // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-      // https://docs.stagehand.dev/configuration/logging
-      model: "openai/gpt-4.1",
-      browserbaseSessionCreateParams: {
-        // Proxies require Developer Plan or higher - comment in if you have a Developer Plan or higher
-        //   proxies: [
-        //     {
-        //       "type": "browserbase",
-        //       "geolocation": {
-        //         "city": "LONDON",
-        //         "country": "GB"
-        //       }
-        //     }
-        //   ],
-        region: "us-east-1",
-        timeout: 900,
-        browserSettings: {
-          viewport: {
-            width: 1920,
-            height: 1080,
-          },
+    const sessionBrowser = await browserbase.launch({
+      apiKey: process.env.BROWSERBASE_API_KEY!,
+      region: "us-east-1",
+      timeout: 900,
+      browserSettings: {
+        viewport: {
+          width: 1920,
+          height: 1080,
         },
       },
     });
+    const sessionStagehand = await Stagehand.create({
+      browser: sessionBrowser,
+      model: { modelName: "openai/gpt-4.1" },
+      logging: { level: "info" },
+    });
 
     try {
-      await sessionStagehand.init();
-      const sessionPage = sessionStagehand.context.pages()[0];
-
-      // Display live view URL for debugging and monitoring
-      const sessionId = sessionStagehand.browserbaseSessionID;
-      if (sessionId) {
-        const liveViewUrl = `https://www.browserbase.com/sessions/${sessionId}`;
-        console.log(`Session ${sessionIndex + 1} Live View: ${liveViewUrl}`);
-      }
+      const sessionPage = (await sessionBrowser.context.pages())[0];
 
       // Navigate to European gift site - proxies help with regional access
       console.log(`Session ${sessionIndex + 1}: Navigating to Firebox.eu...`);
@@ -280,14 +283,14 @@ async function main(): Promise<void> {
 
       // Extract structured product data using Zod schema for type safety
       console.log(`Session ${sessionIndex + 1}: Extracting product data...`);
-      const productsData = await sessionStagehand.extract(
+      const { data: productsData } = await sessionStagehand.extract(
         "Extract the first 3 products from the search results",
         z.object({
           products: z
             .array(
               z.object({
                 title: z.string().describe("the title/name of the product"),
-                url: z.string().url("the full URL link to the product page"),
+                url: z.string().describe("the full URL link to the product page"),
                 price: z.string().describe("the price of the product (include currency symbol)"),
                 rating: z
                   .string()
@@ -301,25 +304,31 @@ async function main(): Promise<void> {
         }),
       );
 
-      console.log(
-        `Session ${sessionIndex + 1}: Found ${productsData.products.length} products for "${query}"`,
-      );
+      const baseUrl = await sessionPage.url();
+      const products = productsData.products.flatMap((product) => {
+        if (!product.title.trim() || !product.url.trim()) return [];
+        try {
+          const url = new URL(product.url, baseUrl);
+          if (url.protocol !== "http:" && url.protocol !== "https:") return [];
+          return [{ ...product, url: url.href }];
+        } catch {
+          return [];
+        }
+      });
 
-      await sessionStagehand.close();
+      console.log(`Session ${sessionIndex + 1}: Found ${products.length} products for "${query}"`);
+
+      await closeSession(sessionStagehand, sessionBrowser);
 
       return {
         query,
         sessionIndex: sessionIndex + 1,
-        products: productsData.products,
+        products,
       };
     } catch (error) {
       console.error(`Session ${sessionIndex + 1} failed:`, error);
 
-      try {
-        await sessionStagehand.close();
-      } catch (closeError) {
-        console.error(`Error closing session ${sessionIndex + 1}:`, closeError);
-      }
+      await closeSession(sessionStagehand, sessionBrowser);
 
       return {
         query,
@@ -332,10 +341,16 @@ async function main(): Promise<void> {
   const searchPromises = searchQueries.map((query, index) => runSingleSearch(query, index));
 
   console.log("\nBrowser Sessions Starting...");
-  console.log("Live view links will appear as each session initializes");
+  console.log("Search sessions are running concurrently");
 
   // Wait for all concurrent searches to complete
   const allResults = await Promise.all(searchPromises);
+  const failedSearches = allResults.filter((result) => result.products.length === 0);
+  if (failedSearches.length > 0) {
+    console.warn(
+      `${failedSearches.length} of ${allResults.length} gift searches produced no usable products; continuing with the successful results`,
+    );
+  }
 
   // Calculate total products found across all search sessions
   const totalProducts = allResults.reduce((sum, result) => sum + result.products.length, 0);
@@ -344,38 +359,30 @@ async function main(): Promise<void> {
   // Flatten all products into single array for AI scoring
   const allProductsFlat = allResults.flatMap((result) => result.products);
 
-  if (allProductsFlat.length > 0) {
-    try {
-      // AI scores all products and ranks them by relevance to recipient
-      const scoredProducts = await scoreProducts(allProductsFlat, recipient, description);
-      const top3Products = scoredProducts.slice(0, 3);
-
-      console.log("\nTOP 3 RECOMMENDED GIFTS:");
-
-      // Display top 3 products with AI reasoning for transparency
-      top3Products.forEach((product, index) => {
-        const rank = `#${index + 1}`;
-        console.log(`\n${rank} - ${product.title}`);
-        console.log(`Price: ${product.price}`);
-        console.log(`Rating: ${product.rating}`);
-        console.log(`Score: ${product.aiScore}/10`);
-        console.log(`Why: ${product.aiReason}`);
-        console.log(`Link: ${product.url}`);
-      });
-
-      console.log(
-        `\nGift finding complete! Found ${totalProducts} products, analyzed ${scoredProducts.length} with AI.`,
-      );
-    } catch (error) {
-      console.error("Error scoring products:", error);
-      console.log(`Target: ${recipient}`);
-      console.log(`Profile: ${description}`);
-    }
-  } else {
-    // Handle case where no products were found across all searches
-    console.log("No products found to score");
-    console.log("Try adjusting your recipient description or check if the website is accessible");
+  if (allProductsFlat.length < 3) {
+    throw new Error(`Expected at least 3 products to rank, received ${allProductsFlat.length}`);
   }
+
+  // AI scores all products and ranks them by relevance to recipient
+  const scoredProducts = await scoreProducts(allProductsFlat, recipient, description);
+  const top3Products = scoredProducts.slice(0, 3);
+
+  console.log("\nTOP 3 RECOMMENDED GIFTS:");
+
+  // Display top 3 products with AI reasoning for transparency
+  top3Products.forEach((product, index) => {
+    const rank = `#${index + 1}`;
+    console.log(`\n${rank} - ${product.title}`);
+    console.log(`Price: ${product.price}`);
+    console.log(`Rating: ${product.rating}`);
+    console.log(`Score: ${product.aiScore}/10`);
+    console.log(`Why: ${product.aiReason}`);
+    console.log(`Link: ${product.url}`);
+  });
+
+  console.log(
+    `\nGift finding complete! Found ${totalProducts} products, analyzed ${scoredProducts.length} with AI.`,
+  );
 
   console.log("\nThank you for using Gift Finder!");
 }

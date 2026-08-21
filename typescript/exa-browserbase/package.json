@@ -8,15 +8,18 @@
     "start": "tsx index.ts"
   },
   "dependencies": {
-    "@browserbasehq/stagehand": "latest",
+    "@browserbasehq/stagehand": "4.0.0",
     "dotenv": "latest",
     "exa-js": "latest",
-    "playwright-core": "latest",
-    "zod": "latest"
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/node": "latest",
     "tsx": "latest",
     "typescript": "latest"
-  }
+  },
+  "engines": {
+    "node": ">=22.18.0"
+  },
+  "packageManager": "pnpm@10.24.0"
 }

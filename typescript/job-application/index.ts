@@ -1,9 +1,9 @@
 // Stagehand + Browserbase: Job Application Automation - See README.md for full documentation
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
 import Browserbase from "@browserbasehq/sdk";
-import { z } from "zod/v3";
+import { z } from "zod/v4";
 
 // Define Zod schema for structured data extraction
 // Using schemas ensures consistent data extraction even if page layout changes
@@ -13,6 +13,14 @@ const JobInfoSchema = z.object({
 });
 
 type JobInfo = z.infer<typeof JobInfoSchema>;
+
+async function closeSession(
+  stagehand: Stagehand,
+  browser: Awaited<ReturnType<typeof browserbase.launch>>,
+) {
+  await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+  await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
+}
 
 export async function getProjectConcurrency(): Promise<number> {
   // Fetch project concurrency limit from Browserbase SDK
@@ -70,21 +78,19 @@ async function applyToJob(jobInfo: JobInfo, semaphore: () => Promise<void>, rele
   await semaphore();
 
   // Initialize Stagehand with Browserbase for cloud-based browser automation
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    model: "google/gemini-2.5-flash", // Routed through Model Gateway
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+  });
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    model: { modelName: "google/gemini-2.5-flash" },
   });
 
   try {
     // Initialize browser session to start automation
-    await stagehand.init();
 
     console.log(`[${jobInfo.title}] Session Started`);
-    console.log(
-      `[${jobInfo.title}] Watch live: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`,
-    );
-
-    const page = stagehand.context.pages()[0];
+    const page = (await browser.context.pages())[0];
 
     // Navigate to job URL
     await page.goto(jobInfo.url);
@@ -111,7 +117,9 @@ async function applyToJob(jobInfo: JobInfo, semaphore: () => Promise<void>, rele
 
     // Upload agent profile/resume file
     // Using observe() to find the upload button, then setting files programmatically
-    const [uploadAction] = await stagehand.observe("find the file upload button for agent profile");
+    const {
+      data: [uploadAction],
+    } = await stagehand.observe("find the file upload button for agent profile");
     if (uploadAction) {
       const uploadSelector = uploadAction.selector;
       if (uploadSelector) {
@@ -144,10 +152,10 @@ async function applyToJob(jobInfo: JobInfo, semaphore: () => Promise<void>, rele
 
     console.log(`[${jobInfo.title}] Application submitted successfully!`);
 
-    await stagehand.close();
+    await closeSession(stagehand, browser);
   } catch (error) {
     console.error(`[${jobInfo.title}] Error:`, error);
-    await stagehand.close();
+    await closeSession(stagehand, browser);
     throw error;
   } finally {
     // Always release semaphore slot to allow next job application to proceed
@@ -163,18 +171,18 @@ async function main() {
   console.log(`Executing with concurrency limit: ${maxConcurrency}`);
 
   // Initialize Stagehand with Browserbase for cloud-based browser automation
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    model: "google/gemini-2.5-flash", // Routed through Model Gateway
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+  });
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    model: { modelName: "google/gemini-2.5-flash" },
   });
 
   // Initialize browser session to start automation
-  await stagehand.init();
 
   console.log(`Main Stagehand Session Started`);
-  console.log(`Watch live: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`);
-
-  const page = stagehand.context.pages()[0];
+  const page = (await browser.context.pages())[0];
 
   // Navigate to agent job board homepage
   await page.goto("https://agent-job-board.vercel.app/");
@@ -186,14 +194,14 @@ async function main() {
 
   // Extract all job listings with titles and URLs using structured schema
   // Using extract() with Zod schema ensures consistent data extraction
-  const jobsData = await stagehand.extract(
+  const { data: jobsData } = await stagehand.extract(
     "extract all job listings with their titles and URLs",
     z.array(JobInfoSchema),
   );
 
   console.log(`Found ${jobsData.length} jobs`);
 
-  await stagehand.close();
+  await closeSession(stagehand, browser);
 
   // Create semaphore with concurrency limit to control parallel job applications
   // Semaphore ensures we don't exceed Browserbase project limits
@@ -207,8 +215,13 @@ async function main() {
 
   const applicationPromises = jobsData.map((job) => applyToJob(job, semaphore, release));
 
-  // Wait for all applications to complete
-  await Promise.all(applicationPromises);
+  // Attempt every application even if an earlier one fails, then report the
+  // complete business outcome instead of stopping on the first rejection.
+  const applicationResults = await Promise.allSettled(applicationPromises);
+  const failures = applicationResults.filter((result) => result.status === "rejected");
+  if (failures.length > 0) {
+    throw new Error(`${failures.length} of ${jobsData.length} applications failed`);
+  }
 
   console.log("All applications completed!");
 }
@@ -217,6 +230,6 @@ main().catch((err) => {
   console.error("Error in job application automation:", err);
   console.error("Common issues:");
   console.error("  - Check .env file has BROWSERBASE_PROJECT_ID and BROWSERBASE_API_KEY");
-  console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
+  console.error("Docs: https://docs.stagehand.dev/v4/first-steps/introduction");
   process.exit(1);
 });

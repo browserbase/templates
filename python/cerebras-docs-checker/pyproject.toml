@@ -3,14 +3,17 @@ name = "cerebras-docs-checker"
 version = "0.1.0"
 description = "AI-powered documentation checker using Cerebras LLMs, Stagehand, and Browserbase"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "httpx",
     "openai",
+    "browserbase>=1.7.0",
     "playwright",
     "pydantic",
     "python-dotenv",
-    "stagehand>=3.19.0",
+    "deepagents==0.7.5",
+    "langchain-mcp-adapters==0.3.2",
+    "langchain-openai==1.4.3",
 ]
 
 [project.optional-dependencies]
@@ -20,9 +23,8 @@ dev = [
     "ruff>=0.1.0",
 ]
 
-[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
+[tool.uv]
+package = false
 
 [tool.black]
 line-length = 100

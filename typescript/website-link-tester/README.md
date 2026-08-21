@@ -3,16 +3,16 @@
 ### AT A GLANCE
 
 - **Goal**: Crawl a website’s homepage, collect all links, and verify that each link loads successfully and matches its link text.
-- **Link extraction**: Uses `Stagehand.extract()` with a Zod schema to pull all links and their visible text from the homepage.
+- **Link extraction**: Uses schema-validated `extract()` to collect rendered HTTP(S) links and their accessible text.
 - **Content verification**: Opens each link and uses AI to assess whether the page content matches what the link text suggests.
 - **Social link handling**: Detects social media domains and only checks that they load (skipping full content verification).
 - **Batch processing**: Processes links in batches controlled by `MAX_CONCURRENT_LINKS` (sequential by default, can be made concurrent).
 
 ### GLOSSARY
 
-- **extract**: extract structured data from web pages using natural language instructions  
-  Docs → `https://docs.stagehand.dev/basics/extract`
-- **concurrent sessions**: run multiple browser sessions at the same time for faster batch processing  
+- **extract**: semantically assess whether a successfully loaded destination fits its source link
+  Docs → `https://docs.stagehand.dev/v4/basics/extract`
+- **concurrent sessions**: run multiple browser sessions at the same time for faster batch processing
   Docs → `https://docs.browserbase.com/guides/concurrency-rate-limits`
 
 ### QUICKSTART
@@ -27,21 +27,22 @@
      - `BROWSERBASE_API_KEY`
 4. **Run the script**
    - `npm start`
+   - Optional: `MAX_CONCURRENT_LINKS=8 npm start` to shorten a full audit when your Browserbase plan supports that concurrency
 
 ### EXPECTED OUTPUT
 
 - **Initial setup**
   - Initializes a Stagehand session with Browserbase
-  - Prints a live session link for monitoring the browser in real time
+  - Closes both the Stagehand instance and browser handle after every link check
 - **Link collection**
   - Navigates to the configured `URL` (default: `https://www.browserbase.com`)
-  - Extracts all links and their link text from the homepage
+  - Reads all rendered links and their link text from the homepage
   - Logs total link count and unique link count after de-duplication
 - **Verification**
   - Verifies links in batches using `MAX_CONCURRENT_LINKS`
   - For each link:
     - Confirms the page loads successfully
-    - For non-social links, extracts:
+    - Rejects HTTP error responses, then for non-social links assesses:
       - `pageTitle`
       - `contentMatches` (boolean)
       - short `assessment` (max ~8 words)
@@ -75,9 +76,9 @@
 
 ### TUNING BATCH SIZE & CONCURRENCY
 
-- **`MAX_CONCURRENT_LINKS` in `index.ts`**
+- **`MAX_CONCURRENT_LINKS` environment variable**
   - Default: `1` → sequential link verification (works on all plans)
-  - Set to `> 1` → more concurrent link verifications per batch (requires higher Browserbase concurrency limits)
+  - Set to `> 1` → more concurrent link verifications per batch (requires higher Browserbase concurrency limits), for example `MAX_CONCURRENT_LINKS=8 npm start`
 - **Using Semaphores for advanced control**
   - For more fine-grained control over concurrency (e.g., rate limiting, prioritization, or per-domain limits), you can wrap link verification in a **Semaphore** or similar concurrency primitive.
   - This lets you:
@@ -95,7 +96,7 @@
 
 ### HELPFUL RESOURCES
 
-- 📚 **Stagehand Docs**: `https://docs.stagehand.dev/v3/first-steps/introduction`
+- 📚 **Stagehand Docs**: `https://docs.stagehand.dev/v4/first-steps/introduction`
 - 🎮 **Browserbase**: `https://www.browserbase.com`
 - 💡 **Try it out**: `https://www.browserbase.com/playground`
 - 🔧 **Templates**: `https://www.browserbase.com/templates`

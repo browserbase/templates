@@ -1,16 +1,18 @@
 # Stagehand + Browserbase: Download Apple's Quarterly Financial Statements
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: automate downloading Apple's quarterly financial statements (PDFs) from their investor relations site.
 - Download Handling: Browserbase automatically captures PDFs opened during the session and bundles them into a ZIP file.
 - Retry Logic: polls Browserbase downloads API with configurable timeout to ensure files are ready before retrieval.
-- Live Debugging: displays live view URL for real-time session monitoring.
+- Live Debugging: the session remains available in the Browserbase Sessions dashboard without logging a signed URL.
 
 ## GLOSSARY
 
 - act: perform UI actions from a prompt (click, scroll, navigate)
-  Docs → https://docs.stagehand.dev/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - downloads API: retrieve files downloaded during a Browserbase session as a ZIP archive
   Docs → https://docs.browserbase.com/features/screenshots#pdfs
 - live view: real-time browser debugging interface for monitoring automation
@@ -54,7 +56,7 @@
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v2/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

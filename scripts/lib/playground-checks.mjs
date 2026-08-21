@@ -7,7 +7,12 @@
  * @returns {boolean}
  */
 export function hasStagehandUsage(code) {
-  const stagehandVariablePattern = /(?:let|const|var)\s+\w+\s*=\s*new\s+Stagehand\s*\(/;
+  const stagehandConstructorPattern = /(?:let|const|var)\s+\w+\s*=\s*new\s+Stagehand\s*\(/;
   const stagehandDirectPattern = /(?:^|\s|await\s+)(?:new\s+)?Stagehand\s*\(/;
-  return stagehandVariablePattern.test(code) || stagehandDirectPattern.test(code);
+  const stagehandCreatePattern = /(?:^|\s|await\s+)Stagehand\.create\s*\(/;
+  return (
+    stagehandConstructorPattern.test(code) ||
+    stagehandDirectPattern.test(code) ||
+    stagehandCreatePattern.test(code)
+  );
 }

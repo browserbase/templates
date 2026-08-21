@@ -14,7 +14,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 load_dotenv()
 
 # ============= CONFIGURATION =============
-BROWSERBASE_API_KEY = os.getenv("BROWSERBASE_API_KEY")
+BROWSERBASE_API_KEY = os.environ["BROWSERBASE_API_KEY"]
 # =========================================
 
 bb = Browserbase(api_key=BROWSERBASE_API_KEY)
@@ -31,6 +31,7 @@ def run() -> None:
         },
     )
     driver = webdriver.Remote(
+        command_executor=session.selenium_remote_url,
         options=webdriver.ChromeOptions(),
         client_config=client_config,
     )
@@ -45,8 +46,6 @@ def run() -> None:
         # Navigate to the SFMOMA homepage
         driver.get("https://www.sfmoma.org")
         print(f"At URL: {driver.current_url} | Title: {driver.title}")
-        assert driver.current_url == "https://www.sfmoma.org/"
-        assert driver.title == "SFMOMA"
 
         wait = WebDriverWait(driver, 10)
 

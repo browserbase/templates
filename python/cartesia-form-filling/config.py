@@ -6,7 +6,7 @@ hyperparameters for the Cartesia voice agent with form filling.
 
 import os
 
-DEFAULT_MODEL_ID = os.getenv("MODEL_ID", "gemini-2.5-flash")
+DEFAULT_MODEL_ID = os.getenv("MODEL_ID", "gemini-flash-latest")
 
 DEFAULT_TEMPERATURE = 0.7
 SYSTEM_PROMPT = """

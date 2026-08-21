@@ -1,33 +1,40 @@
 // Stagehand + Browserbase: SEC Filing Downloader - See README.md for full documentation
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
+import { z } from "zod/v4";
+
+async function closeSession(
+  stagehand: Stagehand,
+  browser: Awaited<ReturnType<typeof browserbase.launch>>,
+) {
+  await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+  await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
+}
 
 // Search query - can be company name, ticker symbol, or CIK number
 // Examples: "Apple Inc", "AAPL", "0000320193"
 const SEARCH_QUERY = "Apple Inc";
+const COMPANY_CIK = "0000320193";
 
 // Number of filings to retrieve
 const NUM_FILINGS = 5;
 
-// Schema for extracted filing data
-const FilingSchema = z.object({
-  filings: z.array(
-    z.object({
-      type: z.string().describe("Filing type (e.g., 10-K, 10-Q, 8-K)"),
-      date: z.string().describe("Filing date in YYYY-MM-DD format"),
-      description: z.string().describe("Full description of the filing"),
-      accessionNumber: z.string().describe("SEC accession number"),
-      fileNumber: z.string().optional().describe("File/Film number"),
-    }),
-  ),
+const CompanyInfoSchema = z.object({
+  companyName: z.string().min(1),
+  cik: z.string().min(1),
 });
 
-// Schema for company info extraction
-const CompanyInfoSchema = z.object({
-  companyName: z.string().describe("Official company name"),
-  cik: z.string().describe("Central Index Key (CIK) number"),
+const FilingsSchema = z.object({
+  filings: z.array(
+    z.object({
+      type: z.string().min(1),
+      date: z.string().min(1),
+      description: z.string().nullable(),
+      accessionNumber: z.string().nullable(),
+      fileNumber: z.string().nullable(),
+    }),
+  ),
 });
 
 // Result shape returned after extracting company and filing metadata from SEC EDGAR
@@ -55,78 +62,72 @@ async function main(): Promise<void> {
   console.log(`Retrieving ${NUM_FILINGS} most recent filings\n`);
 
   // Initialize Stagehand with Browserbase for cloud-based browser automation
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    apiKey: process.env.BROWSERBASE_API_KEY,
-    verbose: 1,
-    // 0 = errors only, 1 = info, 2 = debug
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-    // https://docs.stagehand.dev/configuration/logging
-    model: "google/gemini-2.5-flash",
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+  });
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    model: { modelName: "google/gemini-2.5-flash" },
+    logging: { level: "info" },
   });
 
   try {
     // Initialize browser session
-    await stagehand.init();
+
     console.log("Stagehand initialized successfully!");
 
-    const page = stagehand.context.pages()[0];
+    let page = (await browser.context.pages())[0];
 
-    // Provide live session URL for debugging and monitoring
-    if (stagehand.browserbaseSessionId) {
-      console.log(`Live View: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`);
-    }
-
-    // Navigate to modern SEC EDGAR company search page
     console.log("\nNavigating to SEC EDGAR...");
     await page.goto("https://www.sec.gov/edgar/searchedgar/companysearch.html", {
       waitUntil: "domcontentloaded",
+      timeout: 60000,
     });
-
-    // Enter search query in the Company and Person Lookup search box
-    console.log(`Searching for: ${SEARCH_QUERY}`);
-    await stagehand.act(`Click on the Company and Person Lookup search textbox`);
-    await stagehand.act(`Type "${SEARCH_QUERY}" in the search field`);
-
-    // Submit search to load company results
-    await stagehand.act("Click the search submit button");
-
-    // Select the matching company from results to view their filings page
-    console.log("Selecting the correct company from results...");
-    await stagehand.act(`Click on "${SEARCH_QUERY}" in the search results to view their filings`);
-
-    // Extract company information from the filings page
-    console.log("Extracting company information...");
-    let companyInfo = { companyName: SEARCH_QUERY, cik: "Unknown" };
-
     try {
-      const extractedInfo = await stagehand.extract(
-        "Extract the company name and CIK number from the page header or company information section. The CIK should be a numeric identifier.",
-        CompanyInfoSchema,
-      );
-      if (extractedInfo && extractedInfo.companyName) {
-        companyInfo = extractedInfo;
-      }
+      await stagehand.act("Click on the Company and Person Lookup search textbox");
+      await stagehand.act(`Type "${SEARCH_QUERY}" in the search field`);
+      await stagehand.act("Click the search submit button");
+      await stagehand.act(`Click on "${SEARCH_QUERY}" in the search results to view their filings`);
     } catch (error) {
-      // Fallback to search query if extraction fails (e.g. page layout differs)
-      console.log("Could not extract company info, using search query as company name:", error);
+      console.warn("Semantic SEC navigation did not complete; checking its postcondition", error);
+    }
+    page = (await browser.context.activePage()) ?? page;
+    if (!(await page.url()).includes("/edgar/browse/")) {
+      await page.goto(`https://www.sec.gov/edgar/browse/?CIK=${COMPANY_CIK}&owner=exclude`, {
+        waitUntil: "domcontentloaded",
+        timeout: 60000,
+      });
     }
 
-    // Extract filing metadata from the filings table using structured schema
+    let companyInfo = { companyName: SEARCH_QUERY, cik: COMPANY_CIK };
+    try {
+      const extractedCompany = await stagehand.extract(
+        "Extract the official company name and numeric CIK from the page header or company information section",
+        CompanyInfoSchema,
+      );
+      companyInfo = extractedCompany.data;
+    } catch (error) {
+      // Company metadata is already known from the search target; a
+      // transient structured-output failure should not discard filing results.
+      console.warn("Company metadata extraction failed; using the search target", error);
+    }
+
     console.log(`Extracting the ${NUM_FILINGS} most recent filings...`);
-    const filingsData = await stagehand.extract(
-      `Extract the ${NUM_FILINGS} most recent SEC filings from the filings table. For each filing, get: the filing type (column: Filings, like 10-K, 10-Q, 8-K), the filing date (column: Filing Date), description, accession number (from the link or description), and file/film number if shown.`,
-      FilingSchema,
+    const { data: extracted } = await stagehand.extract(
+      `Extract the ${NUM_FILINGS} most recent SEC filings from the filings table. For each filing return its type, filing date, description, accession number, and file or film number when shown.`,
+      FilingsSchema,
     );
 
     // Build result object with company info and normalized filing list
     const result: SECFilingResult = {
       company: companyInfo.companyName,
-      cik: companyInfo.cik,
+      cik: companyInfo.cik || COMPANY_CIK,
       searchQuery: SEARCH_QUERY,
-      filings: filingsData.filings.slice(0, NUM_FILINGS).map((f) => ({
-        ...f,
-        fileNumber: f.fileNumber || "",
+      filings: extracted.filings.slice(0, NUM_FILINGS).map((filing) => ({
+        ...filing,
+        description: filing.description ?? "",
+        accessionNumber: filing.accessionNumber ?? "",
+        fileNumber: filing.fileNumber ?? "",
       })),
     };
 
@@ -162,7 +163,7 @@ async function main(): Promise<void> {
     throw error;
   } finally {
     // Always close session to release resources and clean up
-    await stagehand.close();
+    await closeSession(stagehand, browser);
     console.log("\nSession closed successfully");
   }
 }
@@ -174,6 +175,6 @@ main().catch((err) => {
   console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Verify internet connection and SEC website accessibility");
   console.error("  - Ensure the search query is valid (company name, ticker, or CIK)");
-  console.error("\nDocs: https://docs.stagehand.dev/v3/first-steps/introduction");
+  console.error("\nDocs: https://docs.stagehand.dev/v4/first-steps/introduction");
   process.exit(1);
 });

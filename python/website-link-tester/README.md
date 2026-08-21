@@ -1,5 +1,7 @@
 # Stagehand + Browserbase: Website Link Tester (Python)
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - **Goal**: Crawl a website’s homepage, collect all links, and verify that each link loads successfully and matches its link text.
@@ -11,9 +13,9 @@
 ## GLOSSARY
 
 - **Stagehand (Python v2)**: Python client that wraps AI-powered browser automation on top of Browserbase.  
-  Docs → `https://docs.stagehand.dev/v3/sdk/python`
+  Docs → `https://docs.stagehand.dev/v4/sdk/python`
 - **extract**: Extract structured data from web pages using natural language instructions and Pydantic models.  
-  Docs → `https://docs.stagehand.dev/basics/extract`
+  Docs → `https://docs.stagehand.dev/v4/basics/extract`
 - **concurrent sessions**: Run multiple browser sessions at the same time for faster batch processing.  
   Docs → `https://docs.browserbase.com/guides/concurrency-rate-limits`
 
@@ -100,7 +102,7 @@
 
 ## HELPFUL RESOURCES
 
-- 📚 **Stagehand Docs**: `https://docs.stagehand.dev/v2/first-steps/introduction`
+- 📚 **Stagehand Docs**: `https://docs.stagehand.dev/v4/first-steps/introduction`
 - 🎮 **Browserbase**: `https://www.browserbase.com`
 - 💡 **Try it out**: `https://www.browserbase.com/playground`
 - 🔧 **Templates**: `https://www.browserbase.com/templates`

@@ -12,7 +12,7 @@
 
 - Session: a full cloud browser instance you connect to via Selenium WebDriver.
   Docs → https://docs.browserbase.com/introduction/getting-started
-- ClientConfig: Selenium's built-in config object for remote connections — used to set the server URL and inject custom auth headers.
+- ClientConfig: Selenium's connection configuration, used here to set Browserbase authentication headers for every WebDriver request.
   Docs → https://www.selenium.dev/documentation/webdriver/drivers/remote_webdriver/
 - Selenium WebDriver: browser automation library — `driver.get()`, `driver.find_element()`, etc.
   Docs → https://www.selenium.dev/documentation/webdriver/
@@ -29,7 +29,7 @@
 ## EXPECTED OUTPUT
 
 - Creates a Browserbase cloud browser session
-- Connects via Selenium WebDriver using `ClientConfig` with custom auth headers
+- Connects via Selenium WebDriver using Browserbase's remote URL and a `ClientConfig` with custom auth headers
 - Prints browser name and version
 - Prints a live debug URL
 - Navigates to https://www.sfmoma.org and prints the URL and title
@@ -42,7 +42,8 @@
 
 - Missing API key: verify .env contains BROWSERBASE_API_KEY — this is the only required credential
 - Project ID confusion: BROWSERBASE_PROJECT_ID is optional — the API infers it from your API key
-- Auth headers: Browserbase requires `x-bb-api-key` and `session-id` headers — these are passed via `ClientConfig(extra_headers=...)`, no custom subclass needed
+- Remote endpoint: pass `session.selenium_remote_url` as `command_executor`; `ClientConfig` alone does not replace Selenium's localhost default
+- Auth headers: Browserbase requires `x-bb-api-key` and `session-id` headers — `ClientConfig(extra_headers=...)` attaches them to every command
 - Session not closing: always call `driver.quit()` in a `finally` block to avoid leaked sessions
 - Element not found: if selectors change on the target site, inspect the page and update `By.CSS_SELECTOR` or `By.LINK_TEXT` values
 - Timeout waiting for element: increase the `WebDriverWait` timeout (default 10s) for slow-loading pages

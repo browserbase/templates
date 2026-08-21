@@ -1,8 +1,8 @@
 // Stagehand + Browserbase: MFA Handling - TOTP Automation - See README.md for full documentation
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
+import { z } from "zod/v4";
 import crypto from "crypto";
 
 // Demo site URL for TOTP challenge testing
@@ -57,24 +57,20 @@ async function main() {
   console.log("Starting MFA Handling - TOTP Automation...");
 
   // Initialize Stagehand with Browserbase for cloud-based browser automation
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 0,
-    // 0 = errors only, 1 = info, 2 = debug
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-    // https://docs.stagehand.dev/configuration/logging
-    model: "google/gemini-2.5-flash", // Routed through Model Gateway
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+  });
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    model: { modelName: "google/gemini-2.5-flash" },
+    logging: { level: "error" },
   });
 
   try {
     // Initialize browser session to start automation
-    await stagehand.init();
-    console.log("Stagehand initialized successfully!");
-    console.log(
-      `Live View Link: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`,
-    );
 
-    const page = stagehand.context.pages()[0];
+    console.log("Stagehand initialized successfully!");
+    const page = (await browser.context.pages())[0];
 
     // Navigate to TOTP challenge demo page
     console.log("Navigating to TOTP Challenge page...");
@@ -84,7 +80,7 @@ async function main() {
 
     // Extract test credentials and TOTP secret from the page
     console.log("Extracting test credentials and TOTP secret...");
-    const credentials = await stagehand.extract(
+    const { data: credentials } = await stagehand.extract(
       "Extract the test email, password, and TOTP secret key shown on the page",
       z.object({
         email: z.string(),
@@ -95,17 +91,22 @@ async function main() {
 
     console.log(`Credentials extracted - Email: ${credentials.email}`);
 
-    // Generate TOTP code using RFC 6238 algorithm
-    const totpCode = generateTOTP(credentials.totpSecret);
-    const secondsLeft = 30 - (Math.floor(Date.now() / 1000) % 30);
-    console.log(`Generated TOTP code: ${totpCode} (valid for ${secondsLeft} seconds)`);
-
     // Fill in login form with email and password
     console.log("Filling in email...");
     await stagehand.act(`Type '${credentials.email}' into the email field`);
 
     console.log("Filling in password...");
     await stagehand.act(`Type '${credentials.password}' into the password field`);
+
+    // Generate the short-lived code only after the slower semantic actions.
+    let secondsLeft = 30 - (Math.floor(Date.now() / 1000) % 30);
+    if (secondsLeft < 12) {
+      console.log(`Waiting ${secondsLeft + 1} seconds for a fresh TOTP window...`);
+      await page.waitForTimeout((secondsLeft + 1) * 1000);
+    }
+    const totpCode = generateTOTP(credentials.totpSecret);
+    secondsLeft = 30 - (Math.floor(Date.now() / 1000) % 30);
+    console.log(`Generated TOTP code: ${totpCode} (valid for ${secondsLeft} seconds)`);
 
     // Fill in TOTP code
     console.log("Filling in TOTP code...");
@@ -118,7 +119,7 @@ async function main() {
     // Wait for response - be tolerant of sites that never reach full "networkidle"
     try {
       console.log("Waiting for page to finish loading after submit...");
-      await page.waitForLoadState("networkidle", { timeout: 15000 });
+      await page.waitForLoadState("networkidle", 15000);
     } catch (err) {
       console.warn(
         "Timed out waiting for 'networkidle' after submit; continuing because the login likely succeeded.",
@@ -128,7 +129,7 @@ async function main() {
 
     // Check if login succeeded
     console.log("Checking authentication result...");
-    const result = await stagehand.extract(
+    const { data: result } = await stagehand.extract(
       "Check if the login was successful or if there's an error message",
       z.object({
         success: z.boolean(),
@@ -144,16 +145,27 @@ async function main() {
       console.log("Retrying with a fresh TOTP code...");
 
       // Regenerate and retry with new code (handles time window edge cases)
+      // A failed submission navigates to a separate failure page, so return to
+      // the challenge before filling and submitting a fresh code.
+      await page.goto(DEMO_URL, { waitUntil: "domcontentloaded" });
+
+      secondsLeft = 30 - (Math.floor(Date.now() / 1000) % 30);
+      if (secondsLeft < 8) {
+        console.log(`Waiting ${secondsLeft + 1} seconds for a fresh TOTP window...`);
+        await page.waitForTimeout((secondsLeft + 1) * 1000);
+      }
+
+      await stagehand.act(`Type '${credentials.email}' into the email field`);
+      await stagehand.act(`Type '${credentials.password}' into the password field`);
+
       const newCode = generateTOTP(credentials.totpSecret);
       console.log(`New TOTP code: ${newCode}`);
-
-      await stagehand.act("Clear the TOTP code field");
       await stagehand.act(`Type '${newCode}' into the TOTP code field`);
       await stagehand.act("Click the submit or login button");
 
       try {
         console.log("Waiting for page to finish loading after retry submit...");
-        await page.waitForLoadState("networkidle", { timeout: 15000 });
+        await page.waitForLoadState("networkidle", 15000);
       } catch (err) {
         console.warn(
           "Timed out waiting for 'networkidle' after retry submit; continuing because the login likely succeeded.",
@@ -161,19 +173,24 @@ async function main() {
         );
       }
 
-      const retryResult = await stagehand.extract("Check if the login was successful", z.boolean());
+      const { data: retryResult } = await stagehand.extract(
+        "Check if the login was successful",
+        z.boolean(),
+      );
 
       if (retryResult) {
         console.log("Success on retry!");
       } else {
-        console.log("Authentication failed after retry");
+        throw new Error("Authentication failed after retry");
       }
     }
   } catch (error) {
     console.error("Error during MFA handling:", error);
+    throw error;
   } finally {
     // Always close session to release resources and clean up
-    await stagehand.close();
+    await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+    await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
     console.log("Session closed successfully");
   }
 }
@@ -184,6 +201,6 @@ main().catch((err) => {
   console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - TOTP code may have expired (try running again)");
   console.error("  - Page structure may have changed");
-  console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
+  console.error("Docs: https://docs.stagehand.dev/v4/first-steps/introduction");
   process.exit(1);
 });

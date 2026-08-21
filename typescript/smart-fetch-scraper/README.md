@@ -14,7 +14,7 @@
 - Fetch API: Browserbase's lightweight HTTP fetching endpoint — fetches page content through Browserbase infrastructure without spinning up a browser.
   Docs → https://docs.browserbase.com/features/fetch
 - extract: pull structured data from pages using schemas and AI.
-  Docs → https://docs.stagehand.dev/basics/extract
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 - Stagehand: AI browser automation framework.
   Docs → https://docs.stagehand.dev
 
@@ -44,7 +44,7 @@ Browser fallback (JS-rendered, blocked, or low text density):
 
 - Logs the strategy being used (Fetch API vs browser)
 - On Fetch API success: prints page title, link count, status code, content length, and a 500-char preview
-- On browser fallback: prints Stagehand live view link, then structured JSON with page title and extracted items
+- On browser fallback: prints structured JSON with the page title and extracted items
 
 ## COMMON PITFALLS
 

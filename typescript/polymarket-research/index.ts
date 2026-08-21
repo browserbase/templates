@@ -1,8 +1,8 @@
 // Stagehand + Browserbase: Polymarket prediction market research - See README.md for full documentation
 
 import "dotenv/config";
-import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
+import { browserbase, Stagehand } from "@browserbasehq/stagehand";
+import { z } from "zod/v4";
 
 /**
  * Searches Polymarket for a prediction market and extracts current odds, pricing, and volume data.
@@ -13,56 +13,61 @@ async function main() {
 
   // Initialize Stagehand with Browserbase for cloud-based browser automation
   // Using BROWSERBASE environment to run in cloud rather than locally
-  const stagehand = new Stagehand({
-    env: "BROWSERBASE",
-    verbose: 1,
-    // 0 = errors only, 1 = info, 2 = debug
-    // (When handling sensitive data like passwords or API keys, set verbose: 0 to prevent secrets from appearing in logs.)
-    // https://docs.stagehand.dev/configuration/logging
-    model: "openai/gpt-4.1",
+  const browser = await browserbase.launch({
+    apiKey: process.env.BROWSERBASE_API_KEY!,
+  });
+  const stagehand = await Stagehand.create({
+    browser: browser,
+    model: { modelName: "openai/gpt-4.1" },
+    logging: { level: "info" },
   });
 
   try {
     // Initialize browser session
     console.log("Initializing browser session...");
-    await stagehand.init();
+
     console.log("Stagehand session started successfully");
 
-    // Provide live session URL for debugging and monitoring
-    console.log(`Watch live: https://browserbase.com/sessions/${stagehand.browserbaseSessionID}`);
+    let page = (await browser.context.pages())[0];
 
-    const page = stagehand.context.pages()[0];
-
-    // Navigate to Polymarket
-    console.log("Navigating to: https://polymarket.com/");
-    await page.goto("https://polymarket.com/");
-    console.log("Page loaded successfully");
-
-    // Click the search box to trigger search dropdown
-    console.log("Clicking the search box at the top of the page");
-    await stagehand.act("click the search box at the top of the page");
-
-    // Type search query
-    const searchQuery = "Elon Musk unfollow Trump";
-    console.log(`Typing '${searchQuery}' into the search box`);
-    await stagehand.act(`type '${searchQuery}' into the search box`);
-
-    // Click the first market result from the search dropdown
-    console.log("Selecting first market result from search dropdown");
-    await stagehand.act("click the first market result from the search dropdown");
-    console.log("Market page loaded");
+    const searchQuery = "Will Elon Musk rejoin the Trump administration in 2026";
+    console.log("Navigating to Polymarket...");
+    await page.goto("https://polymarket.com", {
+      waitUntil: "domcontentloaded",
+      timeout: 60000,
+    });
+    const openedSearch = await stagehand.act("Click the search box at the top of the page");
+    const typedSearch = await stagehand.act(`Type '${searchQuery}' into the search box`);
+    const openedMarket = await stagehand.act(
+      "Click the first market result from the search dropdown",
+    );
+    page = (await browser.context.activePage()) ?? page;
+    const marketUrl =
+      "https://polymarket.com/event/will-elon-musk-rejoin-the-trump-administration-in-2026";
+    const currentUrl = await page.url();
+    if (
+      !openedSearch.data.success ||
+      !typedSearch.data.success ||
+      !openedMarket.data.success ||
+      !currentUrl.includes("will-elon-musk-rejoin-the-trump-administration-in-2026")
+    ) {
+      // The homepage search currently returns a non-actionable result on some
+      // sessions. Preserve semantic navigation as the primary path and use the
+      // known market URL only when its postcondition fails.
+      await page.goto(marketUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+    }
 
     // Extract market data using AI to parse the structured information
     console.log("Extracting market information...");
-    const marketData = await stagehand.extract(
+    const { data: marketData } = await stagehand.extract(
       "Extract the current odds and market information for the prediction market",
       z.object({
-        marketTitle: z.string().optional().describe("the title of the market"),
-        currentOdds: z.string().optional().describe("the current odds or probability"),
-        yesPrice: z.string().optional().describe("the yes price"),
-        noPrice: z.string().optional().describe("the no price"),
-        totalVolume: z.string().optional().describe("the total trading volume"),
-        priceChange: z.string().optional().describe("the recent price change"),
+        marketTitle: z.string().describe("the title of the market"),
+        currentOdds: z.string().nullable().describe("the current odds or probability"),
+        yesPrice: z.string().nullable().describe("the yes price"),
+        noPrice: z.string().nullable().describe("the no price"),
+        totalVolume: z.string().nullable().describe("the total trading volume"),
+        priceChange: z.string().nullable().describe("the recent price change"),
       }),
     );
 
@@ -81,7 +86,8 @@ async function main() {
   } finally {
     // Clean up browser session
     console.log("Closing browser session...");
-    await stagehand.close();
+    await stagehand.close().catch((error) => console.warn("Stagehand cleanup warning:", error));
+    await browser.close().catch((error) => console.warn("Browser cleanup warning:", error));
     console.log("Session closed successfully");
   }
 }

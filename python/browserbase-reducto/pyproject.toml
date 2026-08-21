@@ -3,12 +3,12 @@ name = "browserbase-reducto"
 version = "0.1.0"
 description = "Download Apple's Q4 Financial Statement and Parse with Reducto using Stagehand and Browserbase"
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "browserbase>=1.7.0",
     "python-dotenv",
     "reductoai",
-    "stagehand>=3.19.0",
+    "stagehand==4.0.0",
 ]
 
 [project.optional-dependencies]

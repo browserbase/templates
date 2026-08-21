@@ -2,154 +2,131 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
 	"os"
+	"time"
 
-	"github.com/browserbase/stagehand-go"
-	"github.com/browserbase/stagehand-go/option"
+	stagehand "github.com/browserbase/stagehand/packages/sdk-go/v4"
 )
 
-const sdkVersion = "3.0.7"
+type storyDetails struct {
+	Title      string `json:"title" jsonschema:"description=title of the Hacker News post"`
+	TopComment string `json:"topComment" jsonschema:"description=text of the first visible comment"`
+	Author     string `json:"author" jsonschema:"description=username of the first visible commenter"`
+}
+
+type newestStory struct {
+	Title string `json:"title" jsonschema:"description=title of the newest visible story"`
+}
 
 func main() {
-	// Create client using environment variables
-	client := stagehand.NewClient(
-		option.WithBrowserbaseAPIKey(os.Getenv("BROWSERBASE_API_KEY")),
-		option.WithModelAPIKey(os.Getenv("MODEL_API_KEY")),
-	)
+	if err := run(context.Background()); err != nil {
+		log.Fatal(err)
+	}
+}
 
-	ctx := context.Background()
-
-	// Start a new browser session
-	startResponse, err := client.Sessions.Start(ctx, stagehand.SessionStartParams{
-		ModelName:   "openai/gpt-4o-mini",
-		XLanguage:   stagehand.SessionStartParamsXLanguageTypescript,
-		XSDKVersion: stagehand.String(sdkVersion),
-	})
-	if err != nil {
-		fmt.Printf("Failed to start session: %v\n", err)
-		os.Exit(1)
+func run(parent context.Context) (err error) {
+	apiKey := os.Getenv("BROWSERBASE_API_KEY")
+	if apiKey == "" {
+		return errors.New("BROWSERBASE_API_KEY is required")
 	}
 
-	sessionID := startResponse.Data.SessionID
-	fmt.Printf("Session started: %s\n", sessionID)
-	fmt.Printf("Watch live: https://www.browserbase.com/sessions/%s\n", sessionID)
+	ctx, cancel := context.WithTimeout(parent, 2*time.Minute)
+	defer cancel()
 
-	// Ensure we clean up the session
-	defer func() {
-		_, _ = client.Sessions.End(ctx, sessionID, stagehand.SessionEndParams{
-			XLanguage:   stagehand.SessionEndParamsXLanguageTypescript,
-			XSDKVersion: stagehand.String(sdkVersion),
-		})
-		fmt.Println("Session ended")
-	}()
-
-	// Navigate to Hacker News
-	_, err = client.Sessions.Navigate(ctx, sessionID, stagehand.SessionNavigateParams{
-		URL:         "https://news.ycombinator.com",
-		FrameID:     stagehand.String(""),
-		XLanguage:   stagehand.SessionNavigateParamsXLanguageTypescript,
-		XSDKVersion: stagehand.String(sdkVersion),
+	sessionTimeout := 120.0
+	browser, err := stagehand.LaunchBrowserbase(ctx, stagehand.BrowserbaseLaunchOptions{
+		APIKey:  apiKey,
+		Timeout: &sessionTimeout,
 	})
 	if err != nil {
-		fmt.Printf("Failed to navigate: %v\n", err)
-		return
+		return fmt.Errorf("launch Browserbase: %w", err)
+	}
+	defer func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cleanupCancel()
+		err = errors.Join(err, browser.Close(cleanupCtx))
+	}()
+
+	client, err := stagehand.Create(ctx, stagehand.CreateOptions{Browser: browser})
+	if err != nil {
+		return fmt.Errorf("create Stagehand: %w", err)
+	}
+	defer func() {
+		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cleanupCancel()
+		err = errors.Join(err, client.Close(cleanupCtx))
+	}()
+
+	browserContext, err := browser.Context()
+	if err != nil {
+		return fmt.Errorf("get browser context: %w", err)
+	}
+	pages, err := browserContext.Pages(ctx)
+	if err != nil {
+		return fmt.Errorf("list pages: %w", err)
+	}
+	if len(pages) == 0 {
+		return errors.New("no active page after Stagehand initialization")
+	}
+	page := pages[0]
+
+	response, err := page.Goto(ctx, "https://news.ycombinator.com", nil)
+	if err != nil {
+		return fmt.Errorf("navigate to Hacker News: %w", err)
+	}
+	if response == nil || response.Status() != 200 {
+		return errors.New("unexpected navigation response from Hacker News")
 	}
 	fmt.Println("Navigated to Hacker News")
 
-	// Observe available actions
-	observeResponse, err := client.Sessions.Observe(ctx, sessionID, stagehand.SessionObserveParams{
-		Instruction: stagehand.String("find the link to view comments for the top post"),
-		XLanguage:   stagehand.SessionObserveParamsXLanguageTypescript,
-		XSDKVersion: stagehand.String(sdkVersion),
-	})
+	instruction := "Find the comments link for the top-ranked story"
+	observed, err := client.Observe(ctx, &instruction, nil)
 	if err != nil {
-		fmt.Printf("Failed to observe: %v\n", err)
-		return
+		return fmt.Errorf("observe comments link: %w", err)
 	}
-
-	actions := observeResponse.Data.Result
-	fmt.Printf("Found %d possible actions\n", len(actions))
-
-	if len(actions) == 0 {
-		fmt.Println("No actions found")
-		return
+	if len(observed.Data) == 0 {
+		return errors.New("observe returned no comments link")
 	}
+	fmt.Printf("Found %d possible comment actions\n", len(observed.Data))
 
-	// Act on the first action
-	action := actions[0]
-	fmt.Printf("Acting on: %s\n", action.Description)
-
-	actResponse, err := client.Sessions.Act(ctx, sessionID, stagehand.SessionActParams{
-		Input: stagehand.SessionActParamsInputUnion{
-			OfAction: &stagehand.ActionParam{
-				Description: action.Description,
-				Selector:    action.Selector,
-				Method:      stagehand.String(action.Method),
-				Arguments:   action.Arguments,
-			},
-		},
-		XLanguage:   stagehand.SessionActParamsXLanguageTypescript,
-		XSDKVersion: stagehand.String(sdkVersion),
-	})
+	acted, err := client.Act(ctx, stagehand.ObservedAction(observed.Data[0]), nil)
 	if err != nil {
-		fmt.Printf("Failed to act: %v\n", err)
-		return
+		return fmt.Errorf("open comments: %w", err)
 	}
-	fmt.Printf("Act completed: %s\n", actResponse.Data.Result.Message)
-
-	// Extract structured data
-	extractResponse, err := client.Sessions.Extract(ctx, sessionID, stagehand.SessionExtractParams{
-		Instruction: stagehand.String("extract the title and top comment from this page"),
-		Schema: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"title": map[string]any{
-					"type":        "string",
-					"description": "The title of the post",
-				},
-				"topComment": map[string]any{
-					"type":        "string",
-					"description": "The text of the top comment",
-				},
-				"author": map[string]any{
-					"type":        "string",
-					"description": "The username of the top commenter",
-				},
-			},
-			"required": []string{"title"},
-		},
-		XLanguage:   stagehand.SessionExtractParamsXLanguageTypescript,
-		XSDKVersion: stagehand.String(sdkVersion),
-	})
+	if !acted.Data.Success {
+		return fmt.Errorf("open comments failed: %s", acted.Data.Message)
+	}
+	details, err := stagehand.Extract[storyDetails](
+		ctx,
+		client,
+		"Extract the post title and the first visible comment with its author",
+		nil,
+	)
 	if err != nil {
-		fmt.Printf("Failed to extract: %v\n", err)
-		return
+		return fmt.Errorf("extract story details: %w", err)
 	}
-	fmt.Printf("Extracted data: %+v\n", extractResponse.Data.Result)
+	fmt.Printf("Top story: %s\n", details.Data.Title)
+	fmt.Printf("Top comment by %s: %s\n", details.Data.Author, details.Data.TopComment)
 
-	// Run autonomous agent
-	executeResponse, err := client.Sessions.Execute(ctx, sessionID, stagehand.SessionExecuteParams{
-		ExecuteOptions: stagehand.SessionExecuteParamsExecuteOptions{
-			Instruction: "Navigate back to the main Hacker News page and find the newest post",
-			MaxSteps:    stagehand.Float(5),
-		},
-		AgentConfig: stagehand.SessionExecuteParamsAgentConfig{
-			Model: stagehand.ModelConfigUnionParam{
-				OfModelConfigModelConfigObject: &stagehand.ModelConfigModelConfigObjectParam{
-					ModelName: "openai/gpt-4o-mini",
-					APIKey:    stagehand.String(os.Getenv("MODEL_API_KEY")),
-				},
-			},
-			Cua: stagehand.Bool(false),
-		},
-		XLanguage:   stagehand.SessionExecuteParamsXLanguageTypescript,
-		XSDKVersion: stagehand.String(sdkVersion),
-	})
+	response, err = page.Goto(ctx, "https://news.ycombinator.com/newest", nil)
 	if err != nil {
-		fmt.Printf("Failed to execute agent: %v\n", err)
-		return
+		return fmt.Errorf("navigate to newest stories: %w", err)
 	}
-	fmt.Printf("Agent result: %s\n", executeResponse.Data.Result.Message)
-	fmt.Printf("Agent success: %v\n", executeResponse.Data.Result.Success)
+	if response == nil || response.Status() != 200 {
+		return errors.New("unexpected response from the Hacker News newest page")
+	}
+	newest, err := stagehand.Extract[newestStory](
+		ctx,
+		client,
+		"Extract the exact title of the first story in the newest stories list",
+		nil,
+	)
+	if err != nil {
+		return fmt.Errorf("extract newest story: %w", err)
+	}
+	fmt.Printf("Newest story: %s\n", newest.Data.Title)
+	return nil
 }

@@ -1,20 +1,22 @@
 # Stagehand + Browserbase: Basic Caching
 
+Stagehand is the SDK for browser agents.
+
 ## AT A GLANCE
 
 - Goal: Demonstrate how Stagehand's caching feature dramatically reduces cost and latency by reusing previously computed actions instead of calling the LLM every time.
 - Shows side-by-side comparison of workflows with and without caching enabled.
 - Demonstrates massive cost savings for repeated workflows (99.9% reduction in LLM calls).
-- Docs → https://docs.stagehand.dev/v2/best-practices/caching#caching-actions
+- Docs → https://docs.stagehand.dev/v4/best-practices/caching#caching-actions
 
 ## GLOSSARY
 
 - caching: Stagehand can cache action results based on instruction text and page context, eliminating redundant LLM calls
-  Docs → https://docs.stagehand.dev/v2/best-practices/caching#caching-actions
+  Docs → https://docs.stagehand.dev/v4/best-practices/caching#caching-actions
 - act: execute actions on web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/v2/basics/act
+  Docs → https://docs.stagehand.dev/v4/basics/act
 - observe: observe page elements and generate actions that can be cached and reused
-  Docs → https://docs.stagehand.dev/v2/basics/observe
+  Docs → https://docs.stagehand.dev/v4/basics/observe
 
 ## QUICKSTART
 
@@ -118,7 +120,7 @@ Payment portals rarely change → Cache actions once → Reuse for thousands of 
 
 ## HELPFUL RESOURCES
 
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

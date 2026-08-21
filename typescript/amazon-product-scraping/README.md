@@ -3,17 +3,15 @@
 ## AT A GLANCE
 
 - Goal: scrape the first 3 Amazon search results for a given query and return structured product data.
-- AI-Powered Search: uses Stagehand `act` to type in the search bar and click search (or optionally navigate directly to the search URL).
-- Structured Extraction: uses `extract` with a Zod schema to get product name, price, rating, review count, and product URL.
+- Semantic Search: uses `act()` to find and operate Amazon's current search UI.
+- Structured Results: uses `extract()` with Zod to return and validate product name, price, rating, review count, and URL.
 - Model: uses `google/gemini-2.5-flash` for fast, cost-effective automation.
   Docs → https://docs.stagehand.dev
 
 ## GLOSSARY
 
-- act: perform UI actions from a prompt (type in search bar, click search)
-  Docs → https://docs.stagehand.dev/basics/act
-- extract: pull structured data from pages using schemas
-  Docs → https://docs.stagehand.dev/basics/extract
+- act / extract: use natural-language interaction and schema-validated semantic extraction
+  Docs → https://docs.stagehand.dev/v4/basics/act
 
 ## QUICKSTART
 
@@ -27,8 +25,8 @@
 ## EXPECTED OUTPUT
 
 - Initializes Stagehand session with Browserbase
-- Displays live session link for monitoring
-- Navigates to Amazon and performs search (or direct URL navigation if uncommented)
+- Uses `act()` to run the configured search through Amazon's live UI
+- Returns structured product-detail records with Zod
 - Extracts the first 3 products with name, price, rating, reviews count, and product URL
 - Outputs JSON to console
 - Closes session cleanly
@@ -37,7 +35,7 @@
 
 - "Cannot find module": ensure npm install completed
 - Missing credentials: verify .env contains BROWSERBASE_API_KEY
-- Amazon layout changes: extraction may need prompt/schema updates if Amazon changes their search results UI
+- Amazon access challenges: retry if Amazon presents a CAPTCHA or consent interstitial
 - Find more information on your Browserbase dashboard → https://www.browserbase.com/sign-in
 
 ## USE CASES
@@ -48,7 +46,7 @@
 
 ## NEXT STEPS
 
-• Switch to direct URL: Uncomment the URL-based search block in index.ts for faster runs without LLM search actions.
+• Parameterize storefront: Accept an Amazon domain or country from CLI/env.
 • Parameterize query: Accept SEARCH_QUERY from CLI or env for different products without editing code.
 • Paginate: Extend extraction to multiple pages or increase the number of products per run.
 
