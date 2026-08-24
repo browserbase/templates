@@ -24,7 +24,8 @@
 1. cd python/selenium/quickstart-selenium
 2. cp .env.example .env
 3. Add BROWSERBASE_API_KEY to .env (get it from https://browserbase.com/settings)
-4. uvx --with browserbase --with selenium --with python-dotenv python main.py
+4. uv sync
+5. uv run python main.py
 
 ## EXPECTED OUTPUT
 

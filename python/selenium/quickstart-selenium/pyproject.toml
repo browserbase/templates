@@ -1,0 +1,13 @@
+[project]
+name = "quickstart-selenium"
+version = "1.0.0"
+description = "Browserbase + Selenium: connect to a cloud browser and automate a real website"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "browserbase>=1.7.0",
+    "python-dotenv>=1.2.2",
+    "selenium>=4.38.0",
+]
+
+[tool.uv]
+package = false
