@@ -3,9 +3,9 @@ name = "website-link-tester"
 version = "1.0.0"
 requires-python = ">=3.11,<3.14"
 dependencies = [
-    "pydantic>=2.12,<3",
+    "beautifulsoup4==4.14.3",
+    "browserbase>=1.7.0",
     "python-dotenv==1.2.2",
-    "stagehand==4.0.0",
 ]
 
 [tool.uv]

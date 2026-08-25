@@ -1,34 +1,24 @@
-# Stagehand Code Mode + Vercel AI SDK: Business Lookup
+# Browserbase Fetch API: Business Lookup
 
-## AT A GLANCE
+Retrieve an official San Francisco business record without opening a JSON endpoint in a browser.
+The template uses Browserbase Fetch API, selects the exact DBA match, and returns normalized JSON.
 
-- Goal: give an external agent a Browserbase browser and have it research one SF business record.
-- Agent framework: Vercel AI SDK `ToolLoopAgent` owns the reasoning loop.
-- Browser tool: Stagehand code mode exposes one stateful MCP tool, `code_execute`.
-- Stagehand is the SDK for browser agents.
+## Quickstart
 
-## QUICKSTART
+```bash
+cp .env.example .env
+# Add BROWSERBASE_API_KEY to .env
+pnpm install
+pnpm start
+```
 
-1. `cd business-lookup`
-2. `pnpm install`
-3. Add `BROWSERBASE_API_KEY` and `AI_GATEWAY_API_KEY` to `.env`
-4. `pnpm start`
+Set `BUSINESS_NAME` to query a different DBA. The default is `Jalebi Street`.
 
-Set `AGENT_MODEL` to override the default `anthropic/claude-sonnet-4.6` outer-agent model.
+The result includes the official source URL, business account and location identifiers, ownership,
+address, dates, neighborhood, self-reported NAICS code, and license classification when the dataset
+provides them.
 
-## EXPECTED OUTPUT
+## Resources
 
-- The AI SDK starts the packaged Stagehand code-mode MCP over stdio.
-- The agent uses `code_execute` to search the SF business registry.
-- The final result is validated against a Zod schema and printed as JSON.
-- Closing the MCP client closes Stagehand and the Browserbase browser.
-
-## SAFETY
-
-Code mode executes model-authored JavaScript and is not itself a security sandbox. Run it inside an isolation boundary when prompts or pages are untrusted.
-
-## RESOURCES
-
-- Stagehand: https://docs.stagehand.dev
-- Vercel AI SDK agents: https://ai-sdk.dev/docs/agents/building-agents
-- Vercel AI SDK MCP tools: https://ai-sdk.dev/docs/ai-sdk-core/mcp-tools
+- [Browserbase Fetch API](https://docs.browserbase.com/platform/fetch/overview)
+- [SF Registered Business Locations](https://data.sfgov.org/Businesses-and-Economic-Development/Registered-Business-Locations-San-Francisco/g8m3-pdis)
