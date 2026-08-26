@@ -1,0 +1,26 @@
+{
+  "name": "deep-research-agent",
+  "version": "1.0.0",
+  "description": "Stagehand + Browserbase: deep research pipeline using Search API, Fetch API, and browser-session fallback",
+  "type": "module",
+  "scripts": {
+    "start": "tsx src/research.ts",
+    "web": "tsx src/local-web.ts",
+    "bench": "tsx src/research.ts --bench",
+    "dev": "tsx watch src/research.ts",
+    "dev:web": "tsx watch src/local-web.ts",
+    "check": "tsc --noEmit --target ES2022 --module NodeNext --moduleResolution NodeNext --skipLibCheck index.ts src/research.ts src/api-utils.ts src/local-web.ts api/health.ts api/research.ts"
+  },
+  "dependencies": {
+    "@browserbasehq/sdk": "^2.9.0",
+    "@browserbasehq/stagehand": "latest",
+    "cheerio": "^1.0.0",
+    "dotenv": "^16.4.5",
+    "tsx": "^4.16.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  }
+}

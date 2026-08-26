@@ -1,0 +1,15 @@
+.env
+.env.*
+!.env.example
+
+node_modules/
+package-lock.json
+
+output/
+bench-output/
+research-workspace/
+
+*.log
+*.tmp
+.DS_Store
+.vercel
