@@ -1,0 +1,5 @@
+browserbase
+stagehand
+python-dotenv
+pydantic
+playwright
