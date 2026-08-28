@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Synthetic Checkout Sandbox</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="checkout-shell">
+      <aside class="summary-panel panel">
+        <p class="eyebrow">Sandbox Demo</p>
+        <h1>Invoice Checkout</h1>
+        <p class="summary-copy">
+          This page is intentionally synthetic. No real merchant, processor, or card network is
+          used.
+        </p>
+
+        <div class="stat-row">
+          <span>Currency</span>
+          <strong>USD</strong>
+        </div>
+        <div class="stat-row">
+          <span>Flow type</span>
+          <strong>Single-page payment</strong>
+        </div>
+        <div class="stat-row">
+          <span>Expected output</span>
+          <strong>Confirmation ID</strong>
+        </div>
+
+        <div class="tag-list">
+          <span class="tag">Synthetic Data</span>
+          <span class="tag">Captcha Simulated</span>
+          <span class="tag">No External Submit</span>
+        </div>
+      </aside>
+
+      <section class="payment-panel panel">
+        <header class="payment-header">
+          <p class="eyebrow">Secure Portal</p>
+          <h2>Pay Open Invoice</h2>
+          <p class="hint">
+            Fill all required fields. Submission renders a fake success response for automation
+            testing.
+          </p>
+        </header>
+
+        <div id="captcha-status" class="captcha-pill" role="status" aria-live="polite">
+          Security check initializing...
+        </div>
+
+        <form id="payment-form" novalidate>
+          <input
+            class="hidden-field"
+            type="text"
+            name="internal_token"
+            value="ignore_me"
+            disabled
+          />
+
+          <div class="grid two-col">
+            <label class="field">
+              <span>First name</span>
+              <input type="text" name="first_name" required />
+            </label>
+            <label class="field">
+              <span>Last name</span>
+              <input type="text" name="last_name" required />
+            </label>
+          </div>
+
+          <div class="grid two-col">
+            <label class="field">
+              <span>Company</span>
+              <input type="text" name="company" required />
+            </label>
+            <label class="field">
+              <span>Email</span>
+              <input type="email" name="email" required />
+            </label>
+          </div>
+
+          <div class="grid two-col">
+            <label class="field">
+              <span>Phone</span>
+              <input type="tel" name="phone" required />
+            </label>
+            <label class="field">
+              <span>Invoice number</span>
+              <input type="text" name="invoice_number" required />
+            </label>
+          </div>
+
+          <div class="grid three-col">
+            <label class="field">
+              <span>Address line 1</span>
+              <input type="text" name="address_line_1" required />
+            </label>
+            <label class="field">
+              <span>City</span>
+              <input type="text" name="city" required />
+            </label>
+            <label class="field">
+              <span>State</span>
+              <input type="text" name="state" required maxlength="2" />
+            </label>
+          </div>
+
+          <div class="grid two-col">
+            <label class="field">
+              <span>ZIP code</span>
+              <input type="text" name="zip_code" required />
+            </label>
+            <label class="field">
+              <span>Payment amount (USD)</span>
+              <input type="number" name="payment_amount" required step="0.01" min="1" />
+            </label>
+          </div>
+
+          <div class="grid two-col">
+            <label class="field">
+              <span>Card number</span>
+              <input type="text" name="card_number" inputmode="numeric" required />
+            </label>
+            <label class="field">
+              <span>Cardholder name</span>
+              <input type="text" name="cardholder_name" required />
+            </label>
+          </div>
+
+          <div class="grid three-col">
+            <label class="field">
+              <span>Expiry month</span>
+              <input type="text" name="expiry_month" required maxlength="2" />
+            </label>
+            <label class="field">
+              <span>Expiry year</span>
+              <input type="text" name="expiry_year" required maxlength="4" />
+            </label>
+            <label class="field">
+              <span>CVV</span>
+              <input type="password" name="cvv" required maxlength="4" />
+            </label>
+          </div>
+
+          <label class="field">
+            <span>Additional notes</span>
+            <textarea
+              name="additional_notes"
+              rows="3"
+              placeholder="Optional instructions for this synthetic transaction"
+            ></textarea>
+          </label>
+
+          <button id="submit-payment" type="submit" disabled>Submit payment</button>
+        </form>
+
+        <section id="confirmation" class="confirmation-card" aria-live="polite"></section>
+      </section>
+    </main>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>
