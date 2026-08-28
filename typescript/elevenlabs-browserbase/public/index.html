@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hotel Concierge — Aria</title>
+  <script src="https://unpkg.com/@elevenlabs/convai-widget-embed" async type="text/javascript"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #0f1117;
+      color: #e4e4e7;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem 1rem;
+    }
+    .header {
+      text-align: center;
+      max-width: 480px;
+      margin-bottom: 2rem;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+    .subtitle {
+      color: #a1a1aa;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      margin-bottom: 1.5rem;
+    }
+    .powered-by {
+      margin-top: 1rem;
+      font-size: 0.8rem;
+      color: #52525b;
+    }
+    .powered-by a {
+      color: #71717a;
+      text-decoration: none;
+    }
+    .powered-by a:hover { text-decoration: underline; }
+    .no-agent {
+      background: #1c1c22;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #a1a1aa;
+      line-height: 1.6;
+    }
+    .no-agent code {
+      background: #27272a;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.8rem;
+    }
+
+    /* Activity log */
+    .activity-log {
+      width: 100%;
+      max-width: 800px;
+      margin-top: 2rem;
+    }
+    .log-header {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+      color: #a1a1aa;
+    }
+    .log-header .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22c55e;
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+    .log-header.done .dot {
+      background: #3b82f6;
+      animation: none;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+    .log-sessions {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+    .log-sessions a {
+      font-size: 0.8rem;
+      color: #3b82f6;
+      text-decoration: none;
+      background: #1c1c22;
+      border: 1px solid #27272a;
+      border-radius: 6px;
+      padding: 0.4rem 0.75rem;
+    }
+    .log-sessions a:hover {
+      background: #27272a;
+    }
+    .log-entries {
+      background: #1c1c22;
+      border: 1px solid #27272a;
+      border-radius: 8px;
+      padding: 1rem;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+      font-size: 0.8rem;
+      line-height: 1.7;
+    }
+    .log-entry {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.25rem 0;
+      border-bottom: 1px solid #1a1a20;
+    }
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+    .log-badge {
+      flex-shrink: 0;
+      padding: 0.1rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.7rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .log-source {
+      flex-shrink: 0;
+      color: #71717a;
+      min-width: 55px;
+    }
+    .log-detail {
+      color: #a1a1aa;
+      word-break: break-word;
+    }
+    .badge-navigate { background: #1e3a5f; color: #60a5fa; }
+    .badge-act { background: #3b2f1e; color: #fbbf24; }
+    .badge-extract { background: #1e3b2f; color: #34d399; }
+    .badge-done { background: #1e2d1e; color: #4ade80; }
+    .badge-error { background: #3b1e1e; color: #f87171; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Meet Aria</h1>
+    <p class="subtitle">
+      Your AI hotel concierge. Ask about activities, tours, and local experiences —
+      Aria will search Viator and Airbnb in real time and talk you through the best options.
+    </p>
+
+    <div id="widget-container"></div>
+
+    <div class="powered-by">
+      Powered by
+      <a href="https://elevenlabs.io" target="_blank">ElevenLabs</a> ·
+      <a href="https://browserbase.com" target="_blank">Browserbase</a> ·
+      <a href="https://github.com/browserbase/stagehand" target="_blank">Stagehand</a>
+    </div>
+  </div>
+
+  <div class="activity-log" id="activity-log" style="display:none;">
+    <div class="log-header" id="log-header">
+      <span class="dot"></span>
+      <span id="log-status">Browserbase sessions active</span>
+    </div>
+    <div class="log-sessions" id="log-sessions"></div>
+    <div class="log-entries" id="log-entries"></div>
+  </div>
+
+  <script>
+    var logEl = document.getElementById("activity-log");
+    var entriesEl = document.getElementById("log-entries");
+    var sessionsEl = document.getElementById("log-sessions");
+
+    function addEntry(source, action, detail) {
+      var entry = document.createElement("div");
+      entry.className = "log-entry";
+      var truncated = detail && detail.length > 120
+        ? detail.slice(0, 120) + "..."
+        : detail || "";
+
+      var badge = document.createElement("span");
+      badge.className = "log-badge badge-" + action;
+      badge.textContent = action;
+
+      var src = document.createElement("span");
+      src.className = "log-source";
+      src.textContent = source;
+
+      var det = document.createElement("span");
+      det.className = "log-detail";
+      det.textContent = truncated;
+
+      entry.append(badge, src, det);
+      entriesEl.appendChild(entry);
+      entriesEl.scrollTop = entriesEl.scrollHeight;
+    }
+
+    function connectSSE(secret) {
+      var sseUrl = secret
+        ? "/api/sessions?secret=" + encodeURIComponent(secret)
+        : "/api/sessions";
+      var evtSource = new EventSource(sseUrl);
+      evtSource.onmessage = function (event) {
+        var data = JSON.parse(event.data);
+
+        if (data.type === "sessions") {
+          logEl.style.display = "block";
+          if (data.viator) {
+            var a = document.createElement("a");
+            a.href = "https://www.browserbase.com/sessions/" + data.viator;
+            a.target = "_blank";
+            a.textContent = "Viator session \u2197";
+            sessionsEl.appendChild(a);
+          }
+          if (data.airbnb) {
+            var a = document.createElement("a");
+            a.href = "https://www.browserbase.com/sessions/" + data.airbnb;
+            a.target = "_blank";
+            a.textContent = "Airbnb session \u2197";
+            sessionsEl.appendChild(a);
+          }
+        }
+
+        if (data.type === "action") {
+          logEl.style.display = "block";
+          addEntry(data.source, data.action, data.detail);
+        }
+
+        if (data.type === "done") {
+          document.getElementById("log-header").classList.add("done");
+          document.getElementById("log-status").textContent = "Search complete";
+        }
+      };
+    }
+
+    fetch("/api/config")
+      .then(function (r) { return r.json(); })
+      .then(function (config) {
+        connectSSE(config.webhookSecret || "");
+
+        if (!config.agentId) {
+          var msg = document.createElement("div");
+          msg.className = "no-agent";
+          msg.innerHTML =
+            'No ElevenLabs agent configured.<br/>' +
+            'Set <code>ELEVENLABS_AGENT_ID</code> in your <code>.env</code> file, ' +
+            'then restart the server.<br/><br/>' +
+            'You can still test the scraper directly:<br/>' +
+            '<code>npx tsx test-search.ts</code>';
+          document.getElementById("widget-container").appendChild(msg);
+          return;
+        }
+        var widget = document.createElement("elevenlabs-convai");
+        widget.setAttribute("agent-id", config.agentId);
+        document.getElementById("widget-container").appendChild(widget);
+      })
+      .catch(function () {
+        var msg = document.createElement("div");
+        msg.className = "no-agent";
+        msg.textContent = "Server not reachable. Start the server with npm run dev";
+        document.getElementById("widget-container").appendChild(msg);
+      });
+  </script>
+</body>
+</html>
