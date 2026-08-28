@@ -1,0 +1,15 @@
+# Restaurant Menu Extraction - Batch Processing URLs
+#
+# Instructions:
+# 1. Copy this file to websites.txt
+# 2. Add one restaurant URL per line
+# 3. Lines starting with # are treated as comments and ignored
+# 4. Run: python main.py --batch
+#
+# Example URLs:
+
+https://www.thetailorssonsf.com/
+https://www.thegrovesf.com/
+https://www.nopalitosf.com/
+
+# Add more restaurant URLs below:

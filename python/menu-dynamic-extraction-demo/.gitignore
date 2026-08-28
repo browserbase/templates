@@ -1,0 +1,34 @@
+# Environment variables (CRITICAL - contains API keys)
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Output directories
+results/
+output/
+*.json
+*.csv
+
+# Logs
+*.log
+
+# Jupyter
+.ipynb_checkpoints/
