@@ -9,7 +9,7 @@ Stagehand is the SDK for browser agents.
 - **Workflow**: Stagehand navigates the expense portal and clicks each receipt's download link; Browserbase captures downloads. The script polls for the session's download ZIP, extracts files, then optionally sends them to Extend for structured extraction (vendor, date, totals, line items, etc.).
 - **Download Handling**: Implements retry/polling around Browserbase's Session Downloads API until the ZIP is available.
 - **Structured Extraction**: Extend AI extraction with inline receipt JSON schema config; results written to `output/results/receipts.json` and `receipts.csv`.
-- Docs → [Browserbase Downloads](https://docs.browserbase.com/features/downloads) | [Extend AI](https://docs.extend.app)
+- Docs → [Browserbase Downloads](https://docs.browserbase.com/features/downloads) | [Extend AI](https://docs.extend.ai)
 
 ## GLOSSARY
 
@@ -20,7 +20,7 @@ Stagehand is the SDK for browser agents.
 - **Browserbase Downloads**: When files are downloaded during a browser session, Browserbase captures and stores them. Files are retrieved via the Session Downloads API as a ZIP archive.
   Docs → https://docs.browserbase.com/features/downloads
 - **Extend AI extraction**: A configurable document extraction pipeline that parses files against a JSON schema and returns structured data. Config can be passed inline or via a saved extractor resource.
-  Docs → https://docs.extend.app
+  Docs → https://docs.extend.ai
 - **Download polling**: Browserbase syncs downloads in real-time; the script retries every 2 seconds until the ZIP is available or a timeout is reached.
 
 ## QUICKSTART
@@ -72,7 +72,7 @@ Stagehand is the SDK for browser agents.
 📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
 📚 Python SDK: https://docs.stagehand.dev/v4/sdk/python
 📚 Browserbase Downloads: https://docs.browserbase.com/features/downloads
-📚 Extend AI: https://docs.extend.app
+📚 Extend AI: https://docs.extend.ai
 🎮 Browserbase: https://www.browserbase.com
 💡 Try it out: https://www.browserbase.com/playground
 🔧 Templates: https://www.browserbase.com/templates

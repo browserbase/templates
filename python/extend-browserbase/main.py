@@ -23,7 +23,7 @@ load_dotenv()
 # Uses extraction_light base extractor with parse_performance engine for low latency
 RECEIPT_EXTRACTION_CONFIG = {
     "baseProcessor": "extraction_light",
-    "baseVersion": "3.4.0",
+    "baseVersion": "3.5.1",
     "parseConfig": {
         "engine": "parse_performance",
         "target": "markdown",
@@ -43,11 +43,8 @@ RECEIPT_EXTRACTION_CONFIG = {
                 "figureImageClippingEnabled": False,
             },
         },
-        "engineVersion": "1.0.1",
+        "engineVersion": "2.0.0",
         "advancedOptions": {
-            "engine": "parse_performance",
-            "agenticOcrEnabled": False,
-            "pageBreaksEnabled": True,
             "pageRotationEnabled": False,
             "verticalGroupingThreshold": 1,
         },
@@ -150,9 +147,6 @@ RECEIPT_EXTRACTION_CONFIG = {
         "advancedMultimodalEnabled": False,
         "citationsEnabled": True,
         "arrayCitationStrategy": "item",
-        "pageRanges": [],
-        "chunkingOptions": {},
-        "advancedFigureParsingEnabled": True,
     },
 }
 

@@ -86,7 +86,7 @@ function extractFilesFromZip(zipPath: string, outputDir: string = "output/docume
 // Uses extraction_light base extractor with parse_performance engine for low latency
 const receiptExtractionConfig = {
   baseProcessor: "extraction_light",
-  baseVersion: "3.4.0",
+  baseVersion: "3.5.1",
   parseConfig: {
     engine: "parse_performance",
     target: "markdown",
@@ -106,11 +106,8 @@ const receiptExtractionConfig = {
         figureImageClippingEnabled: false,
       },
     },
-    engineVersion: "1.0.1",
+    engineVersion: "2.0.0",
     advancedOptions: {
-      engine: "parse_performance",
-      agenticOcrEnabled: false,
-      pageBreaksEnabled: true,
       pageRotationEnabled: false,
       verticalGroupingThreshold: 1,
     },
@@ -213,9 +210,6 @@ const receiptExtractionConfig = {
     advancedMultimodalEnabled: false,
     citationsEnabled: true,
     arrayCitationStrategy: "item",
-    pageRanges: [],
-    chunkingOptions: {},
-    advancedFigureParsingEnabled: true,
   },
 };
 
