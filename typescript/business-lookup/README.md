@@ -1,62 +1,41 @@
-# Stagehand + Browserbase: Business Lookup with Agent
+# Stagehand + Browserbase: Business Lookup
 
-## AT A GLANCE
+Look up a business in San Francisco's Registered Business Lookup and read its published registration details using Stagehand V3 browser locators.
 
-- Goal: Automate business registry searches using an autonomous AI agent with computer-use capabilities.
-- Uses Stagehand Agent in CUA mode to navigate complex UI elements, apply filters, and extract structured business data.
-- Demonstrates extraction with Zod schema validation for consistent data retrieval.
-- Docs → https://docs.stagehand.dev/basics/agent
+## How it works
 
-## GLOSSARY
+1. Open the registry in a Browserbase session.
+2. Find the business in the DBA Name filter, select its checkbox, and apply the filter.
+3. Wait for the filtered row and require exactly one matching location.
+4. Read the labeled grid cells and require the requested DBA name, a business account number, and a location ID.
+5. Scroll the registry's virtualized columns and read the dates, neighborhood, license description, and self-reported NAICS code directly from their cells.
+6. Print the record as JSON and close the session.
 
-- agent: create an autonomous AI agent that can execute complex multi-step tasks
-  Docs → https://docs.stagehand.dev/basics/agent#what-is-agent
-- extract: extract structured data from web pages using natural language instructions
-  Docs → https://docs.stagehand.dev/basics/extract
+Filtering and record retrieval use the registry's DOM controls and labeled grid cells. The template makes no model calls; `BROWSERBASE_API_KEY` is the only credential required.
 
-## QUICKSTART
+## Running the template
 
-1. npm install
-2. cp .env.example .env
-3. Add required API keys/IDs to .env
-4. npm start
+Use a TypeScript environment with Stagehand V3 (`@browserbasehq/stagehand@3.6.0`), `dotenv`, and a TypeScript runner such as `tsx`. Provide `BROWSERBASE_API_KEY` through your environment or secret manager, then run `index.ts` with your TypeScript runner.
 
-## EXPECTED OUTPUT
+Set `businessName` near the top of `index.ts` to the business's DBA name. The default is `Jalebi Street`.
 
-- Initializes Stagehand session with Browserbase
-- Displays live session link for monitoring
-- Navigates to SF Business Registry search page
-- Agent searches for business using DBA Name filter
-- Agent completes search and opens business details
-- Extracts structured business information (DBA Name, Account Number, NAICS Code, etc.)
-- Outputs extracted data as JSON
-- Closes session cleanly
+In Playground, choose **Search business registries for KYC** and run the template. Playground supplies the session and Browserbase credentials.
 
-## COMMON PITFALLS
+## Expected output
 
-- Dependency install errors: ensure npm install completed
-- Missing credentials: verify .env contains BROWSERBASE_API_KEY and GOOGLE_API_KEY
-- Google API access: ensure you have access to Google's gemini-2.5-computer-use-preview-10-2025 model
-- Agent failures: check that the business name exists in the registry and that maxSteps is sufficient for complex searches
-- Find more information on your Browserbase dashboard -> https://www.browserbase.com/sign-in
+The JSON record includes the DBA and ownership names, business account number, location ID, street address, business start/end dates, neighborhood, license code description, and self-reported NAICS code.
 
-## USE CASES
+Blank registry cells are returned as `null`. For example, a business can have a license description but no self-reported NAICS code. The template reports those fields separately and does not infer an industry code from the license description.
 
-• Business verification: Automate registration status checks, license validation, and compliance verification for multiple businesses.
-• Data enrichment: Collect structured business metadata (NAICS codes, addresses, ownership) for research or CRM updates.
-• Due diligence: Streamline background checks by autonomously searching and extracting business registration details from public registries.
+## Troubleshooting
 
-## NEXT STEPS
+- If the business is not available in the DBA filter or the results do not update, the template times out with a description of the missing control or result.
+- If several locations share the DBA name, narrow the registry filters before extracting one record. This template deliberately rejects multiple matches.
+- If the row does not match the requested DBA name or lacks an account number or location ID, the template reports an error. A missing column also causes an error; only rendered blank cells become `null`.
+- Browser and lookup failures include their error message. Check that your Browserbase credentials are valid and the registry is available.
 
-• Parameterize search: Accept business names as command-line arguments or from a CSV file for batch processing.
-• Expand extraction: Add support for additional fields like tax status, licenses, or historical registration changes.
-• Multi-registry support: Extend agent to search across multiple city or state business registries with routing logic.
+## Resources
 
-## HELPFUL RESOURCES
-
-📚 Stagehand Docs: https://docs.stagehand.dev/v3/first-steps/introduction
-🎮 Browserbase: https://www.browserbase.com
-💡 Try it out: https://www.browserbase.com/playground
-🔧 Templates: https://www.browserbase.com/templates
-📧 Need help? support@browserbase.com
-💬 Discord: http://stagehand.dev/discord
+- [Stagehand V3 documentation](https://docs.stagehand.dev/v3/first-steps/introduction)
+- [San Francisco Registered Business Lookup](https://data.sf.gov/stories/s/Registered-Business-Lookup/k6sk-2y6w/)
+- [Browserbase Playground](https://www.browserbase.com/playground)

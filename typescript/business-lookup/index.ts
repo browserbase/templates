@@ -1,90 +1,117 @@
-// Business Lookup with Agent - See README.md for full documentation
+// Business Lookup with Stagehand - See README.md for full documentation
 
 import "dotenv/config";
 import { Stagehand } from "@browserbasehq/stagehand";
-import { z } from "zod";
 
-// Business search variables
 const businessName = "Jalebi Street";
 
 async function main() {
-  // Initialize Stagehand with Browserbase for cloud-based browser automation.
   const stagehand = new Stagehand({
     env: "BROWSERBASE",
     verbose: 1,
-    model: "openai/gpt-4.1",
   });
 
   try {
-    // Initialize browser session to start automation.
     await stagehand.init();
-    console.log("Stagehand initialized successfully!");
-    console.log(
-      `Live View Link: https://browserbase.com/sessions/${stagehand.browserbaseSessionId}`,
-    );
-
     const page = stagehand.context.pages()[0];
+    await page.goto("https://data.sf.gov/stories/s/Registered-Business-Lookup/k6sk-2y6w/");
 
-    // Navigate to SF Business Registry search page.
-    console.log(`Navigating to SF Business Registry...`);
-    await page.goto("https://data.sfgov.org/stories/s/Registered-Business-Lookup/k6sk-2y6w/");
-
-    // Create agent with computer use capabilities for autonomous business search.
-    const agent = stagehand.agent({
-      cua: true, // Enable Computer Use Agent mode
-      model: {
-        modelName: "google/gemini-2.5-computer-use-preview-10-2025",
-        apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-      },
-      systemPrompt:
-        "You are a helpful assistant that can use a web browser to search for business information.",
-    });
-
-    console.log(`Searching for business: ${businessName}`);
-    const result = await agent.execute({
-      instruction: `Find and look up the business "${businessName}" in the SF Business Registry. Use the DBA Name filter to search for "${businessName}", apply the filter, and click on the business row to view detailed information. Scroll towards the right to see the NAICS code.`,
-      maxSteps: 30,
-    });
-
-    if (!result.success) {
-      throw new Error("Agent failed to complete the search");
+    async function waitFor(
+      check: () => Promise<boolean | number>,
+      description: string,
+    ): Promise<void> {
+      const deadline = Date.now() + 20000;
+      while (Date.now() < deadline) {
+        if (await check()) return;
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+      throw new Error(`Timed out waiting for ${description}`);
     }
 
-    // Extract comprehensive business information after agent completes the search.
-    console.log("Extracting business information...");
-    const businessInfo = await stagehand.extract(
-      "Extract all visible business information including DBA Name, Ownership Name, Business Account Number, Location Id, Street Address, Business Start Date, Business End Date, Neighborhood, NAICS Code, and NAICS Code Description",
-      z.object({
-        dbaName: z.string(),
-        ownershipName: z.string().optional(),
-        businessAccountNumber: z.string(),
-        locationId: z.string().optional(),
-        streetAddress: z.string().optional(),
-        businessStartDate: z.string().optional(),
-        businessEndDate: z.string().optional(),
-        neighborhood: z.string().optional(),
-        naicsCode: z.string(),
-        naicsCodeDescription: z.string().optional(),
-      }),
-      { page },
+    // Click the checkbox itself: clicking its adjacent text does not select it.
+    const filter = '[role="button"][aria-label="Filter: DBA Name - Select..."]';
+    await waitFor(() => page.locator(filter).count(), "the DBA Name filter");
+    await page.locator(filter).click();
+    await waitFor(
+      () => page.locator("#search-text-filter-input").count(),
+      "the business-name search input",
     );
+    await page.locator("#search-text-filter-input").fill(businessName);
+    const checkbox = `forge-checkbox[aria-label=${JSON.stringify(businessName)}]`;
+    await waitFor(() => page.locator(checkbox).count(), `the ${businessName} option`);
+    await page.locator(checkbox).click();
+    await waitFor(() => page.locator(checkbox).isChecked(), "the selected business checkbox");
+    await page.locator('[data-testid="apply-filter-button"]').click();
 
+    // Wait for the results grid to replace the unfiltered first page.
+    await waitFor(
+      () =>
+        page.evaluate((name: string) => {
+          const cells = [...document.querySelectorAll('[role="gridcell"][col-id="dba_name"]')];
+          return cells.length > 0 && cells.every((cell) => cell.textContent!.trim() === name);
+        }, businessName),
+      `results matching ${businessName}`,
+    );
+    if ((await page.locator('[role="gridcell"][col-id="dba_name"]').count()) !== 1) {
+      throw new Error(
+        `Multiple locations found for ${businessName}; narrow the registry filters before extracting one record.`,
+      );
+    }
+    // Read the labeled grid cells directly; missing cells must fail rather
+    // than being confused with an empty value published by the registry.
+    async function readCell(column: string): Promise<string | null> {
+      const text = await page.locator(`[role="gridcell"][col-id="${column}"]`).innerText();
+      return text.trim() || null;
+    }
+    const businessInfo = {
+      dbaName: await readCell("dba_name"),
+      ownershipName: await readCell("ownership_name"),
+      businessAccountNumber: await readCell("certificate_number"),
+      locationId: await readCell("ttxid"),
+      streetAddress: await readCell("full_business_address"),
+    };
+    if (
+      businessInfo.dbaName !== businessName ||
+      !businessInfo.businessAccountNumber ||
+      !businessInfo.locationId
+    ) {
+      throw new Error("The filtered registry row is missing the requested business identity.");
+    }
+
+    // The registry virtualizes its columns; scroll to render the remaining fields.
+    await page.evaluate(() => {
+      const scrollbar = document.querySelector<HTMLElement>(".ag-body-horizontal-scroll-viewport")!;
+      scrollbar.scrollLeft = scrollbar.scrollWidth;
+    });
+    await waitFor(
+      () => page.locator('[role="gridcell"][col-id="self_reported_naics_code"]').count(),
+      "the Self-Reported NAICS Code column",
+    );
+    // Preserve blank published values instead of inferring from nearby cells.
+    const details = {
+      businessStartDate: await readCell("dba_start_date"),
+      businessEndDate: await readCell("dba_end_date"),
+      neighborhood: await readCell("neighborhoods_analysis_boundaries"),
+      licenseCodeDescription: await readCell("lic_code_description"),
+      naicsCode: await readCell("self_reported_naics_code"),
+    };
     console.log("Business Information:");
-    console.log(JSON.stringify(businessInfo, null, 2));
+    console.log(JSON.stringify({ ...businessInfo, ...details }, null, 2));
+    if (!details.naicsCode)
+      console.log("The registry does not list a Self-Reported NAICS Code for this business.");
   } catch (error) {
-    console.error("Error during business lookup:", error);
+    const errorMessage =
+      error !== null &&
+      typeof error === "object" &&
+      "message" in error &&
+      typeof error.message === "string"
+        ? error.message
+        : String(error);
+    console.error("Error during business lookup:", errorMessage);
+    throw error;
   } finally {
-    // Always close session to release resources and clean up.
     await stagehand.close();
-    console.log("Session closed successfully");
   }
 }
 
-main().catch((err) => {
-  console.error("Error in business lookup:", err);
-  console.error("Common issues:");
-  console.error("  - Check .env file has BROWSERBASE_API_KEY");
-  console.error("  - Verify GOOGLE_API_KEY is set for the agent");
-  console.error("Docs: https://docs.stagehand.dev/v3/first-steps/introduction");
-  process.exit(1);
-});
+await main();
