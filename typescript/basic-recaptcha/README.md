@@ -1,8 +1,8 @@
-# Stagehand + Browserbase: Basic reCAPTCHA Solving
+# Stagehand + Browserbase: Basic CAPTCHA Solving
 
 ## AT A GLANCE
 
-- Goal: Demonstrate automatic reCAPTCHA solving using Browserbase's built-in captcha solving capabilities.
+- Goal: Demonstrate automatic CAPTCHA solving using Browserbase's built-in captcha solving capabilities.
 - Automated Solving: Browserbase automatically detects and solves CAPTCHAs in the background. CAPTCHA solving is **enabled by default** - you don't need to set `solveCaptchas: true` unless you want to explicitly enable it (or set it to `false` to disable).
 - Solving Time: CAPTCHA solving typically takes between 5-30 seconds depending on CAPTCHA type and complexity.
 - Progress Monitoring: Listen for console messages (`browserbase-solving-started`, `browserbase-solving-finished`) to track captcha solving progress in real-time.
@@ -12,7 +12,7 @@
 
 ## GLOSSARY
 
-- solveCaptchas: Browserbase browser setting that enables automatic captcha solving for reCAPTCHA, CAPTCHA, and other captcha types. Enabled by default for Basic and Advanced Stealth Mode.
+- solveCaptchas: Browserbase browser setting that enables automatic CAPTCHA solving. Enabled by default for Basic and Advanced Stealth Mode.
   Docs → https://docs.browserbase.com/features/stealth-mode#captcha-solving
 - CAPTCHA solving: When a CAPTCHA is detected, Browserbase attempts to solve it automatically in the background, allowing your automation to continue without manual intervention.
 - console messages: browser console events that indicate captcha solving status:
@@ -41,7 +41,7 @@ Browserbase provides integrated CAPTCHA solving to handle challenges automatical
 - **Solving Time**: CAPTCHA solving typically takes between 5-30 seconds, depending on the CAPTCHA type and complexity
 - **Default Behavior**: CAPTCHA solving is enabled by default for Basic and Advanced Stealth Mode
 - **Proxies**: It's recommended to enable proxies when using CAPTCHA solving for higher success rates
-- **Multiple Types**: Browserbase supports reCAPTCHA, CAPTCHA, and other common captcha providers automatically
+- **Multiple Types**: Browserbase supports common CAPTCHA types automatically
 
 ### Custom CAPTCHA Solving
 
@@ -83,11 +83,11 @@ browserSettings: {
 
 - Initializes Stagehand session with Browserbase
 - Listens for Browserbase captcha progress through Stagehand V4 console events
-- Navigates to Google reCAPTCHA demo page
-- Clicks submit button to trigger reCAPTCHA challenge
-- Waits for Browserbase to automatically solve the captcha
-- Logs captcha solving progress messages
-- Clicks submit again after captcha is solved
+- Navigates to CAPTCHA demo page
+- Clicks submit button to trigger CAPTCHA challenge
+- Waits for Browserbase to automatically solve the CAPTCHA
+- Logs CAPTCHA solving progress messages
+- Clicks submit again after CAPTCHA is solved
 - Extracts and displays page content
 - Prints the resulting page content for inspection
 - Closes session cleanly
@@ -98,8 +98,8 @@ browserSettings: {
 - Captcha solving not enabled: ensure `solveCaptchas: true` is set in browserSettings (enabled by default)
 - Solving timeout: allow up to 30 seconds for CAPTCHA solving to complete before timing out
 - Proxies not enabled: enable proxies in browserSettings for higher CAPTCHA solving success rates
-- Demo page inaccessible: verify the reCAPTCHA demo page URL is accessible and hasn't changed
-- Console message timing: ensure console event listeners are set up before triggering the captcha
+- Demo page inaccessible: verify the CAPTCHA demo page URL is accessible and hasn't changed
+- Console message timing: ensure console event listeners are set up before triggering the CAPTCHA
 - Custom captcha selectors: for non-standard CAPTCHAs, verify that `captchaImageSelector` and `captchaInputSelector` are correctly defined
 
 ## HELPFUL RESOURCES

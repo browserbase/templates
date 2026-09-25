@@ -1,4 +1,4 @@
-# Basic reCAPTCHA Solving with Playwright + Browserbase - See README.md for full documentation
+# Basic CAPTCHA Solving with Playwright + Browserbase - See README.md for full documentation
 #
 # This template uses Playwright directly with the Browserbase SDK for lower-level browser control.
 # For a higher-level API with natural language commands, see the Stagehand template instead.
@@ -36,7 +36,7 @@ def validate_env() -> str:
 
 
 async def main():
-    print("Starting Playwright + Browserbase reCAPTCHA Example...")
+    print("Starting Playwright + Browserbase CAPTCHA Example...")
 
     api_key = validate_env()
 
@@ -44,8 +44,7 @@ async def main():
     bb = Browserbase(api_key=api_key)
 
     # Create a new browser session with captcha solving enabled.
-    # solveCaptchas: Browserbase setting that enables automatic solving for
-    # reCAPTCHA, CAPTCHA, and other captcha types.
+    # solveCaptchas: Browserbase setting that enables automatic CAPTCHA solving.
     # Docs: https://docs.browserbase.com/features/stealth-mode#captcha-solving
     print("Creating Browserbase session with captcha solving enabled...")
     session = bb.sessions.create(
@@ -90,8 +89,8 @@ async def main():
 
                 page.on("console", handle_console)
 
-            # Navigate to Google reCAPTCHA demo page to test captcha solving.
-            print("Navigating to reCAPTCHA demo page...")
+            # Navigate to CAPTCHA demo page to test CAPTCHA solving.
+            print("Navigating to CAPTCHA demo page...")
             await page.goto(DEMO_URL, wait_until="domcontentloaded")
 
             # Wait for Browserbase to solve the captcha automatically.
@@ -117,7 +116,7 @@ async def main():
             print(f"Page content: {page_content[:500] if page_content else 'None'}")
 
         except Exception as error:
-            print(f"Error during reCAPTCHA solving: {error}")
+            print(f"Error during CAPTCHA solving: {error}")
             raise
 
         finally:

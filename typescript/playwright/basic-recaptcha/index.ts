@@ -1,4 +1,4 @@
-// Basic reCAPTCHA Solving with Playwright + Browserbase - See README.md for full documentation
+// Basic CAPTCHA Solving with Playwright + Browserbase - See README.md for full documentation
 //
 // This template uses Playwright directly with the Browserbase SDK for lower-level browser control.
 // For a higher-level API with natural language commands, see the Stagehand template instead.
@@ -23,7 +23,7 @@ function validateEnv(): { apiKey: string } {
 }
 
 async function main() {
-  console.log("Starting Playwright + Browserbase reCAPTCHA Example...");
+  console.log("Starting Playwright + Browserbase CAPTCHA Example...");
 
   const { apiKey } = validateEnv();
 
@@ -31,7 +31,7 @@ async function main() {
   const bb = new Browserbase({ apiKey });
 
   // Create a new browser session with captcha solving enabled.
-  // solveCaptchas: Browserbase setting that enables automatic solving for reCAPTCHA, CAPTCHA, and other captcha types.
+  // solveCaptchas: Browserbase setting that enables automatic CAPTCHA solving.
   // Docs: https://docs.browserbase.com/features/stealth-mode#captcha-solving
   console.log("Creating Browserbase session with captcha solving enabled...");
   const session = await bb.sessions.create({
@@ -85,8 +85,8 @@ async function main() {
       });
     }
 
-    // Navigate to Google reCAPTCHA demo page to test captcha solving.
-    console.log("Navigating to reCAPTCHA demo page...");
+    // Navigate to CAPTCHA demo page to test CAPTCHA solving.
+    console.log("Navigating to CAPTCHA demo page...");
     await page.goto(DEMO_URL, { waitUntil: "domcontentloaded" });
 
     // Wait for Browserbase to solve the captcha automatically.
@@ -117,7 +117,7 @@ async function main() {
     const pageContent = await page.textContent("body");
     console.log("Page content:", pageContent?.substring(0, 500));
   } catch (error) {
-    console.error("Error during reCAPTCHA solving:", error);
+    console.error("Error during CAPTCHA solving:", error);
     throw error;
   } finally {
     // Always close the browser to release resources and end the Browserbase session.
