@@ -1,30 +1,35 @@
-# Playwright + Browserbase: Basic CAPTCHA Solving
+# Stagehand + Browserbase: Basic CAPTCHA Solving
 
 ## AT A GLANCE
 
-- Goal: Demonstrate automatic CAPTCHA solving using Playwright with Browserbase's built-in captcha solving capabilities.
+- Goal: Demonstrate automatic CAPTCHA solving using Browserbase's built-in captcha solving capabilities.
 - Automated Solving: Browserbase automatically detects and solves CAPTCHAs in the background. CAPTCHA solving is **enabled by default** - you don't need to set `solveCaptchas: true` unless you want to explicitly enable it (or set it to `false` to disable).
-- Timeout Handling: Includes 60-second timeout to prevent indefinite waits on captcha solving failures.
+- Solving Time: CAPTCHA solving typically takes between 5-30 seconds depending on CAPTCHA type and complexity.
 - Progress Monitoring: Listen for console messages (`browserbase-solving-started`, `browserbase-solving-finished`) to track captcha solving progress in real-time.
-- Docs -> https://docs.browserbase.com/features/stealth-mode#captcha-solving
+- Proxies Recommended: Enable proxies for higher CAPTCHA solving success rates.
+- Result inspection: Extracts and prints the page content after form submission.
+- Docs → https://docs.browserbase.com/features/stealth-mode#captcha-solving
 
 ## GLOSSARY
 
-- Browserbase SDK: JavaScript/TypeScript SDK for creating and managing browser sessions in Browserbase's cloud infrastructure.
-  Docs -> https://docs.browserbase.com/
 - solveCaptchas: Browserbase browser setting that enables automatic CAPTCHA solving. Enabled by default for Basic and Advanced Stealth Mode.
-  Docs -> https://docs.browserbase.com/features/stealth-mode#captcha-solving
-- console messages: Browser console events that indicate captcha solving status:
+  Docs → https://docs.browserbase.com/features/stealth-mode#captcha-solving
+- CAPTCHA solving: When a CAPTCHA is detected, Browserbase attempts to solve it automatically in the background, allowing your automation to continue without manual intervention.
+- console messages: browser console events that indicate captcha solving status:
   - `browserbase-solving-started`: emitted when CAPTCHA detection begins
   - `browserbase-solving-finished`: emitted when CAPTCHA solving completes
 - custom CAPTCHA solving: For non-standard or custom captcha providers, you can specify CSS selectors for the captcha image and input field using `captchaImageSelector` and `captchaInputSelector` in browserSettings.
+- act: perform UI actions from a prompt (type, click, fill forms)
+  Docs → https://docs.stagehand.dev/v4/basics/act
+- extract: pull data from web pages using natural language instructions
+  Docs → https://docs.stagehand.dev/v4/basics/extract
 
-## PLAYWRIGHT VS STAGEHAND
+## STAGEHAND VS PLAYWRIGHT
 
-| Feature         | Playwright (this template)    | Stagehand                            |
-| --------------- | ----------------------------- | ------------------------------------ |
-| Actions         | `page.click()`, `page.goto()` | `stagehand.act("Click the button")`  |
-| Data Extraction | Manual DOM queries            | `stagehand.extract("Get the price")` |
+| Feature         | Stagehand (this template)            | Playwright                    |
+| --------------- | ------------------------------------ | ----------------------------- |
+| Actions         | `stagehand.act("Click the button")`  | `page.click()`, `page.goto()` |
+| Data Extraction | `stagehand.extract("Get the price")` | Manual DOM queries            |
 
 ## CAPTCHA SOLVING DETAILS
 
@@ -36,6 +41,7 @@ Browserbase provides integrated CAPTCHA solving to handle challenges automatical
 - **Solving Time**: CAPTCHA solving typically takes between 5-30 seconds, depending on the CAPTCHA type and complexity
 - **Default Behavior**: CAPTCHA solving is enabled by default for Basic and Advanced Stealth Mode
 - **Proxies**: It's recommended to enable proxies when using CAPTCHA solving for higher success rates
+- **Multiple Types**: Browserbase supports common CAPTCHA types automatically
 
 ### Custom CAPTCHA Solving
 
@@ -44,7 +50,7 @@ For non-standard or custom captcha providers, you can specify CSS selectors to g
 ```typescript
 browserSettings: {
   solveCaptchas: true,
-  captchaImageSelector: "#custom-captcha-image-id",xc
+  captchaImageSelector: "#custom-captcha-image-id",
   captchaInputSelector: "#custom-captcha-input-id"
 }
 ```
@@ -67,7 +73,7 @@ browserSettings: {
 
 ## QUICKSTART
 
-1. cd typescript/playwright/basic-recaptcha
+1. cd typescript/basic-captcha-solving
 2. pnpm install
 3. cp .env.example .env
 4. Add your Browserbase API key to .env
@@ -75,32 +81,32 @@ browserSettings: {
 
 ## EXPECTED OUTPUT
 
-- Validates environment variables for Browserbase credentials
-- Creates Browserbase session with captcha solving enabled
-- Displays session ID and live view link for monitoring
-- Connects to browser via Chrome DevTools Protocol (CDP)
+- Initializes Stagehand session with Browserbase
+- Listens for Browserbase captcha progress through Stagehand V4 console events
 - Navigates to CAPTCHA demo page
-- Waits for Browserbase to automatically solve the CAPTCHA (with 60s timeout)
+- Clicks submit button to trigger CAPTCHA challenge
+- Waits for Browserbase to automatically solve the CAPTCHA
 - Logs CAPTCHA solving progress messages
-- Clicks submit button after CAPTCHA is solved
-- Verifies successful captcha solving by checking for success message
-- Closes session cleanly and displays replay link
+- Clicks submit again after CAPTCHA is solved
+- Extracts and displays page content
+- Prints the resulting page content for inspection
+- Closes session cleanly
 
 ## COMMON PITFALLS
 
 - Missing credentials: verify .env contains BROWSERBASE_API_KEY
-- CAPTCHA solving timeout: the template uses a 60-second timeout; increase if needed for complex CAPTCHAs
-- No browser context: ensure the Browserbase session was created successfully before connecting
+- Captcha solving not enabled: ensure `solveCaptchas: true` is set in browserSettings (enabled by default)
+- Solving timeout: allow up to 30 seconds for CAPTCHA solving to complete before timing out
 - Proxies not enabled: enable proxies in browserSettings for higher CAPTCHA solving success rates
 - Demo page inaccessible: verify the CAPTCHA demo page URL is accessible and hasn't changed
-- Console message timing: ensure console event listeners are set up before navigating to the page
+- Console message timing: ensure console event listeners are set up before triggering the CAPTCHA
 - Custom captcha selectors: for non-standard CAPTCHAs, verify that `captchaImageSelector` and `captchaInputSelector` are correctly defined
 
 ## HELPFUL RESOURCES
 
-- Browserbase Docs: https://docs.browserbase.com
-- Playwright Docs: https://playwright.dev/docs/intro
-- Browserbase Dashboard: https://www.browserbase.com
-- Playground: https://www.browserbase.com/playground
-- Templates: https://www.browserbase.com/templates
-- Need help? support@browserbase.com
+📚 Stagehand Docs: https://docs.stagehand.dev/v4/first-steps/introduction
+🎮 Browserbase: https://www.browserbase.com
+💡 Try it out: https://www.browserbase.com/playground
+🔧 Templates: https://www.browserbase.com/templates
+📧 Need help? support@browserbase.com
+💬 Discord: http://stagehand.dev/discord

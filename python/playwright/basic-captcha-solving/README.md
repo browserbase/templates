@@ -80,7 +80,7 @@ session = bb.sessions.create(
 
 ## QUICKSTART
 
-1. `cd python/playwright/basic-recaptcha`
+1. `cd python/playwright/basic-captcha-solving`
 2. `uv venv venv`
 3. `source venv/bin/activate` # On Windows: `venv\Scripts\activate`
 4. `uv pip install .` # Install dependencies from pyproject.toml
