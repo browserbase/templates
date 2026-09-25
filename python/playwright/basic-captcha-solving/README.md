@@ -1,8 +1,8 @@
-# Playwright + Browserbase: Basic reCAPTCHA Solving (Python)
+# Playwright + Browserbase: Basic CAPTCHA Solving (Python)
 
 ## AT A GLANCE
 
-- Goal: Demonstrate automatic reCAPTCHA solving using Playwright with Browserbase's built-in captcha solving capabilities.
+- Goal: Demonstrate automatic CAPTCHA solving using Playwright with Browserbase's built-in captcha solving capabilities.
 - Automated Solving: Browserbase automatically detects and solves CAPTCHAs in the background. CAPTCHA solving is **enabled by default** - you don't need to set `solveCaptchas: True` unless you want to explicitly enable it (or set it to `False` to disable).
 - Timeout Handling: Includes 60-second timeout to prevent indefinite waits on captcha solving failures.
 - Progress Monitoring: Listen for console messages (`browserbase-solving-started`, `browserbase-solving-finished`) to track captcha solving progress in real-time.
@@ -12,7 +12,7 @@
 
 - Browserbase SDK: Python SDK for creating and managing browser sessions in Browserbase's cloud infrastructure.
   Docs -> https://docs.browserbase.com/
-- solveCaptchas: Browserbase browser setting that enables automatic captcha solving for reCAPTCHA, hCaptcha, and other captcha types. Enabled by default for Basic and Advanced Stealth Mode.
+- solveCaptchas: Browserbase browser setting that enables automatic CAPTCHA solving. Enabled by default for Basic and Advanced Stealth Mode.
   Docs -> https://docs.browserbase.com/features/stealth-mode#captcha-solving
 - console messages: Browser console events that indicate captcha solving status:
   - `browserbase-solving-started`: emitted when CAPTCHA detection begins
@@ -80,7 +80,7 @@ session = bb.sessions.create(
 
 ## QUICKSTART
 
-1. `cd python/playwright/basic-recaptcha`
+1. `cd python/playwright/basic-captcha-solving`
 2. `uv venv venv`
 3. `source venv/bin/activate` # On Windows: `venv\Scripts\activate`
 4. `uv pip install .` # Install dependencies from pyproject.toml
@@ -94,10 +94,10 @@ session = bb.sessions.create(
 - Creates Browserbase session with captcha solving enabled
 - Displays session ID and live view link for monitoring
 - Connects to browser via Chrome DevTools Protocol (CDP)
-- Navigates to Google reCAPTCHA demo page
-- Waits for Browserbase to automatically solve the captcha (with 60s timeout)
-- Logs captcha solving progress messages
-- Clicks submit button after captcha is solved
+- Navigates to CAPTCHA demo page
+- Waits for Browserbase to automatically solve the CAPTCHA (with 60s timeout)
+- Logs CAPTCHA solving progress messages
+- Clicks submit button after CAPTCHA is solved
 - Verifies successful captcha solving by checking for success message
 - Closes session cleanly and displays replay link
 
@@ -105,10 +105,10 @@ session = bb.sessions.create(
 
 - Missing credentials: verify .env contains BROWSERBASE_API_KEY
 - Browser not installed: run `playwright install chromium` to install browser binaries
-- Captcha solving timeout: the template uses a 60-second timeout; increase if needed for complex CAPTCHAs
+- CAPTCHA solving timeout: the template uses a 60-second timeout; increase if needed for complex CAPTCHAs
 - No browser context: ensure the Browserbase session was created successfully before connecting
 - Proxies not enabled: enable proxies in session creation for higher CAPTCHA solving success rates
-- Demo page inaccessible: verify the reCAPTCHA demo page URL is accessible and hasn't changed
+- Demo page inaccessible: verify the CAPTCHA demo page URL is accessible and hasn't changed
 - Console message timing: ensure console event listeners are set up before navigating to the page
 - Custom captcha selectors: for non-standard CAPTCHAs, verify that `captchaImageSelector` and `captchaInputSelector` are correctly defined
 - Import errors: activate your virtual environment if you created one

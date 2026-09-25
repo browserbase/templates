@@ -1,5 +1,5 @@
 {
-  "name": "playwright-basic-recaptcha-template",
+  "name": "playwright-basic-captcha-solving-template",
   "type": "module",
   "scripts": {
     "build": "tsc",

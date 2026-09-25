@@ -1,7 +1,7 @@
 [project]
-name = "playwright-basic-recaptcha"
+name = "playwright-basic-captcha-solving"
 version = "0.1.0"
-description = "Basic reCAPTCHA solving with Playwright and Browserbase"
+description = "Basic CAPTCHA solving with Playwright and Browserbase"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [

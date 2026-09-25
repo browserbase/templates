@@ -1,4 +1,4 @@
-"""Solve and verify Google's reCAPTCHA demo with Stagehand V4."""
+"""Solve and verify CAPTCHA challenge with Stagehand V4."""
 
 import asyncio
 import os
@@ -58,6 +58,6 @@ if __name__ == "__main__":
     try:
         asyncio.run(main())
     except Exception as error:
-        print(f"reCAPTCHA example failed: {error}")
+        print(f"CAPTCHA solving example failed: {error}")
         print("Docs: https://docs.stagehand.dev/v4/first-steps/introduction")
         raise

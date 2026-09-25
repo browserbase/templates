@@ -1,11 +1,11 @@
-// Basic reCAPTCHA Solving with Browserbase - See README.md for full documentation
+// Basic CAPTCHA Solving with Browserbase - See README.md for full documentation
 
 import "dotenv/config";
 import { browserbase, Stagehand } from "@browserbasehq/stagehand";
 
 async function main() {
   // Initialize Stagehand with Browserbase for cloud-based browser automation.
-  // Enable captcha solving in browser settings for automatic reCAPTCHA handling.
+  // Enable captcha solving in browser settings for automatic CAPTCHA handling.
 
   const solveCaptchas = true; // Set to false to disable automatic captcha solving (true by default)
 
@@ -23,8 +23,8 @@ async function main() {
     console.log("Stagehand initialized successfully!");
     const page = (await browser.context.pages())[0];
 
-    // Navigate to Google reCAPTCHA demo page to test captcha solving.
-    console.log("Navigating to reCAPTCHA demo page...");
+    // Navigate to CAPTCHA demo page to test CAPTCHA solving.
+    console.log("Navigating to CAPTCHA demo page...");
     await page.goto("https://google.com/recaptcha/api2/demo");
 
     // Wait for Browserbase to solve the captcha automatically.
@@ -60,8 +60,8 @@ async function main() {
       console.log("Captcha solving is disabled. Skipping wait...");
     }
 
-    // Click submit again after captcha is solved to complete the form submission.
-    console.log("Clicking submit button after captcha is solved...");
+    // Click submit again after CAPTCHA is solved to complete the form submission.
+    console.log("Clicking submit button after CAPTCHA is solved...");
     await stagehand.act("Click the Submit button");
 
     // Extract and display the page content after submission.
@@ -70,7 +70,7 @@ async function main() {
     console.log("Page content:");
     console.log(text);
   } catch (error) {
-    console.error("Error during reCAPTCHA solving:", error);
+    console.error("Error during CAPTCHA solving:", error);
   } finally {
     // Always close session to release resources and clean up.
     await stagehand.close();
@@ -80,7 +80,7 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Error in reCAPTCHA solving example:", err);
+  console.error("Error in CAPTCHA solving example:", err);
   console.error("Common issues:");
   console.error("  - Check .env file has BROWSERBASE_API_KEY");
   console.error("  - Verify solveCaptchas is enabled in browserSettings");
