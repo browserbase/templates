@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>bb research engine</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <div class="main">
+        <header class="topbar">
+          <div class="topbar-brand">
+            <img class="topbar-logo" src="browserbase-logo.svg" alt="Browserbase logo" />
+            <div class="topbar-brand-copy">
+              <span class="topbar-eyebrow">Browserbase</span>
+              <h2 id="workspace-title">Research workspace</h2>
+            </div>
+          </div>
+          <div class="status-row">
+            <div class="status-pill ready" id="status-pill">
+              <span class="dot" aria-hidden="true"></span>
+              <span id="status">Ready</span>
+            </div>
+            <div class="status-pill" id="api-pill">
+              <span class="dot" aria-hidden="true"></span>
+              <span id="api-status">Checking API</span>
+            </div>
+          </div>
+        </header>
+
+        <main class="workspace">
+          <section class="command-panel">
+            <form id="research-form">
+              <label>
+                Research topic
+                <input id="topic" name="topic" maxlength="300" required value="Browserbase Fetch API" />
+              </label>
+              <button class="run-button" id="submit" type="submit">
+                <span class="loading-spinner" aria-hidden="true"></span>
+                <span id="submit-label">Run research</span>
+              </button>
+            </form>
+            <div class="loading-state" id="loading-state" role="status" aria-live="polite" hidden>
+              <div class="loading-state-header">
+                <strong id="loading-title">Run in progress</strong>
+                <span id="loading-detail">Preparing request</span>
+              </div>
+              <div class="loading-meta">
+                <span id="loading-elapsed">Elapsed 0:00</span>
+                <span id="loading-eta">Estimated time until complete: ~4:00</span>
+              </div>
+              <div class="loading-bar" aria-hidden="true"></div>
+            </div>
+          </section>
+
+          <section class="brief-panel" aria-labelledby="brief-heading">
+            <span>What this does</span>
+            <h2 id="brief-heading">Turn a research question into a cited brief.</h2>
+            <p>
+              Enter a topic and bb research engine runs a repeatable evidence pipeline: discover sources, extract usable
+              evidence, synthesize the answer, then verify confidence before showing the final result.
+            </p>
+          </section>
+
+          <section class="explain-panel" aria-labelledby="explain-heading">
+            <div class="explain-heading">
+              <div>
+                <h2 id="explain-heading">Pipeline details</h2>
+                <p>Six static steps from planning to verified output.</p>
+              </div>
+            </div>
+            <div class="timeline" aria-label="Run pipeline details">
+              <article class="step" data-step="planning">
+                <div class="step-content">
+                  <span>01</span>
+                  <strong>Planning</strong>
+                  <div class="explain-body">
+                    <p>Clarifies the question, source strategy, and quality rubric before any web calls run.</p>
+                  </div>
+                </div>
+              </article>
+              <article class="step" data-step="search">
+                <div class="step-content">
+                  <span>02</span>
+                  <strong>Search</strong>
+                  <div class="explain-body">
+                    <p>Discovers candidate URLs quickly while preserving titles, links, and result context.</p>
+                  </div>
+                </div>
+              </article>
+              <article class="step" data-step="fetch">
+                <div class="step-content">
+                  <span>03</span>
+                  <strong>Fetch</strong>
+                  <div class="explain-body">
+                    <p>Retrieves page content first, avoiding browser-session cost when static content is enough.</p>
+                  </div>
+                </div>
+              </article>
+              <article class="step" data-step="browser">
+                <div class="step-content">
+                  <span>04</span>
+                  <strong>Browser</strong>
+                  <div class="explain-body">
+                    <p>Uses Stagehand only when a source is dynamic, blocked, thin, or needs rendered-page extraction.</p>
+                  </div>
+                </div>
+              </article>
+              <article class="step" data-step="synthesis">
+                <div class="step-content">
+                  <span>05</span>
+                  <strong>Synthesis</strong>
+                  <div class="explain-body">
+                    <p>Turns accepted evidence into findings, source records, gaps, contradictions, and follow-up questions.</p>
+                  </div>
+                </div>
+              </article>
+              <article class="step" data-step="verify">
+                <div class="step-content">
+                  <span>06</span>
+                  <strong>Verify</strong>
+                  <div class="explain-body">
+                    <p>Scores source coverage, missing angles, confidence signals, and process quality so uncertainty stays visible.</p>
+                  </div>
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section class="metrics" aria-label="Run metrics">
+            <div class="metric-card">
+              <span>Duration</span>
+              <strong id="metric-duration">--</strong>
+              <small>seconds</small>
+            </div>
+            <div class="metric-card">
+              <span>Sources</span>
+              <strong id="metric-sources">--</strong>
+              <small>accepted</small>
+            </div>
+            <div class="metric-card">
+              <span>Domains</span>
+              <strong id="metric-domains">--</strong>
+              <small>distinct</small>
+            </div>
+            <div class="metric-card">
+              <span>Verification</span>
+              <strong id="metric-verification">--</strong>
+              <small id="metric-pass">pending</small>
+            </div>
+          </section>
+
+          <div id="notice"></div>
+
+          <section class="results-shell">
+            <div class="tabs" role="tablist" aria-label="Results">
+              <button class="tab-button active" type="button" data-tab-target="overview">Overview</button>
+              <button class="tab-button" type="button" data-tab-target="findings">Findings</button>
+              <button class="tab-button" type="button" data-tab-target="sources">Sources</button>
+              <button class="tab-button" type="button" data-tab-target="artifacts">Raw output</button>
+            </div>
+
+            <section class="panel" id="panel-overview">
+              <div class="empty">No run selected.</div>
+            </section>
+            <section class="panel" id="panel-findings" hidden>
+              <div class="empty">No findings yet.</div>
+            </section>
+            <section class="panel" id="panel-sources" hidden>
+              <div class="empty">No sources yet.</div>
+            </section>
+            <section class="panel" id="panel-artifacts" hidden>
+              <div class="empty">No raw output yet.</div>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <script>
+      const form = document.querySelector("#research-form");
+      const topicInput = document.querySelector("#topic");
+      const submit = document.querySelector("#submit");
+      const submitLabel = document.querySelector("#submit-label");
+      const loadingState = document.querySelector("#loading-state");
+      const loadingTitle = document.querySelector("#loading-title");
+      const loadingDetail = document.querySelector("#loading-detail");
+      const loadingElapsed = document.querySelector("#loading-elapsed");
+      const loadingEta = document.querySelector("#loading-eta");
+      const statusText = document.querySelector("#status");
+      const statusPill = document.querySelector("#status-pill");
+      const apiStatus = document.querySelector("#api-status");
+      const apiPill = document.querySelector("#api-pill");
+      const notice = document.querySelector("#notice");
+      const panelOverview = document.querySelector("#panel-overview");
+      const panelFindings = document.querySelector("#panel-findings");
+      const panelSources = document.querySelector("#panel-sources");
+      const panelArtifacts = document.querySelector("#panel-artifacts");
+      const metricDuration = document.querySelector("#metric-duration");
+      const metricSources = document.querySelector("#metric-sources");
+      const metricDomains = document.querySelector("#metric-domains");
+      const metricVerification = document.querySelector("#metric-verification");
+      const metricPass = document.querySelector("#metric-pass");
+      let apiBase = window.location.protocol === "file:" ? "http://localhost:3000" : "";
+      const localApiCandidates = ["http://localhost:3000", "http://localhost:3210"];
+      const pipelineSteps = ["planning", "search", "fetch", "browser", "synthesis", "verify"];
+      const estimatedRunSeconds = 240;
+      const loadingSteps = [
+        { title: "Planning research", detail: "Clarifying the question and rubric" },
+        { title: "Searching live web", detail: "Discovering candidate sources" },
+        { title: "Fetching pages", detail: "Extracting source content" },
+        { title: "Checking browser fallbacks", detail: "Escalating dynamic pages when needed" },
+        { title: "Synthesizing findings", detail: "Building the cited brief" },
+        { title: "Verifying answer", detail: "Scoring evidence and confidence" },
+      ];
+      let loadingTimer;
+      let loadingStepTimer;
+      let loadingStepIndex = 0;
+      let loadingStartedAt = 0;
+
+      document.querySelectorAll("[data-tab-target]").forEach((button) => {
+        button.addEventListener("click", () => setActiveTab(button.dataset.tabTarget));
+      });
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const topic = topicInput.value.trim();
+        if (!topic) return;
+
+        setLoading(true);
+        setStatus("Running", "ready");
+        notice.innerHTML = "";
+        panelOverview.innerHTML = `<div class="empty">Running ${escapeHtml(topic)}</div>`;
+        panelFindings.innerHTML = `<div class="empty">No findings yet.</div>`;
+        panelSources.innerHTML = `<div class="empty">No sources yet.</div>`;
+        panelArtifacts.innerHTML = `<div class="empty">No raw output yet.</div>`;
+        resetMetrics();
+        setActiveTab("overview");
+
+        try {
+          const response = await fetch(`${apiBase}/api/research`, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ topic }),
+          });
+          const payload = await readJson(response);
+          if (!response.ok) {
+            throw new Error(payload.error || "Research failed.");
+          }
+          renderResults(payload);
+          setStatus("Ready", "ready");
+          setPipeline("complete");
+        } catch (error) {
+          notice.innerHTML = `<div class="notice">${escapeHtml(error.message || String(error))}</div>`;
+          setStatus("Error", "error");
+          setPipeline("failed", Math.max(0, Math.min(pipelineSteps.length - 1, loadingStepIndex - 1)));
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      async function checkHealth() {
+        const candidates = window.location.protocol === "file:" ? localApiCandidates : [apiBase];
+        for (const base of candidates) {
+          try {
+            const response = await fetch(`${base}/api/health`);
+            if (!response.ok) continue;
+            apiBase = base;
+            apiStatus.textContent = "API online";
+            apiPill.className = "status-pill online";
+            return;
+          } catch {
+            // Try the next local API candidate.
+          }
+        }
+        apiStatus.textContent = "API unavailable";
+        apiPill.className = "status-pill offline";
+      }
+
+      function renderResults(result) {
+        const report = result.report || {};
+        const verification = result.verification || {};
+        const findings = report.keyFindings || [];
+        const sources = result.sources || [];
+        const sourceDomainCount =
+          result.sourceDomainCount ?? new Set(sources.map((source) => source.domain).filter(Boolean)).size;
+        const followUps = report.followUpQuestions || [];
+        const gaps = report.gaps || [];
+
+        metricDuration.textContent = String(result.durationSec || 0);
+        metricSources.textContent = String(sources.length);
+        metricDomains.textContent = String(sourceDomainCount);
+        metricVerification.textContent = verification.overallScore ?? "n/a";
+        metricPass.textContent = verification.pass ? "passed" : "review";
+        metricPass.className = verification.pass ? "pass" : "fail";
+
+        panelOverview.innerHTML = `
+          <div class="summary-grid">
+            <div>
+              <h2>${escapeHtml(report.title || result.topic)}</h2>
+              <div class="summary-card">
+                <p>${escapeHtml(report.executiveSummary || "")}</p>
+              </div>
+              <div class="summary-card">
+                <p class="${verification.pass ? "pass" : "fail"}">Verification: ${verification.pass ? "passed" : "review"}</p>
+                <p class="muted">${escapeHtml(verification.summary || "")}</p>
+              </div>
+            </div>
+            <div class="list">
+              ${renderMiniList("Gaps", gaps)}
+              ${renderMiniList("Follow ups", followUps)}
+            </div>
+          </div>
+        `;
+
+        panelFindings.innerHTML = findings.length
+          ? `<div class="list">${findings.map(renderFinding).join("")}</div>`
+          : `<div class="empty">No findings returned.</div>`;
+
+        panelSources.innerHTML = sources.length
+          ? renderSourcesTable(sources)
+          : `<div class="empty">No sources returned.</div>`;
+
+        panelArtifacts.innerHTML = `
+          <div class="artifact-card">
+            <h2>Raw output</h2>
+            <p>This engineer-facing payload is useful for debugging and audit checks. Most demo readers can stay in Overview, Findings, and Sources.</p>
+            <pre>${escapeHtml(JSON.stringify(result.artifacts || {}, null, 2))}</pre>
+          </div>
+        `;
+      }
+
+      function renderMiniList(title, values) {
+        const items = Array.isArray(values) ? values.filter(Boolean) : [];
+        return `
+          <div class="summary-card">
+            <h3>${escapeHtml(title)}</h3>
+            ${items.length
+              ? `<div class="list">${items.map((item) => `<p>${escapeHtml(item)}</p>`).join("")}</div>`
+              : `<p class="muted">None returned.</p>`}
+          </div>
+        `;
+      }
+
+      function renderFinding(finding) {
+        return `
+          <article class="finding">
+            <h3>${escapeHtml(finding.confidence || "medium")} confidence</h3>
+            <p>${escapeHtml(finding.finding || "")}</p>
+            <p class="finding-footer">Sources: ${(finding.sourceIds || []).map((id) => `[${escapeHtml(id)}]`).join(", ") || "none"}</p>
+          </article>
+        `;
+      }
+
+      function renderSourcesTable(sources) {
+        return `
+          <div class="sources-table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Source</th>
+                  <th>Domain</th>
+                  <th>Type</th>
+                  <th>Words</th>
+                  <th>Reliability</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${sources.map((source) => `
+                  <tr>
+                    <td>${escapeHtml(source.id)}</td>
+                    <td><a href="${escapeAttr(source.url)}">${escapeHtml(source.title)}</a></td>
+                    <td>${escapeHtml(source.domain)}</td>
+                    <td>${escapeHtml(source.sourceType)}</td>
+                    <td>${escapeHtml(source.wordCount)}</td>
+                    <td>${escapeHtml(source.reliabilityScore)}</td>
+                  </tr>
+                `).join("")}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      function setActiveTab(tabName) {
+        document.querySelectorAll("[data-tab-target]").forEach((button) => {
+          button.classList.toggle("active", button.dataset.tabTarget === tabName);
+        });
+        panelOverview.hidden = tabName !== "overview";
+        panelFindings.hidden = tabName !== "findings";
+        panelSources.hidden = tabName !== "sources";
+        panelArtifacts.hidden = tabName !== "artifacts";
+      }
+
+      function setStatus(text, state) {
+        statusText.textContent = text;
+        statusPill.className = `status-pill ${state}`;
+      }
+
+      function setLoading(isLoading) {
+        submit.disabled = isLoading;
+        topicInput.disabled = isLoading;
+        submit.classList.toggle("is-loading", isLoading);
+        submit.setAttribute("aria-busy", String(isLoading));
+        loadingState.hidden = !isLoading;
+        submitLabel.textContent = isLoading ? "Running" : "Run research";
+
+        window.clearInterval(loadingTimer);
+        window.clearInterval(loadingStepTimer);
+        if (!isLoading) {
+          loadingTimer = undefined;
+          loadingStepTimer = undefined;
+          loadingStepIndex = 0;
+          loadingStartedAt = 0;
+          return;
+        }
+
+        loadingStartedAt = Date.now();
+        loadingStepIndex = 0;
+        updateLoadingStep();
+        updateLoadingClock();
+        loadingStepTimer = window.setInterval(updateLoadingStep, 3600);
+        loadingTimer = window.setInterval(updateLoadingClock, 1000);
+      }
+
+      function updateLoadingStep() {
+        const step = loadingSteps[loadingStepIndex % loadingSteps.length];
+        loadingTitle.textContent = step.title;
+        loadingDetail.textContent = step.detail;
+        setPipeline("running", loadingStepIndex % pipelineSteps.length);
+        loadingStepIndex += 1;
+      }
+
+      function updateLoadingClock() {
+        const elapsedSeconds = Math.max(0, Math.floor((Date.now() - loadingStartedAt) / 1000));
+        const remainingSeconds = estimatedRunSeconds - elapsedSeconds;
+        loadingElapsed.textContent = `Elapsed ${formatDuration(elapsedSeconds)}`;
+        loadingEta.textContent =
+          remainingSeconds > 0
+            ? `Estimated time until complete: ~${formatDuration(remainingSeconds)}`
+            : `Running longer than the ~${formatDuration(estimatedRunSeconds)} estimate`;
+      }
+
+      function setPipeline(state, activeIndex = 0) {
+        const clampedActiveIndex = Math.max(0, Math.min(activeIndex, pipelineSteps.length - 1));
+        pipelineSteps.forEach((step, index) => {
+          const node = document.querySelector(`[data-step="${step}"]`);
+          node.className = "step";
+          if (state === "running") {
+            node.classList.toggle("active", index === clampedActiveIndex);
+            node.classList.toggle("done", index < clampedActiveIndex);
+          }
+          if (state === "complete") {
+            node.classList.add("done");
+          }
+          if (state === "failed") {
+            node.classList.toggle("done", index < clampedActiveIndex);
+            node.classList.toggle("failed", index === clampedActiveIndex);
+          }
+        });
+      }
+
+      function resetMetrics() {
+        metricDuration.textContent = "--";
+        metricSources.textContent = "--";
+        metricDomains.textContent = "--";
+        metricVerification.textContent = "--";
+        metricPass.textContent = "pending";
+        metricPass.className = "";
+      }
+
+      async function readJson(response) {
+        const text = await response.text();
+        if (!text) return {};
+        try {
+          return JSON.parse(text);
+        } catch {
+          return { error: text };
+        }
+      }
+
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
+      function escapeAttr(value) {
+        return escapeHtml(value).replace(/`/g, "&#96;");
+      }
+
+      function formatDuration(totalSeconds) {
+        const minutes = Math.floor(totalSeconds / 60);
+        const seconds = totalSeconds % 60;
+        return `${minutes}:${String(seconds).padStart(2, "0")}`;
+      }
+
+      checkHealth();
+    </script>
+  </body>
+</html>

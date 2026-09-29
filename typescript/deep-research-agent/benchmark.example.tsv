@@ -1,0 +1,2 @@
+benchmark	id	task_summary	init_url	precomputed_rubric
+research	browserbase_fetch_api	Summarize Browserbase Fetch API capabilities and explain when to use browser sessions instead.	https://docs.browserbase.com/reference/api/fetch-a-page	"{""items"":[{""criterion"":""Explains Fetch API capabilities with citations"",""max_points"":2},{""criterion"":""Explains when browser sessions are needed"",""max_points"":2}],""total_max_points"":4}"
