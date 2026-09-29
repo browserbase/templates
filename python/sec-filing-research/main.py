@@ -1,123 +1,120 @@
-"""Extract recent Apple SEC filings with Stagehand V4."""
+"""Retrieve recent SEC filings with Browserbase Fetch API."""
 
 import asyncio
 import json
 import os
+import re
+from typing import Any
 
+from browserbase import AsyncBrowserbase
 from dotenv import load_dotenv
-from pydantic import BaseModel
-from stagehand import Stagehand, browserbase
 
 load_dotenv()
 
-SEARCH_QUERY = "Apple Inc"
-COMPANY_CIK = "0000320193"
-NUM_FILINGS = 5
+SEARCH_QUERY = os.environ.get("SEARCH_QUERY", "Apple Inc")
+NUM_FILINGS = int(os.environ.get("NUM_FILINGS", "5"))
+COMPANY_TICKERS_URL = "https://www.sec.gov/files/company_tickers.json"
 
 
-class CompanyInfo(BaseModel):
-    company_name: str
-    cik: str
+def normalized(value: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", value.casefold())
 
 
-class Filing(BaseModel):
-    type: str
-    date: str
-    description: str | None
-    accession_number: str | None
-    file_number: str | None
+def raw_json(response: Any) -> Any:
+    if not 200 <= response.status_code < 300:
+        raise RuntimeError(f"SEC returned HTTP {response.status_code}")
+    if not isinstance(response.content, str):
+        raise RuntimeError("Expected SEC to return raw JSON content")
+    return json.loads(response.content)
 
 
-class Filings(BaseModel):
-    filings: list[Filing]
+async def resolve_cik(api: AsyncBrowserbase, query: str) -> str:
+    stripped = query.strip()
+    if stripped.isdigit():
+        return stripped.zfill(10)
+
+    response = await api.fetch_api.create(
+        url=COMPANY_TICKERS_URL,
+        format="raw",
+        allow_redirects=True,
+    )
+    ticker_file = raw_json(response)
+    if not isinstance(ticker_file, dict):
+        raise RuntimeError("SEC company list was not a JSON object")
+
+    target = normalized(query)
+    company = next(
+        (
+            candidate
+            for candidate in ticker_file.values()
+            if isinstance(candidate, dict)
+            and (
+                normalized(str(candidate.get("ticker", ""))) == target
+                or normalized(str(candidate.get("title", ""))) == target
+            )
+        ),
+        None,
+    )
+    if company is None:
+        raise RuntimeError(f"No exact SEC company or ticker match for {query!r}")
+    return str(company["cik_str"]).zfill(10)
 
 
 async def main() -> None:
     api_key = os.environ.get("BROWSERBASE_API_KEY")
     if not api_key:
         raise RuntimeError("BROWSERBASE_API_KEY is required")
+    if NUM_FILINGS < 1:
+        raise RuntimeError("NUM_FILINGS must be a positive integer")
 
-    browser = await browserbase.launch(api_key=api_key)
-    try:
-        stagehand = await Stagehand.create(
-            browser=browser,
+    async with AsyncBrowserbase(api_key=api_key) as api:
+        print(f"Resolving {SEARCH_QUERY!r} through the official SEC company list...")
+        cik = await resolve_cik(api, SEARCH_QUERY)
+        submissions_url = f"https://data.sec.gov/submissions/CIK{cik}.json"
+
+        print(f"Fetching recent filings for CIK {cik}...")
+        response = await api.fetch_api.create(
+            url=submissions_url,
+            format="raw",
+            allow_redirects=True,
         )
-        try:
-            pages = await browser.context.pages()
-            page = pages[0] if pages else await browser.context.new_page()
-            await page.goto(
-                "https://www.sec.gov/edgar/searchedgar/companysearch.html",
-                wait_until="domcontentloaded",
-                timeout=60_000,
-            )
-            try:
-                await stagehand.act(
-                    "Click the Company and Person Lookup search textbox",
-                    page=page,
-                )
-                await stagehand.act(
-                    "Fill the company search field with %query%",
-                    page=page,
-                    variables={"query": SEARCH_QUERY},
-                )
-                await stagehand.act("Click the search submit button", page=page)
-                await stagehand.act(
-                    "Click the Apple Inc company result to view its filings",
-                    page=page,
-                )
-            except Exception as error:
-                print(
-                    f"Semantic SEC navigation did not complete; checking its postcondition: {error}"
-                )
-            page = await browser.context.active_page() or page
-            if "/edgar/browse/" not in await page.url():
-                await page.goto(
-                    f"https://www.sec.gov/edgar/browse/?CIK={COMPANY_CIK}&owner=exclude",
-                    wait_until="domcontentloaded",
-                    timeout=60_000,
-                )
-            company_result = await stagehand.extract(
-                "Extract the official company name and numeric CIK from the page header",
-                CompanyInfo,
-                page=page,
-            )
-            filings_result = await stagehand.extract(
-                (
-                    f"Extract the {NUM_FILINGS} most recent SEC filings from the filings table. "
-                    "For each return its type, filing date, description, accession number, and "
-                    "file or film number when shown."
-                ),
-                Filings,
-                page=page,
-            )
-            filings = filings_result.data.filings[:NUM_FILINGS]
+        submissions = raw_json(response)
 
-            result = {
-                "company": company_result.data.company_name,
-                "cik": company_result.data.cik or COMPANY_CIK,
-                "search_query": SEARCH_QUERY,
-                "filings": [
-                    {
-                        **filing.model_dump(),
-                        "description": filing.description or "",
-                        "accession_number": filing.accession_number or "",
-                        "file_number": filing.file_number or "",
-                    }
-                    for filing in filings
-                ],
+    recent = submissions.get("filings", {}).get("recent", {})
+    forms = recent.get("form", [])
+    if not submissions.get("name") or not forms:
+        raise RuntimeError("SEC submissions response did not contain recent filings")
+
+    def value_at(field: str, index: int) -> str:
+        values = recent.get(field, [])
+        return str(values[index]) if index < len(values) else ""
+
+    filings = []
+    for index, form in enumerate(forms[:NUM_FILINGS]):
+        filings.append(
+            {
+                "type": form,
+                "date": value_at("filingDate", index),
+                "description": value_at("primaryDocDescription", index),
+                "accession_number": value_at("accessionNumber", index),
+                "file_number": value_at("fileNumber", index),
+                "primary_document": value_at("primaryDocument", index),
             }
-            print(json.dumps(result, indent=2))
-        finally:
-            await stagehand.close()
-    finally:
-        await browser.close()
-        print("Session closed successfully")
+        )
+
+    result = {
+        "company": submissions["name"],
+        "cik": cik,
+        "search_query": SEARCH_QUERY,
+        "source_url": submissions_url,
+        "filings": filings,
+    }
+    print(json.dumps(result, indent=2))
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except Exception as error:
-        print(f"SEC filing extraction failed: {error}")
-        print("Docs: https://docs.stagehand.dev/v4/first-steps/introduction")
-        raise
+        print(f"SEC filing research failed: {error}")
+        raise SystemExit(1) from error

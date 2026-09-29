@@ -1,82 +1,55 @@
-"""Generate a concise company value proposition with Stagehand V4."""
+"""Generate a concise company value proposition with Browserbase Fetch API."""
 
 import asyncio
+import json
 import os
 
+from browserbase import AsyncBrowserbase
 from dotenv import load_dotenv
-from pydantic import BaseModel
-
-from stagehand import Stagehand, browserbase
+from pydantic import BaseModel, Field
 
 load_dotenv()
 
-TARGET_DOMAIN = "www.browserbase.com"
+TARGET_URL = os.environ.get("TARGET_URL", "https://www.browserbase.com")
 
 
 class ValueProposition(BaseModel):
-    value_prop: str
+    value_proposition: str = Field(
+        min_length=1,
+        description="The company's central value proposition stated on the landing page",
+    )
+    personalized_opener: str = Field(
+        min_length=1,
+        description=(
+            "A unique English phrase grounded in the value proposition, no more than 9 words, "
+            'beginning with "Your"'
+        ),
+    )
 
 
-class OneLiner(BaseModel):
-    one_liner: str
-
-
-async def generate_one_liner(domain: str) -> str:
+async def main() -> None:
     api_key = os.environ.get("BROWSERBASE_API_KEY")
     if not api_key:
         raise RuntimeError("BROWSERBASE_API_KEY is required")
 
-    browser = await browserbase.launch(api_key=api_key)
-    try:
-        stagehand = await Stagehand.create(
-            browser=browser,
+    print(f"Extracting a value proposition from {TARGET_URL} with Fetch API...")
+    async with AsyncBrowserbase(api_key=api_key) as api:
+        response = await api.fetch_api.create(
+            url=TARGET_URL,
+            format="json",
+            schema=ValueProposition.model_json_schema(),
+            allow_redirects=True,
         )
-        try:
-            pages = await browser.context.pages()
-            page = pages[0] if pages else await browser.context.new_page()
-            await page.goto(
-                f"https://{domain}/",
-                wait_until="domcontentloaded",
-                timeout=300_000,
-            )
+    if not 200 <= response.status_code < 300:
+        raise RuntimeError(f"Target returned HTTP {response.status_code}")
 
-            value_prop_result = await stagehand.extract(
-                "Extract the value proposition from the landing page",
-                ValueProposition,
-                page=page,
-            )
-            value_prop = value_prop_result.data.value_prop.strip()
-            print(f"Extracted value proposition: {value_prop}")
-
-            formatted_result = await stagehand.extract(
-                (
-                    f'Using the company value proposition "{value_prop}", write a unique '
-                    'English description that starts with "your", uses no quotes, avoids '
-                    "generic adjectives, and is no more than 9 words"
-                ),
-                OneLiner,
-                page=page,
-            )
-            one_liner = formatted_result.data.one_liner.strip()
-            print(f"Generated one-liner: {one_liner}")
-            return one_liner
-        finally:
-            await stagehand.close()
-    finally:
-        await browser.close()
-        print("Session closed successfully")
-
-
-async def main() -> None:
-    print("Starting One-Liner Generator...")
-    one_liner = await generate_one_liner(TARGET_DOMAIN)
-    print(f"Success: {one_liner}")
+    result = ValueProposition.model_validate(response.content)
+    print(json.dumps({"target_url": TARGET_URL, **result.model_dump()}, indent=2))
 
 
 if __name__ == "__main__":
     try:
         asyncio.run(main())
     except Exception as error:
-        print(f"Error: {error}")
-        print("Docs: https://docs.stagehand.dev/v4/first-steps/introduction")
-        raise
+        print(f"Value proposition extraction failed: {error}")
+        raise SystemExit(1) from error

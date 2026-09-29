@@ -1,95 +1,53 @@
-// Stagehand + Browserbase: Philadelphia Council Events Scraper - See README.md for full documentation
+// Browserbase Fetch API: Philadelphia Council Events
+
+import Browserbase from "@browserbasehq/sdk";
 import "dotenv/config";
-import { browserbase, Stagehand } from "@browserbasehq/stagehand";
 import { z } from "zod/v4";
 
+const CALENDAR_URL = "https://phila.legistar.com/Calendar.aspx";
 const CURRENT_YEAR = new Date().getUTCFullYear();
 
-/** Searches the current Philadelphia Council calendar and extracts event information. */
-async function main() {
-  console.log("Starting Philadelphia Council Events automation...");
+const CouncilEventsSchema = z.object({
+  events: z
+    .array(
+      z.object({
+        name: z.string().describe("The event or meeting name"),
+        date: z.string().describe("The displayed event date"),
+        time: z.string().describe("The displayed event time"),
+      }),
+    )
+    .describe(`Every ${CURRENT_YEAR} event displayed in the council calendar table`),
+});
 
-  // Initialize Stagehand with Browserbase for cloud-based browser automation
-  const browser = await browserbase.launch({
-    apiKey: process.env.BROWSERBASE_API_KEY!,
+async function main(): Promise<void> {
+  const apiKey = process.env.BROWSERBASE_API_KEY;
+  if (!apiKey) throw new Error("BROWSERBASE_API_KEY is required");
+
+  const calendarUrl = new URL(CALENDAR_URL);
+  calendarUrl.searchParams.set("Mode", String(CURRENT_YEAR));
+
+  console.log(`Fetching the ${CURRENT_YEAR} Philadelphia Council calendar...`);
+  const bb = new Browserbase({ apiKey });
+  const schema = z.toJSONSchema(CouncilEventsSchema) as Record<string, unknown>;
+  delete schema.$schema;
+  const response = await bb.fetchAPI.create({
+    url: calendarUrl.toString(),
+    format: "json",
+    schema,
+    allowRedirects: true,
   });
-  const stagehand = await Stagehand.create({
-    browser: browser,
-    model: { modelName: "openai/gpt-4.1" },
-    logging: { level: "info" },
-  });
-
-  try {
-    let page = (await browser.context.pages())[0];
-
-    console.log("Navigating to: https://phila.legistar.com/");
-    await page.goto("https://phila.legistar.com/");
-
-    console.log("Clicking calendar from the navigation menu");
-    const calendar = await stagehand.act("click calendar from the navigation menu");
-    if (!calendar.data.success) {
-      throw new Error(calendar.data.message || "Could not open the calendar");
-    }
-
-    console.log(`Selecting ${CURRENT_YEAR} from the year dropdown`);
-    const selection = await stagehand.act(`select ${CURRENT_YEAR} from the year dropdown`);
-    if (!selection.data.success) {
-      throw new Error(selection.data.message || `Could not select ${CURRENT_YEAR}`);
-    }
-    page = (await browser.context.activePage()) ?? page;
-    if (!(await page.url()).includes("Calendar.aspx")) {
-      await page.goto("https://phila.legistar.com/Calendar.aspx", {
-        waitUntil: "domcontentloaded",
-        timeout: 60000,
-      });
-    }
-    await stagehand.observe(`Find the calendar table rows for ${CURRENT_YEAR}`);
-
-    // Extract event data using AI to parse the structured information
-    console.log("Extracting event information...");
-    const EventResultsSchema = z.object({
-      results: z.array(
-        z.object({
-          name: z.string(),
-          date: z.string(),
-          time: z.string(),
-        }),
-      ),
-    });
-    const { data: results } = await stagehand.extract(
-      `Extract every ${CURRENT_YEAR} event currently visible in the calendar table, including its name, date, and time`,
-      EventResultsSchema,
-    );
-
-    console.log(`Found ${results.results.length} events for ${CURRENT_YEAR}`);
-    console.log("Event data extracted successfully:");
-    console.log(JSON.stringify(results, null, 2));
-  } catch (error) {
-    console.error("Error during event extraction:", error);
-
-    // Provide helpful troubleshooting information
-    console.error("\nCommon issues:");
-    console.error("1. Check .env file has BROWSERBASE_API_KEY");
-    console.error("2. Ensure internet access and https://phila.legistar.com is accessible");
-    console.error("3. Verify Browserbase account has sufficient credits");
-    console.error("4. Check if the calendar page structure has changed");
-
-    throw error;
-  } finally {
-    try {
-      await stagehand.close();
-    } catch (error) {
-      console.warn("Stagehand cleanup warning:", error);
-    }
-    try {
-      await browser.close();
-    } catch (error) {
-      console.warn("Browser cleanup warning:", error);
-    }
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new Error(`Council calendar returned HTTP ${response.statusCode}`);
   }
+
+  const result = CouncilEventsSchema.parse(response.content);
+  console.log(`Found ${result.events.length} events for ${CURRENT_YEAR}.`);
+  console.log(
+    JSON.stringify({ year: CURRENT_YEAR, sourceUrl: calendarUrl.toString(), ...result }, null, 2),
+  );
 }
 
-main().catch((err) => {
-  console.error("Application error:", err);
+main().catch((error) => {
+  console.error("Council event extraction failed:", error);
   process.exit(1);
 });

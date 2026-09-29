@@ -1,18 +1,28 @@
-// Business Lookup with a bring-your-own agent - See README.md for full documentation
+// Browserbase Fetch API: Business Lookup - See README.md for full documentation
 
+import Browserbase from "@browserbasehq/sdk";
 import "dotenv/config";
-import { createMCPClient } from "@ai-sdk/mcp";
-import { Experimental_StdioMCPTransport } from "@ai-sdk/mcp/mcp-stdio";
-import { Output, ToolLoopAgent, stepCountIs } from "ai";
 import { z } from "zod/v4";
 
-const childEnv = Object.fromEntries(
-  Object.entries(process.env).filter((entry): entry is [string, string] => entry[1] !== undefined),
-);
+const BUSINESS_NAME = process.env.BUSINESS_NAME ?? "Jalebi Street";
+const DATASET_URL = "https://data.sfgov.org/resource/g8m3-pdis.json";
 
-const businessName = "Jalebi Street";
-
-const businessSchema = z.object({
+const RawBusinessSchema = z
+  .object({
+    dba_name: z.string(),
+    ownership_name: z.string().optional(),
+    ttxid: z.string(),
+    uniqueid: z.string().optional(),
+    full_business_address: z.string().optional(),
+    dba_start_date: z.string().optional(),
+    dba_end_date: z.string().optional(),
+    neighborhoods_analysis_boundaries: z.string().optional(),
+    self_reported_naics_code: z.string().optional(),
+    lic: z.string().optional(),
+    lic_code_description: z.string().optional(),
+  })
+  .passthrough();
+const BusinessSchema = z.object({
   dbaName: z.string(),
   ownershipName: z.string().nullable(),
   businessAccountNumber: z.string(),
@@ -22,55 +32,63 @@ const businessSchema = z.object({
   businessEndDate: z.string().nullable(),
   neighborhood: z.string().nullable(),
   naicsCode: z.string().nullable(),
-  naicsCodeDescription: z.string().nullable(),
+  licenseCode: z.string().nullable(),
+  licenseCodeDescription: z.string().nullable(),
+  sourceUrl: z.string().url(),
 });
 
-async function main() {
-  const mcpClient = await createMCPClient({
-    transport: new Experimental_StdioMCPTransport({
-      command: "stagehand-codemode",
-      env: childEnv,
-      stderr: "inherit",
-    }),
+async function main(): Promise<void> {
+  const apiKey = process.env.BROWSERBASE_API_KEY;
+  if (!apiKey) throw new Error("BROWSERBASE_API_KEY is required");
+
+  const sourceUrl = new URL(DATASET_URL);
+  sourceUrl.searchParams.set("$q", BUSINESS_NAME);
+  sourceUrl.searchParams.set("$limit", "5");
+
+  console.log(`Fetching official SF Open Data records for ${JSON.stringify(BUSINESS_NAME)}...`);
+  const bb = new Browserbase({ apiKey });
+  const response = await bb.fetchAPI.create({
+    url: sourceUrl.toString(),
+    format: "raw",
+    allowRedirects: true,
+  });
+  if (response.statusCode < 200 || response.statusCode >= 300) {
+    throw new Error(`SF Open Data returned HTTP ${response.statusCode}`);
+  }
+  if (typeof response.content !== "string") {
+    throw new Error("Expected a raw JSON response from SF Open Data");
+  }
+
+  const records = z.array(RawBusinessSchema).parse(JSON.parse(response.content));
+  const record = records.find(
+    (candidate) =>
+      candidate.dba_name.localeCompare(BUSINESS_NAME, undefined, {
+        sensitivity: "accent",
+      }) === 0,
+  );
+  if (!record) {
+    throw new Error(`No exact DBA record found in ${records.length} returned records`);
+  }
+
+  const business = BusinessSchema.parse({
+    dbaName: record.dba_name,
+    ownershipName: record.ownership_name ?? null,
+    businessAccountNumber: record.ttxid,
+    locationId: record.uniqueid ?? null,
+    streetAddress: record.full_business_address ?? null,
+    businessStartDate: record.dba_start_date ?? null,
+    businessEndDate: record.dba_end_date ?? null,
+    neighborhood: record.neighborhoods_analysis_boundaries ?? null,
+    naicsCode: record.self_reported_naics_code ?? null,
+    licenseCode: record.lic ?? null,
+    licenseCodeDescription: record.lic_code_description ?? null,
+    sourceUrl: sourceUrl.toString(),
   });
 
-  try {
-    const tools = await mcpClient.tools();
-    if (!tools.code_execute) throw new Error("Stagehand code mode did not expose code_execute");
-
-    const agent = new ToolLoopAgent({
-      model: process.env.AGENT_MODEL ?? "anthropic/claude-sonnet-4.6",
-      instructions:
-        "You are a browser agent. Use code_execute for all browser work. Prefer deterministic page, locator, and page.evaluate APIs. Use no more than 8 code_execute calls. Once you have the requested record, stop calling tools and return the structured response immediately.",
-      tools,
-      output: Output.object({ schema: businessSchema }),
-      prepareStep: ({ stepNumber }) =>
-        stepNumber >= 8
-          ? {
-              activeTools: [],
-              toolChoice: "none",
-              instructions:
-                "Return the structured business record now using the evidence already collected. Do not call another tool.",
-            }
-          : undefined,
-      stopWhen: stepCountIs(10),
-    });
-
-    console.log(`Searching for business: ${businessName}`);
-    const result = await agent.generate({
-      prompt: `Open the official San Francisco Open Data API query https://data.sfgov.org/resource/g8m3-pdis.json?$q=${encodeURIComponent(businessName)}&$limit=5 and find the exact DBA record for ${JSON.stringify(businessName)}. Read the JSON rendered in the browser, map ttxid to businessAccountNumber and uniqueid to locationId, and return all requested fields. Use null when a field is not present.`,
-    });
-
-    console.log("Business Information:");
-    console.log(JSON.stringify(result.output, null, 2));
-  } finally {
-    await mcpClient.close();
-    console.log("Stagehand code-mode session closed successfully");
-  }
+  console.log(JSON.stringify(business, null, 2));
 }
 
 main().catch((error) => {
-  console.error("Error in business lookup:", error);
-  console.error("Check BROWSERBASE_API_KEY and AI_GATEWAY_API_KEY in .env");
+  console.error("Business lookup failed:", error);
   process.exit(1);
 });
