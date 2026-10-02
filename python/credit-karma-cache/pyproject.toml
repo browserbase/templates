@@ -1,0 +1,13 @@
+[project]
+name = "credit-karma-cache"
+version = "0.1.0"
+description = "Credit Karma Mortgage Rates automation with Stagehand and Browserbase"
+requires-python = ">=3.10"
+dependencies = [
+    "stagehand>=0.5.0,<1.0.0",
+    "python-dotenv",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

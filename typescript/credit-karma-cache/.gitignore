@@ -1,0 +1,26 @@
+# Environment variables
+.env
+
+# Cache directory
+credit-karma-cache/
+
+# Screenshots
+error-screenshot.png
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+.cursor/
+
+# OS
+.DS_Store
