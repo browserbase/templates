@@ -1,0 +1,33 @@
+[project]
+name = "menu-dynamic-extraction-demo"
+version = "0.1.0"
+description = "Restaurant menu extraction using Stagehand and Browserbase"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic>=2.0.0",
+    "python-dotenv>=1.2.1",
+    "stagehand>=3.0.0",  # v3 API - manages Browserbase sessions internally
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "ruff>=0.1.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311']
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
