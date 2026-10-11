@@ -1,0 +1,28 @@
+{
+  "name": "elevenlabs-browserbase",
+  "version": "1.0.0",
+  "description": "Hotel concierge voice agent — ElevenLabs Conversational AI + Browserbase/Stagehand for real-time activity search",
+  "type": "module",
+  "main": "server/index.ts",
+  "scripts": {
+    "setup": "tsx setup.ts",
+    "dev": "tsx watch server/index.ts",
+    "start": "tsx server/index.ts",
+    "test-search": "tsx test-search.ts",
+    "build": "tsc",
+    "start:prod": "node dist/server/index.js"
+  },
+  "dependencies": {
+    "@browserbasehq/stagehand": "latest",
+    "dotenv": "^16.4.0",
+    "express": "^4.21.0",
+    "localtunnel": "^2.0.2",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0"
+  }
+}
