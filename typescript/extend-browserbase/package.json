@@ -10,7 +10,7 @@
   "dependencies": {
     "@browserbasehq/sdk": "^2.9.0",
     "@browserbasehq/stagehand": "4.0.0",
-    "adm-zip": "^0.5.16",
+    "adm-zip": "^0.6.1",
     "dotenv": "^17.2.4",
     "extend-ai": "^1.0.2",
     "open": "^11.0.0"
