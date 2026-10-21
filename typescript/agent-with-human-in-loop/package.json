@@ -13,7 +13,7 @@
     "@browserbasehq/sdk": "^2.9.0",
     "@browserbasehq/stagehand-codemode": "github:browserbase/stagehand#54302fc5f13be5ad8e717d8e1388502de22be2ed&path:packages/integrations",
     "ai": "^7.0.58",
-    "next": "16.3.8",
+    "next": "16.4.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "^4.4.3"
@@ -24,7 +24,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
-    "eslint-config-next": "16.2.1",
+    "eslint-config-next": "16.4.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },
