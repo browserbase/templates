@@ -11,7 +11,6 @@ const TYPESCRIPT_ROOT = path.join(ROOT, "typescript");
  */
 const TEMPLATE_FLAG_TO_TYPESCRIPT_DIR = new Map([
   ["google-trends-keywords", "google-trends"],
-  ["amazon-price-comparison", "amazon-global-price-comparison"],
   ["real-estate-license-verification", "license-verification"],
 ]);
 
@@ -59,7 +58,7 @@ function resolveTemplatesApiUrl(explicit) {
   if (explicit && String(explicit).trim()) return String(explicit).trim();
   const fromEnv = process.env.TEMPLATES_API_URL;
   if (typeof fromEnv === "string" && fromEnv.trim()) return fromEnv.trim();
-  return "https://www.browserbase.com/website-api/templates";
+  return "https://www.browserbase.com/api/templates";
 }
 
 export async function fetchPlaygroundTypescriptTemplateEntries(apiUrl) {
